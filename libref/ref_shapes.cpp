@@ -2561,8 +2561,11 @@ int ref_ernie_idx_query_shape(const RadParam* p, int n_p, int operand, RadOpdDes
 }
 int ref_ernie_idx_key_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
     const int64_t M = gi(p, n_p, "M", 0), D = gi(p, n_p, "head_dim", 0), R = gi(p, n_p, "rope_dim", 0);
-    const int64_t bs = gi(p, n_p, "block_size", 8), np = gi(p, n_p, "num_pages", 0), pages = np > 0 ? np : (M + bs - 1) / bs + 1;
-    if (M < 1 || D < 4 || R < 2 || (R & 1) || R > D || bs < 1 || pages < 1) return RAD_E_UNSUPPORTED;
+    const int64_t bs = gi(p, n_p, "block_size", 8), np = gi(p, n_p, "num_pages", 0);
+    /* block_size divides the page count below, so it is validated before any arithmetic on it (as the tiled callback does) */
+    if (M < 1 || D < 4 || R < 2 || (R & 1) || R > D || bs < 1) return RAD_E_UNSUPPORTED;
+    const int64_t pages = np > 0 ? np : (M + bs - 1) / bs + 1;
+    if (pages < 1) return RAD_E_UNSUPPORTED;
     Opd o;
     o.t((uint32_t)RAD_BF16, { M, D });                 /* k */
     o.t((uint32_t)RAD_BF16, { D });                    /* gamma (w) */
@@ -2575,8 +2578,9 @@ int ref_ernie_idx_key_shape(const RadParam* p, int n_p, int operand, RadOpdDesc*
 int ref_ernie_idx_logits_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
     const int64_t M = gi(p, n_p, "M", 0), H = gi(p, n_p, "heads", 0), D = gi(p, n_p, "head_dim", 0);
     const int64_t L = gi(p, n_p, "tokens", 256), S = gi(p, n_p, "seqs", 2), bs = gi(p, n_p, "block_size", 8);
-    const int64_t B = std::max<int64_t>(gi(p, n_p, "blocks", 0), (L + bs - 1) / bs), pages = std::max<int64_t>(gi(p, n_p, "num_pages", 0), S * B);
+    /* block_size divides the token count below, so it is validated before any arithmetic on it (as the tiled callback does) */
     if (M < 1 || H < 1 || D < 4 || L < 1 || S < 1 || bs < 1) return RAD_E_UNSUPPORTED;
+    const int64_t B = std::max<int64_t>(gi(p, n_p, "blocks", 0), (L + bs - 1) / bs), pages = std::max<int64_t>(gi(p, n_p, "num_pages", 0), S * B);
     Opd o;
     o.t((uint32_t)RAD_F8E4M3, { M, H * D });           /* qf */
     o.t_fill((uint32_t)RAD_F32, { M, H }, (uint32_t)RAD_FILL_SIGMOID, 0);   /* qs */

@@ -24,6 +24,9 @@
 //       ernie_dsa_topk_tiled path.
 //   (d) both RADIANCE_ERNIE55_IDX_ROW_SPLIT=1 and RADIANCE_ERNIE55_AR_OVERLAP=1 at TP 2: the server starts, the
 //       overlap is declined with a reason naming the indexer row split, and the output equals the plain run.
+//   In (c-i..c-v) and (d) the ON arm also sets RADIANCE_ERNIE55_IDX_ROW_SPLIT_TRACE=1 and the per-rank trace is
+//   checked (a T >= 256 step; r0 = rank*run and per-rank rows summing to T; in (c-ii) an odd T >= 257 with unequal
+//   rows); the OFF arm sets the trace env too and must emit no trace line.
 //
 // Needs node, a host build of the repo (RAD_BUILD_DIR, default <repo>/build-ernie55) and the sysfs mask:
 //   nosys node --test tests/ernie55/idx_row_split.test.cjs
@@ -36,9 +39,12 @@ const {h} = ck;
 
 const SW = 'RADIANCE_ERNIE55_IDX_ROW_SPLIT';
 const AR = 'RADIANCE_ERNIE55_AR_OVERLAP';
+const TR = 'RADIANCE_ERNIE55_IDX_ROW_SPLIT_TRACE';    // per-rank, per-step row-split trace (arch/ernie55/ernie55.cpp)
 const NT = Number(process.env.IRS_NT || 40);          // decode rows a request
-const OFF = {[SW]: '0'};                              // the switch set to '0' explicitly, never inherited from the ambient env
-const ON = {[SW]: '1'};
+// The trace env is set in BOTH arms: the ON arm must emit per-rank trace lines, the OFF arm must emit none (the
+// split branch is not taken with the switch off). The switch in OFF is set to '0' explicitly, never inherited.
+const OFF = {[SW]: '0', [TR]: '1'};
+const ON = {[SW]: '1', [TR]: '1'};
 
 let _dir, _model, _tiled;
 function getModel() {
@@ -115,6 +121,44 @@ function assertSplitRan(log, what) {
   assert.ok(st.some(s => s.ntok >= 256), `${what}: no step reached the 256-row split threshold (max n_tok ${Math.max(...st.map(s => s.ntok))})`);
 }
 
+// The per-rank row-split trace (RADIANCE_ERNIE55_IDX_ROW_SPLIT_TRACE=1), one line per rank per split step:
+//   radiance: ernie55: idx row split step: T=.. run=.. r0=.. rows=.. rank=.. world=..
+const TRACE_RE = /idx row split step: T=(\d+) run=(\d+) r0=(\d+) rows=(\d+) rank=(\d+) world=(\d+)/g;
+const traceLines = log => [...log.matchAll(TRACE_RE)].map(m => ({T: +m[1], run: +m[2], r0: +m[3], rows: +m[4], rank: +m[5], world: +m[6]}));
+
+// Assert the trace teeth for an ON arm. Both ranks' stderr reaches srv.log: the host backend runs one thread per
+// rank in a single process (core/device/host.cpp), so every rank's fprintf(stderr) is captured, and RADIANCE_LOG_STEPS
+// (engine.cpp) is captured the same way. The per-step indexer all_gather keeps a step's `world` lines consecutive, so
+// the trace chunks into per-step groups of `world`. Each group shares T and run; rank r has r0 = r*run and the rows
+// sum to T across ranks 0..world-1. At least one group must reach T >= 256. With {odd}, also require an odd T >= 257
+// group whose per-rank rows are unequal (the last rank's run is short).
+function assertTrace(log, what, {odd = false} = {}) {
+  const tl = traceLines(log);
+  assert.ok(tl.length > 0, `${what}: no idx-row-split trace line captured (RADIANCE_ERNIE55_IDX_ROW_SPLIT_TRACE=1)`);
+  const world = tl[0].world;
+  assert.ok(world >= 2, `${what}: trace world ${world} < 2 (the split is inert at TP 1)`);
+  assert.ok(tl.every(t => t.world === world), `${what}: trace lines disagree on world (${[...new Set(tl.map(t => t.world))]})`);
+  assert.equal(tl.length % world, 0, `${what}: ${tl.length} trace lines is not a multiple of world ${world}`);
+  let big = 0, oddBig = 0;
+  for (let i = 0; i < tl.length; i += world) {
+    const g = tl.slice(i, i + world), T = g[0].T, run = g[0].run;
+    assert.ok(g.every(t => t.T === T && t.run === run), `${what}: a step's per-rank lines disagree on T/run: ${JSON.stringify(g)}`);
+    const ranks = g.map(t => t.rank).sort((a, b) => a - b);
+    assert.ok(eq(ranks, Array.from({length: world}, (_, j) => j)), `${what}: a step's ranks are not 0..${world - 1}: ${ranks}`);
+    for (const t of g) assert.equal(t.r0, t.rank * run, `${what}: rank ${t.rank} r0 ${t.r0} != rank*run ${t.rank * run} (T ${T})`);
+    assert.equal(g.reduce((s, t) => s + t.rows, 0), T, `${what}: per-rank rows do not sum to T ${T}: ${JSON.stringify(g)}`);
+    if (T >= 256) big++;
+    if (odd && (T % 2) === 1 && T >= 257) {
+      oddBig++;
+      assert.ok(new Set(g.map(t => t.rows)).size > 1, `${what}: odd T ${T} split into equal per-rank rows: ${JSON.stringify(g)}`);
+    }
+  }
+  assert.ok(big > 0, `${what}: no trace step reached T >= 256 (max T ${Math.max(...tl.map(t => t.T))})`);
+  if (odd) assert.ok(oddBig > 0, `${what}: no odd trace step with T >= 257 (the odd-T case did not exercise an odd split)`);
+}
+// The OFF arm sets the trace env too but must emit no trace line (the split branch is not taken with the switch off).
+const assertNoTrace = (log, what) => assert.equal(traceLines(log).length, 0, `${what}: the switch-OFF arm emitted an idx-row-split trace line`);
+
 // (a) declare at TP 2 with the switch off: no indexer all_gather, and the declared program is the switch-unset one.
 test('(a) TP2 declare, switch off (unset and 0): no indexer all_gather, graph equals unset', () => {
   const unset = debugGraph(2, {});
@@ -157,6 +201,7 @@ test('(c-i) TP2, 256-row prefill chunks (3 chunks, ragged last): on == off', {ti
   const off = await run(OFF), on = await run(ON);
   sameTokens(off.res, on.res, '256-row chunks');
   assertSplitRan(off.log, 'off'); assertSplitRan(on.log, 'on');
+  assertTrace(on.log, 'on (c-i)'); assertNoTrace(off.log, 'off (c-i)');
 });
 
 // (c-ii) an odd row count (257 rows, a single >= 256 chunk): rank 0 runs 129 rows, rank 1 the short 128. on == off.
@@ -172,6 +217,8 @@ test('(c-ii) TP2, odd T (last rank run short): on == off', {timeout: 2400000}, a
   const off = await run(OFF), on = await run(ON);
   sameTokens(off.res, on.res, 'odd T');
   assertSplitRan(off.log, 'off'); assertSplitRan(on.log, 'on');
+  // odd T: a trace step with odd T >= 257 whose two ranks' rows are unequal (rank 0 the long run, rank 1 the short)
+  assertTrace(on.log, 'on (c-ii)', {odd: true}); assertNoTrace(off.log, 'off (c-ii)');
 });
 
 // (c-iii) two concurrent requests of different lengths (a multi-sequence step): each request on equals the same
@@ -197,6 +244,7 @@ test('(c-iii) TP2, two concurrent requests of different lengths (multi-sequence 
     assert.ok(st.some(s => s.nseq >= 2 && s.ntok >= 256),
       `${tag}: no step carried two sequences at the 256-row threshold (n_seq/n_tok: ${st.map(s => s.nseq + '/' + s.ntok).join(',')})`);
   }
+  assertTrace(on.log, 'on (c-iii)'); assertNoTrace(off.log, 'off (c-iii)');
 });
 
 // (c-iv) the DSpark drafter on (spec 7): on equals off in tokens and top-3 logprobs, and the drafter really
@@ -214,6 +262,7 @@ test('(c-iv) TP2, spec 7 (DSpark drafter on): on == off in tokens and top-3 logp
   const off = await run(OFF), on = await run(ON);
   sameTokens(off.res, on.res, 'spec 7');
   assertSplitRan(off.log, 'off'); assertSplitRan(on.log, 'on');
+  assertTrace(on.log, 'on (c-iv)'); assertNoTrace(off.log, 'off (c-iv)');
   assert.ok(off.res.drafted > 0, 'spec 7 off drafted nothing');
   assert.ok(on.res.drafted > 0, 'spec 7 on drafted nothing');
 });
@@ -235,6 +284,7 @@ test('(c-v) TP2, score tiling on (ernie55_idx_tile): on == off on the ernie_dsa_
     assert.match(r.log, /indexer score plane[^\n]*tiled/i, `${tag}: the serve log does not report a tiled indexer score plane, so the tiled path was not taken: ` + r.log.slice(-2000));
     assertSplitRan(r.log, tag);
   }
+  assertTrace(on.log, 'on (c-v)'); assertNoTrace(off.log, 'off (c-v)');
 });
 
 // (d) both switches at TP 2: the overlap is declined because the row split is on, and the output equals the plain
@@ -255,4 +305,6 @@ test('(d) TP2, row split + AR overlap: overlap declined (reason names the row sp
     'the overlap was not declined with the row-split reason: ' + both.log.slice(-2000));
   assert.doesNotMatch(plain.log, /collectives overlap requested but off/,
     'the plain run (no overlap requested) printed an overlap-declined line');
+  // (d) has no OFF arm -- both runs have the switch on -- so both must carry the trace (T >= 256 teeth).
+  assertTrace(plain.log, 'plain (d)'); assertTrace(both.log, 'both (d)');
 });

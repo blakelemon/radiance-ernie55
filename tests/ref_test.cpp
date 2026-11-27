@@ -8597,6 +8597,33 @@ TEST(op_ernie_dsa_topk_tiled_shape_callback_validates_before_dividing) {
     }
 }
 
+/* The two DSA indexer shape callbacks (ernie_idx_key, ernie_idx_logits) divided by block_size computing a page /
+ * block count before validating it, so block_size 0 was a SIGFPE rather than RAD_E_UNSUPPORTED. block_size is the
+ * only bad parameter here; num_pages / blocks stay absent so the old code reached the division. Each call runs in a
+ * child, so a crash is a failure and not the end of the run. */
+TEST(op_ernie_idx_shape_callback_validates_block_size_before_dividing) {
+    struct K { const char* name; const char* keys[8]; int64_t vals[8]; int n; };
+    const K ks[] = {
+        {"ernie_idx_key",    {"M", "head_dim", "rope_dim", "block_size"},                       {1, 4, 2, 0},    4},
+        {"ernie_idx_logits", {"M", "heads", "head_dim", "tokens", "seqs", "block_size"},         {1, 1, 4, 16, 2, 0}, 6},
+    };
+    for (const K& k : ks) {
+        const RadKernelInfo* info = kern(k.name);
+        REQUIRE(info != nullptr && info->opd_shape != nullptr);
+        const pid_t pid = fork();
+        if (pid == 0) {
+            std::vector<RadParam> p;
+            for (int i = 0; i < k.n; ++i) { RadParam q{}; q.key = k.keys[i]; q.kind = RAD_P_INT; q.ival = k.vals[i]; p.push_back(q); }
+            RadOpdDesc d{};
+            _exit(info->opd_shape(p.data(), (int)p.size(), 0, &d) == RAD_E_UNSUPPORTED ? 0 : 3);
+        }
+        int st = 0; waitpid(pid, &st, 0);
+        if (WIFSIGNALED(st)) std::fprintf(stderr, "%s opd_shape with block_size=0 died of signal %d\n", k.name, WTERMSIG(st));
+        else if (WEXITSTATUS(st) != 0) std::fprintf(stderr, "%s opd_shape with block_size=0 did not return RAD_E_UNSUPPORTED\n", k.name);
+        CHECK(!WIFSIGNALED(st) && WEXITSTATUS(st) == 0);
+    }
+}
+
 
 TEST(op_ernie_mla_project) {
     /* head: 2 key rows [1 0] [0 1], 1 value row [1 1], latent 2. */

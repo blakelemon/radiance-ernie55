@@ -116,6 +116,11 @@ static bool kv_replicated_from_env() { const char* v = getenv("RADIANCE_ERNIE55_
 /* RADIANCE_ERNIE55_IDX_ROW_SPLIT=1: under tensor parallelism each rank runs the DSA indexer chain (ernie_idx_logits + ernie_dsa_select / ernie_dsa_topk_tiled) for its own run of a prefill-sized step's rows instead of the whole step, and an all_gather joins the runs' slot lists (m.sl_all) for ernie_mla_sparse_attn; the key side and the query-side projections stay whole on every rank, so each row's selection is bit-identical to the replicated one's. The collectives-overlap is off when this is on (ov_declare). Default off. */
 static bool idx_row_split_from_env() { const char* v = getenv("RADIANCE_ERNIE55_IDX_ROW_SPLIT"); return v && v[0] == '1' && v[1] == '\0'; }
 
+/* RADIANCE_ERNIE55_IDX_ROW_SPLIT_TRACE=1: when the indexer row split is on, each rank prints one line per step to
+ * stderr recording its run of rows (T, run, r0, rows, rank, world). Diagnostic only, read once and cached; default
+ * off, so when unset the split branch adds only one predictable branch on a cached bool. */
+static bool idx_row_split_trace_from_env() { static const bool v = [] { const char* e = getenv("RADIANCE_ERNIE55_IDX_ROW_SPLIT_TRACE"); return e && e[0] == '1' && e[1] == '\0'; }(); return v; }
+
 /* Diagnostic pin, neutral unless set: ERNIE_ROUTER_SPLIT=1 routes a one-row step through ernie_router_topk + moe_scatter, the ops
  * every other row count uses, instead of the fused ernie_router_topk_scatter, so the router is not a source of M=1 versus M>1
  * difference. */
@@ -4350,6 +4355,8 @@ static bool ov_step(RadCtx* c, const RadBatch* batch) {
  * DsaCache::live_blocks reads) reach 2^18, scores and selects enough to outweigh the gather. */
 static bool idx_split_step(const FfnProgram& m, const RadBatch* batch) {
     const int64_t T = batch->n_tok;
+    /* the `T >= 16 && T*max_ctx_len >= 2^18` branch is not exercised by the tiny test fixture (max-model-len 1024,
+     * where that bound needs T >= 256, already covered by the first rule); it is covered on cards only */
     return m.idx_split && (T >= 256 || (T >= 16 && T * (int64_t)batch->max_ctx_len >= (int64_t(1) << 18)));
 }
 
@@ -4387,6 +4394,7 @@ static void step(RadCtx* c, const RadBatch* batch) {
         }
         RAD_ISSUE(c, m.row_req, praw(batch->cu_seqlens, RAD_I32, S + 1), brows(m.req, T));
     }
+    bool idx_split_traced = false;   /* R2 trace: one line per step, not per layer (set in the split branch below) */
     for (int64_t l = 0; l < m.layers; ++l) {
         const FfnLayer& y = m.L[(size_t)l];
         const rad_buf cur = y.ffn_in, nxt = y.ffn_out;
@@ -4535,6 +4543,11 @@ static void step(RadCtx* c, const RadBatch* batch) {
                  * gather with its (dead) part buffer; the query side above stays whole at T rows. */
                 const int64_t W2 = a.topk + a.window, R = (T + m.world - 1) / m.world;
                 const int64_t r0 = (int64_t)m.rank * R, rows = r0 >= T ? 0 : std::min(R, T - r0);
+                if (idx_row_split_trace_from_env() && !idx_split_traced) {
+                    idx_split_traced = true;
+                    fprintf(stderr, "radiance: ernie55: idx row split step: T=%lld run=%lld r0=%lld rows=%lld rank=%d world=%d\n",
+                            (long long)T, (long long)R, (long long)r0, (long long)rows, (int)m.rank, (int)m.world);
+                }
                 if (rows > 0) {
                     const RadOperand qf = brow_slice(m.qf, r0, rows, a.ih * a.id);
                     const RadOperand qs = brow_slice(m.qs, r0, rows, a.ih);
