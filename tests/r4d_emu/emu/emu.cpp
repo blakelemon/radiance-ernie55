@@ -136,9 +136,14 @@ EmuIdx& emu_block_idx() { return S.bid; }
 EmuIdx& emu_block_dim() { return S.bdim; }
 EmuIdx& emu_grid_dim() { return S.gdim; }
 
+/* A test may set this to act at the first block barrier of every block, at the moment its first thread arrives (the other threads have not run past it): a stand-in for
+ * what a second stream does to device memory while the threads of one block are at different points. */
+void (*emu_barrier_hook)(unsigned bx, unsigned by) = nullptr;
+bool (*emu_launch_tap)(EmuLaunchRec&) = nullptr;
 void __syncthreads() {
     Fiber& me = S.f[S.cur];
     const unsigned g = S.gen;
+    if (emu_barrier_hook && S.gen == 0 && S.arrive == 0) emu_barrier_hook(S.bid.x, S.bid.y);
     /* Clearing the next generation's slot here, as the barrier completes, keeps it ahead of every
      * write to it (threads arrive at g + 1 only after g completes) and behind every read of the
      * slot it shares a residue with (g - 2's, read before arriving at g - 1). */
@@ -370,6 +375,9 @@ static void lds_reserve(size_t bytes) {
 
 int emu_grids = 0;
 int emu_last_block = 0;
+/* A test may set this to interleave launches: it is called between two blocks of a grid (no fiber running, `done` blocks of `total` finished) and may launch whole grids
+ * of its own, as a second stream's launch lands between the blocks of the first on a card. It is cleared while it runs (its own launches do not call it). */
+void (*emu_after_block_hook)(unsigned done, unsigned total) = nullptr;
 const char* emu_last_kernel = "";
 void emu_run_grid(dim3 grid, dim3 block, void (*body)(void*), void* ctx, size_t dyn_lds) {
     ++emu_grids;
@@ -386,9 +394,16 @@ void emu_run_grid(dim3 grid, dim3 block, void (*body)(void*), void* ctx, size_t 
     S.gdim = EmuIdx{grid.x, grid.y, grid.z};
     S.f.resize(n);
     for (auto& f : S.f) if (!f.stack) f.stack.reset(new char[kStack]);
-    for (unsigned bz = 0; bz < grid.z; ++bz)
-    for (unsigned by = 0; by < grid.y; ++by)
-    for (unsigned bx = 0; bx < grid.x; ++bx) {
+    /* The hardware runs the blocks of a grid in no promised order. R4D_EMU_BLOCK_ORDER=reverse runs them last to first (read at every launch), so a kernel whose
+     * result depends on the order of blocks (two blocks storing to one address) shows it in a test. */
+    const char* order_env = std::getenv("R4D_EMU_BLOCK_ORDER");
+    const bool reverse = order_env && !std::strcmp(order_env, "reverse");
+    unsigned blocks_done = 0;
+    const unsigned blocks_total = grid.x * grid.y * grid.z;
+    for (unsigned bz_ = 0; bz_ < grid.z; ++bz_)
+    for (unsigned by_ = 0; by_ < grid.y; ++by_)
+    for (unsigned bx_ = 0; bx_ < grid.x; ++bx_) {
+        const unsigned bz = reverse ? grid.z - 1 - bz_ : bz_, by = reverse ? grid.y - 1 - by_ : by_, bx = reverse ? grid.x - 1 - bx_ : bx_;
         S.bid = EmuIdx{bx, by, bz};
         std::memset(g_lds, 0xA5, dyn_lds);
         S.arrive = 0; S.gen = 0;
@@ -431,6 +446,18 @@ void emu_run_grid(dim3 grid, dim3 block, void (*body)(void*), void* ctx, size_t 
                              bx, by, bz, done, bb, wb, emu_last_kernel);
                 std::abort();
             }
+        }
+        ++blocks_done;
+        if (emu_after_block_hook && blocks_done < blocks_total) {
+            void (*h)(unsigned, unsigned) = emu_after_block_hook;
+            emu_after_block_hook = nullptr;
+            void (*sb)(void*) = S.body; void* sc = S.ctx; const int sn = S.nthreads; const EmuIdx sbd = S.bdim, sgd = S.gdim; const int slb = emu_last_block;
+            h(blocks_done, blocks_total);
+            S.body = sb; S.ctx = sc; S.nthreads = sn; S.bdim = sbd; S.gdim = sgd; emu_last_block = slb;
+            S.f.resize(n);
+            for (auto& f : S.f) if (!f.stack) f.stack.reset(new char[kStack]);
+            lds_reserve(dyn_lds);
+            emu_after_block_hook = h;
         }
     }
 }

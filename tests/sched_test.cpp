@@ -5982,6 +5982,62 @@ TEST(each_conv_group_derives_against_its_own_window) {
     }
 }
 
+TEST(window_block_origins_follow_each_group_and_sequence_on_all_ranks) {
+    struct WindowKV : FakeKV {
+        int64_t first_block_pos(uint64_t seq, int32_t group) const override {
+            if (group == 1) return seq == 1 ? 32 : 0;
+            if (group == 2) return seq == 1 ? 64 : 16;
+            return 0;
+        }
+    } kv;
+    Fixture f;
+    f.build(4096, 64, 128, 4096, /*windowed=*/true, /*linear=*/false);
+    KVGroupInfo short_window = f.prog.kv_groups[1];
+    short_window.name = "short_window";
+    short_window.decl.window = 16;
+    f.prog.kv_groups.push_back(short_window);
+    f.add_derived("window_origin", "kv_block_origin", f.cfg.max_seqs, 1);
+    f.add_derived("state_origin", "kv_block_origin", f.cfg.max_seqs, 2);
+    kv.setup(f.prog.kv_groups, f.cfg.max_ctx, 4096, 64);
+
+    Program rank1 = f.prog;
+    std::vector<int32_t> rank1_window((size_t)f.cfg.max_seqs), rank1_state((size_t)f.cfg.max_seqs);
+    rank1.buffers[1].ptr = rank1_window.data();
+    rank1.buffers[2].ptr = rank1_state.data();
+    ChunkGeometry geo;
+    CHECK_OK(chunk_geometry_resolve(f.prog, f.cfg, &geo));
+    BatchBuilder bb;
+    const std::vector<BatchBuilder::RankIO> ranks = {{0, nullptr, &f.prog}, {1, nullptr, &rank1}};
+    CHECK_OK(bb.init(f.prog, f.cfg, geo, kv.geom, ranks));
+
+    StepPlan plan;
+    plan.reset();
+    for (uint64_t id : {2, 1}) {
+        CHECK_OK(kv.add_sequence(id));
+        CHECK_OK(kv.ensure(id, 80));
+        StepEntry e;
+        e.seq = id;
+        e.card = (int32_t)plan.e.size();
+        e.ctx_len = id == 1 ? 78 : 47;
+        e.n_tokens = id == 1 ? 2 : 1;
+        plan.e.push_back(e);
+        plan.n_tok += e.n_tokens;
+    }
+    REQUIRE(bb.build(plan, kv, 0) != nullptr);
+    const int32_t* window = f.derived("window_origin");
+    const int32_t* state = f.derived("state_origin");
+    REQUIRE(window && state);
+    CHECK_EQ(window[0], 0);
+    CHECK_EQ(window[1], 32);
+    CHECK_EQ(state[0], 16);
+    CHECK_EQ(state[1], 64);
+    for (int i = 0; i < 2; ++i) {
+        CHECK_EQ(rank1_window[i], window[i]);
+        CHECK_EQ(rank1_state[i], state[i]);
+    }
+    bb.fini();
+}
+
 /* ================================================================== the derivation registry
  *
  * A derivation named in a schema but missing here is refused by name at declare, with the known

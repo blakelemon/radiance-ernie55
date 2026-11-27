@@ -899,6 +899,275 @@ TEST(a_kl_document_longer_than_the_kv_pool_is_refused_up_front) {
 /* A checkpoint served directly whose quantization_config is a tool's form the import does not
  * read keeps the tool's descriptor, which no plugin claims: the refusal says why, naming the
  * form, not only that no plugin claims the quantisation. */
+/* A kernel library whose device kernels ran a launch the reference kernel refuses reports it through rad_kernel_poll_error (core/plugin/registry.h); the engine polls
+ * where it has already waited for the step and stops before it commits the step's tokens, with the reference kernel's error (RAD_E_SHAPE). tests/poll_error_plugin.cpp
+ * stands in for the card's library. Three cases on one tiny checkpoint: a verdict stops the run and names the bits; no verdict runs to the end; the verdict with
+ * RADIANCE_POLL_KERNEL_ERRORS=0 (the switch that times the poll's cost) is never asked for. */
+#ifdef RAD_E2E_POLL_PLUGIN
+TEST(a_kernel_library_that_reports_a_refused_launch_stops_the_engine) {
+    World& w = world();
+    REQUIRE(w.ok);
+    tiny::TempDir home("e2e_pollhome");
+    REQUIRE(home.ok());
+    namespace fs = std::filesystem;
+    for (const auto& e : fs::directory_iterator(RAD_E2E_HOME)) {
+        if (e.path().filename() == "kernels") continue;
+        fs::create_directory_symlink(fs::absolute(e.path()), fs::path(home.path) / e.path().filename());
+    }
+    fs::create_directory(fs::path(home.path) / "kernels");
+    for (const auto& e : fs::directory_iterator(fs::path(RAD_E2E_HOME) / "kernels"))
+        fs::create_symlink(fs::absolute(e.path()), fs::path(home.path) / "kernels" / e.path().filename());
+    fs::copy_file(RAD_E2E_POLL_PLUGIN, fs::path(home.path) / "kernels" / "pollerr.so");
+    auto run = [&](const std::vector<std::string>& env) {
+        tiny::TempDir out("e2e_pollrec");
+        std::vector<std::string> a = { "--kld-record", out / "rec", "--kld-corpus", w.corpus, "--kernels", "libref,pollerr",
+                                       "--max-num-batched-tokens", "512", "--max-num-seqs", "1" };
+        std::vector<std::string> e = { "ROCR_VISIBLE_DEVICES=99", "RADIANCE_HOST_VRAM_MIB=512", "OMP_WAIT_POLICY=passive", "OMP_NUM_THREADS=2",
+                                       "RADIANCE_HOME=" + home.path };
+        e.insert(e.end(), env.begin(), env.end());
+        Ran r;
+        r.status = tiny::run(engine_argv(w.qwen35, a), e, &r.log, 120);
+        return r;
+    };
+    {
+        const Ran r = run({ "RAD_POLL_PLUGIN_BITS=0x10" });
+        if (r.status == 0) fprintf(stderr, "    the run finished:\n%s\n", tail(r.log).c_str());
+        CHECK(r.status != 0);
+        CHECK(has(r.log, "ran a launch the reference kernel refuses (verdict bits 0x10"));
+        CHECK(has(r.log, "'pollerr'"));
+    }
+    {   /* a verdict that appears only at a later poll (the draft-pass poll, a later step) still stops the run */
+        const Ran r = run({ "RAD_POLL_PLUGIN_BITS=0x10", "RAD_POLL_PLUGIN_AFTER=2" });
+        CHECK(r.status != 0);
+        CHECK(has(r.log, "ran a launch the reference kernel refuses (verdict bits 0x10"));
+    }
+    {
+        const Ran r = run({ "RAD_POLL_PLUGIN_BITS=0" });
+        REQUIRE_RAN(r);
+        CHECK(!has(r.log, "reference kernel refuses"));
+    }
+    {
+        const Ran r = run({ "RAD_POLL_PLUGIN_BITS=0x10", "RADIANCE_POLL_KERNEL_ERRORS=0" });
+        REQUIRE_RAN(r);
+        CHECK(!has(r.log, "reference kernel refuses"));
+        CHECK(has(r.log, "kernel refusals are not checked on every step (never)"));   /* switched off: said at startup */
+    }
+    {   /* review M1: the value is an integer. A word is refused at startup instead of reading as 0 (polling off, silently) */
+        for (const char* bad : { "yes", "on", "true", "1x", "-1", "0.5", "9999999999999999999999" }) {
+            const Ran r = run({ "RAD_POLL_PLUGIN_BITS=0x10", std::string("RADIANCE_POLL_KERNEL_ERRORS=") + bad });
+            CHECK(r.status != 0);
+            CHECK(has(r.log, "is not a non-negative integer"));
+            CHECK(!has(r.log, "reference kernel refuses"));
+        }
+    }
+    {   /* every Nth step: allowed, and it says it is thinner than the default */
+        const Ran r = run({ "RAD_POLL_PLUGIN_BITS=0", "RADIANCE_POLL_KERNEL_ERRORS=3" });
+        REQUIRE_RAN(r);
+        CHECK(has(r.log, "kernel refusals are not checked on every step; the tokens of a step"));
+    }
+    {   /* the default and an explicit 1 do not warn */
+        const Ran r = run({ "RAD_POLL_PLUGIN_BITS=0", "RADIANCE_POLL_KERNEL_ERRORS=1" });
+        REQUIRE_RAN(r);
+        CHECK(!has(r.log, "kernel refusals are not checked"));
+    }
+}
+#endif
+
+#ifdef RAD_E2E_POLL_PLUGIN
+/* NO TOKEN OF A REFUSED STEP REACHES THE CLIENT (review rounds 2 and 3: the poll sits before sched_.commit, but nothing asserted the order). A server with the stand-in kernel
+ * library streams one greedy request; the library reports a refusal at its Nth poll. The engine names the step and the poll ("after the step's readback" = before that step's
+ * commit; "after the draft passes" = after it, the trunk tokens of the step already valid). The ids the client has received when the run stops are held to:
+ *   - a refusal before a step's commit leaves the client with exactly the tokens of the steps before it (and with none at all when it is step 0's),
+ *   - a refusal after the draft passes of a step leaves it with that step's tokens as well, strictly more,
+ *   - every received list is a prefix of the unrefused run's.
+ * Run on the plain checkpoint (one poll a step) and on the block drafter (two polls a step: the ids are read ahead of the draft passes, the commit streams the tokens while the
+ * card runs them, and the second poll follows). Moving the first poll behind sched_.commit makes the "strictly more" and the "exactly the earlier steps" cases fail. */
+struct PollRun { int status = -1; std::vector<int32_t> tokens; std::string log; int step = -1; bool after_commit = false; bool ok = false; };
+
+PollRun poll_run(const std::string& model, const std::vector<std::string>& extra, const std::string& home, long after, const std::vector<int32_t>& prompt, int n,
+                 const std::vector<std::string>& env_extra = {}) {
+    PollRun r;
+    Server s;
+    std::vector<std::string> args = { "--kernels", "libref,pollerr", "--max-num-seqs", "1", "--max-num-batched-tokens", "512", "-v" };
+    args.insert(args.end(), extra.begin(), extra.end());
+    std::vector<std::string> env = { "RADIANCE_HOME=" + home, "RAD_POLL_PLUGIN_BITS=" + std::string(after < 0 ? "0" : "0x10"), "RAD_POLL_PLUGIN_AFTER=" + std::to_string(after < 0 ? 0 : after) };
+    env.insert(env.end(), env_extra.begin(), env_extra.end());
+    if (!s.start(model, args, env)) return r;
+    json body = completion(prompt, n);
+    body["stream"] = true;
+    Call c;
+    std::string out;
+    const int st = c.send(s.port, "POST", "/completion", body.dump()) ? c.read(&out) : -1;
+    r.ok = st == 200;
+    for (size_t at = 0; (at = out.find("data: ", at)) != std::string::npos;) {
+        const size_t end = out.find("\n", at);
+        const json j = json::parse(out.substr(at + 6, end == std::string::npos ? std::string::npos : end - at - 6), nullptr, false);
+        /* the closing chunk (stop: true) repeats every token of the reply; only the deltas count */
+        if (j.is_object() && j.contains("tokens") && j["tokens"].is_array() && j.contains("stop") && j["stop"].is_boolean() && !j["stop"].get<bool>())
+            for (const auto& t : j["tokens"]) r.tokens.push_back(t.get<int32_t>());
+        if (end == std::string::npos) break;
+        at = end;
+    }
+    r.status = s.stop();
+    r.log = s.output();
+    const std::string key = "ran a launch the reference kernel refuses";
+    const size_t k = r.log.find(key);
+    if (k != std::string::npos) {
+        const size_t line = r.log.rfind("step ", k);
+        if (line != std::string::npos) r.step = std::atoi(r.log.c_str() + line + 5);
+        const size_t eol = r.log.find('\n', k);
+        r.after_commit = r.log.substr(k, eol == std::string::npos ? std::string::npos : eol - k).find("after the draft passes") != std::string::npos;
+    }
+    return r;
+}
+
+TEST(no_token_of_a_step_the_kernels_refused_reaches_the_client) {
+    World& w = world();
+    REQUIRE(w.ok);
+    tiny::TempDir home("e2e_pollhome2");
+    REQUIRE(home.ok());
+    namespace fs = std::filesystem;
+    for (const auto& e : fs::directory_iterator(RAD_E2E_HOME)) {
+        if (e.path().filename() == "kernels") continue;
+        fs::create_directory_symlink(fs::absolute(e.path()), fs::path(home.path) / e.path().filename());
+    }
+    fs::create_directory(fs::path(home.path) / "kernels");
+    for (const auto& e : fs::directory_iterator(fs::path(RAD_E2E_HOME) / "kernels"))
+        fs::create_symlink(fs::absolute(e.path()), fs::path(home.path) / "kernels" / e.path().filename());
+    fs::copy_file(RAD_E2E_POLL_PLUGIN, fs::path(home.path) / "kernels" / "pollerr.so");
+    struct Model { const char* name; const std::string* path; std::vector<std::string> extra; };
+    const Model models[] = { { "plain checkpoint (one poll a step)", &w.qwen35, {} },
+                             { "block drafter (read-ahead ids, two polls a step)", &w.g31_df2, { "--num-speculative-tokens", "7" } } };
+    for (const Model& m : models) {
+        const std::vector<int32_t> prompt = prompt_ids(61, 40);
+        const PollRun control = poll_run(*m.path, m.extra, home.path, -1, prompt, 20);
+        if (!control.ok || control.tokens.size() != 20) fprintf(stderr, "    %s control: status %d, %zu token(s)\n%s\n", m.name, control.status, control.tokens.size(), tail(control.log).c_str());
+        REQUIRE(control.ok);
+        REQUIRE_EQ(control.tokens.size(), (size_t)20);
+        std::map<std::pair<int, bool>, size_t> got;   /* (step, after the commit) -> tokens the client holds */
+        int unreached = 0;   /* polls past the end of the run: they must be a tail of the sweep, never a hole in it (the earlier code stopped at the first one) */
+        for (long after = 0; after < 14; ++after) {
+            const PollRun r = poll_run(*m.path, m.extra, home.path, after, prompt, 20);
+            if (r.step < 0) { fprintf(stderr, "    %s, refusal at poll %ld: not reported (run finished, status %d, %zu tokens)\n", m.name, after, r.status, r.tokens.size()); ++unreached; continue; }
+            CHECK(r.tokens.size() < control.tokens.size());   /* the request did not complete (the server itself exits 0 on SIGTERM) */
+            const bool prefix = r.tokens.size() <= control.tokens.size() && std::equal(r.tokens.begin(), r.tokens.end(), control.tokens.begin());
+            fprintf(stderr, "    %s, poll %ld: step %d %s, client holds %zu token(s)%s\n", m.name, after, r.step, r.after_commit ? "after the draft passes" : "before the commit", r.tokens.size(), prefix ? "" : " (NOT a prefix of the unrefused run)");
+            CHECK(prefix);
+            got[{ r.step, r.after_commit }] = r.tokens.size();
+        }
+        CHECK(got.size() >= 6);   /* a sweep that reached only a step or two proves nothing about the order of poll and commit */
+        const std::pair<int, bool> first_step{ 0, false };
+        REQUIRE(got.count(first_step) == 1);
+        CHECK_EQ(got[first_step], (size_t)0);   /* the refusal of the very first step: nothing at all was emitted */
+        for (const auto& [key, n] : got) {
+            const int step = key.first;
+            if (!key.second) {
+                /* Plain checkpoint: one token a step, so a refusal before step s's commit leaves exactly s tokens with the client; a poll that came after the commit would leave s + 1,
+                 * at EVERY step, not only the first (review: only step 0 was sensitive). */
+                if (m.extra.empty()) CHECK_EQ(n, (size_t)step);
+                auto prev = got.find({ step - 1, true });
+                if (prev != got.end()) CHECK_EQ(n, prev->second);   /* the refused step added nothing to what the step before it committed */
+                auto before = got.find({ step - 1, false });
+                if (prev == got.end() && before != got.end() && step > 1) CHECK(n > before->second);
+            } else {
+                auto at = got.find({ step, false });
+                if (at != got.end()) CHECK(n > at->second);   /* after the draft passes the step's own tokens are in */
+            }
+        }
+    }
+}
+
+#endif
+
+#ifdef RAD_E2E_POLL_PLUGIN
+/* REVIEW M-a / M-b (fix series 5): a refusal raised on a NON-ZERO rank is reported at its own step and no token of that step is committed. The stand-in library answers the engine's
+ * own readback form (kernel_poll_source / _fold) with one log per device; the engine copies each rank's log through that rank's stream behind its step work and waits for that
+ * rank's event. The refusal is raised in the log of device 1 only (rank 0's log stays empty) when the engine issues the Nth poll of that device, the way a kernel of the last
+ * layer of step N on that card would. Plain checkpoint, --tp 2: one token a step, so the client holds exactly N tokens when step N is refused. Red against an engine that polls
+ * rank 0's log alone (or one that reads another rank's log a step late). */
+TEST(a_refusal_raised_on_another_rank_is_reported_at_its_own_step) {
+    World& w = world();
+    REQUIRE(w.ok);
+    tiny::TempDir home("e2e_pollhome3");
+    REQUIRE(home.ok());
+    namespace fs = std::filesystem;
+    for (const auto& e : fs::directory_iterator(RAD_E2E_HOME)) {
+        if (e.path().filename() == "kernels") continue;
+        fs::create_directory_symlink(fs::absolute(e.path()), fs::path(home.path) / e.path().filename());
+    }
+    fs::create_directory(fs::path(home.path) / "kernels");
+    for (const auto& e : fs::directory_iterator(fs::path(RAD_E2E_HOME) / "kernels"))
+        fs::create_symlink(fs::absolute(e.path()), fs::path(home.path) / "kernels" / e.path().filename());
+    fs::copy_file(RAD_E2E_POLL_PLUGIN, fs::path(home.path) / "kernels" / "pollerr.so");
+    const std::vector<int32_t> prompt = prompt_ids(61, 40);
+    const std::vector<std::string> tp2 = { "--tp", "2" };
+    const PollRun control = poll_run(w.qwen35, tp2, home.path, -1, prompt, 12, { "RAD_POLL_PLUGIN_MODE=source", "RAD_POLL_PLUGIN_DEVICE=1", "RADIANCE_HOST_DEVICES=2" });
+    if (!control.ok || control.tokens.size() != 12) fprintf(stderr, "    control: status %d, %zu token(s)\n%s\n", control.status, control.tokens.size(), tail(control.log).c_str());
+    REQUIRE(control.ok);
+    REQUIRE_EQ(control.tokens.size(), (size_t)12);
+    int reported = 0;
+    for (long after : { 0L, 1L, 3L, 6L }) {
+        const PollRun r = poll_run(w.qwen35, tp2, home.path, after, prompt, 12, { "RAD_POLL_PLUGIN_MODE=source", "RAD_POLL_PLUGIN_DEVICE=1", "RADIANCE_HOST_DEVICES=2" });
+        if (r.step < 0) { fprintf(stderr, "    refusal on device 1 at poll %ld: not reported (status %d, %zu tokens)\n%s\n", after, r.status, r.tokens.size(), tail(r.log).c_str()); continue; }
+        ++reported;
+        fprintf(stderr, "    device 1, poll %ld: reported at step %d, client holds %zu token(s)\n", after, r.step, r.tokens.size());
+        CHECK_EQ(r.step, (int)after);                    /* its own step, not the next */
+        CHECK_EQ(r.tokens.size(), (size_t)after);        /* before the step's commit: exactly the earlier steps' tokens */
+        if (!has(r.log, "on device 1")) fprintf(stderr, "DBG:\n%s\n", tail(r.log, 12).c_str());
+        CHECK(has(r.log, "on device 1"));
+        CHECK(!has(r.log, "on device 0"));
+    }
+    CHECK_EQ(reported, 4);
+}
+#endif
+
+/* The same chain with the REAL poll: tests/r4d_emu/emu_poll_plugin.cpp is libr4d's own rad_kernel_poll_error (the SIMT-emulated HIP sources) with one launch libref would
+ * refuse injected at open, through the device launcher of one family in card form (no host scan: the launch returns RAD_OK and the kernel raises an event). The engine must
+ * stop at its first poll with the reference kernel's error, naming the family's bits, (that no token is committed is the DSpark branch's `no_token_of_a_step_the_kernels_refused_reaches_the_client`); the control, no injected
+ * launch, runs to the end. One case per family of the integration: HCA compress in the block layout (bit 0x100, a completing row at the wrong block offset), the tiled DSA
+ * select (0x1, a NaN score), the DSpark attention (0x1, a NaN sink). */
+#ifdef RAD_E2E_EMU_POLL_PLUGIN
+TEST(a_device_launch_refused_in_card_form_reaches_the_engine_poll_for_every_ernie_family) {
+    World& w = world();
+    REQUIRE(w.ok);
+    tiny::TempDir home("e2e_emupollhome");
+    REQUIRE(home.ok());
+    namespace fs = std::filesystem;
+    for (const auto& e : fs::directory_iterator(RAD_E2E_HOME)) {
+        if (e.path().filename() == "kernels") continue;
+        fs::create_directory_symlink(fs::absolute(e.path()), fs::path(home.path) / e.path().filename());
+    }
+    fs::create_directory(fs::path(home.path) / "kernels");
+    for (const auto& e : fs::directory_iterator(fs::path(RAD_E2E_HOME) / "kernels"))
+        fs::create_symlink(fs::absolute(e.path()), fs::path(home.path) / "kernels" / e.path().filename());
+    fs::copy_file(RAD_E2E_EMU_POLL_PLUGIN, fs::path(home.path) / "kernels" / "emupoll.so");
+    struct Out { Ran r; };
+    auto run = [&](const char* family, const std::vector<std::string>& env) {
+        tiny::TempDir out("e2e_emupollrec");
+        std::vector<std::string> a = { "--kld-record", out / "rec", "--kld-corpus", w.corpus, "--kernels", "libref,emupoll",
+                                       "--max-num-batched-tokens", "512", "--max-num-seqs", "1" };
+        std::vector<std::string> e = { "ROCR_VISIBLE_DEVICES=99", "RADIANCE_HOST_VRAM_MIB=512", "OMP_WAIT_POLICY=passive", "OMP_NUM_THREADS=2",
+                                       "RADIANCE_HOME=" + home.path, std::string("RAD_EMU_POLL_FAMILY=") + family };
+        e.insert(e.end(), env.begin(), env.end());
+        Out o;
+        o.r.status = tiny::run(engine_argv(w.qwen35, a), e, &o.r.log, 120);
+        return o;
+    };
+    struct Fam { const char* name; const char* bits; };
+    const Out control = run("none", {});
+    REQUIRE_RAN(control.r);
+    CHECK(!has(control.r.log, "reference kernel refuses"));
+    for (const Fam& fam : { Fam{ "hca", "0x100 on device" }, Fam{ "dsa", "0x1 on device" }, Fam{ "dspark", "0x1 on device" } }) {
+        const Out o = run(fam.name, {});
+        if (o.r.status == 0) fprintf(stderr, "    %s: the run finished:\n%s\n", fam.name, tail(o.r.log).c_str());
+        CHECK(o.r.status != 0);
+        CHECK(has(o.r.log, std::string("ran a launch the reference kernel refuses (verdict bits ") + fam.bits));
+        CHECK(has(o.r.log, "'emupoll'"));
+        /* that no token of the refused step reaches the client is `no_token_of_a_step_the_kernels_refused_reaches_the_client` (poll before sched_.commit); here: the real poll of each family fails the run */
+    }
+}
+#endif
+
 TEST(a_checkpoint_in_a_quantisation_the_import_refuses_says_why) {
     tiny::TempDir d("e2e_unread");
     REQUIRE(d.ok());

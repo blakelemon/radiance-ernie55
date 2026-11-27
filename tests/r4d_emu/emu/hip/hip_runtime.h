@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <tuple>
 #include <vector>
 
@@ -40,7 +41,8 @@ inline hipError_t hipStreamIsCapturing(hipStream_t, hipStreamCaptureStatus* s) {
     *s = hipStreamCaptureStatusNone;
     return hipSuccess;
 }
-/* every launch runs to completion before it returns */
+/* every launch runs to completion before it returns: a launcher may read a kernel verdict after it */
+#define R4D_SYNC_LAUNCH 1
 inline hipError_t hipDeviceSynchronize() { return hipSuccess; }
 /* __device__ variables are host globals, so a symbol copy is a memcpy */
 enum hipMemcpyKind { hipMemcpyHostToDevice = 1, hipMemcpyDeviceToHost = 2, hipMemcpyDeviceToDevice = 3 };
@@ -128,6 +130,10 @@ template <class T>
 inline T atomicCAS(T* p, T expect, T v) { const T o = *p; if (o == expect) *p = v; return o; }
 template <class T>
 inline T atomicExch(T* p, T v) { const T o = *p; *p = v; return o; }
+template <class T>
+inline T atomicOr(T* p, T v) { const T o = *p; *p = o | v; return o; }
+template <class T>
+inline T atomicSub(T* p, T v) { const T o = *p; *p = o - v; return o; }
 /* v_wmma_f32_16x16x16_bf16 (gfx12, wave32): A[M][K] lane M + 16 * (K / 8) element K % 8; B[K][N]
  * lane N + 16 * (K / 8) element K % 8; D[M][N] lane N + 16 * (M / 8) element M % 8 */
 typedef short emu_v8s __attribute__((ext_vector_type(8)));
@@ -278,8 +284,25 @@ inline int max(int a, int b) { return a > b ? a : b; }
 void emu_run_grid(dim3 grid, dim3 block, void (*body)(void*), void* ctx, size_t dyn_lds = 0);
 template <typename K, typename A>
 struct EmuCall { K k; A a; static void run(void* p) { auto* c = (EmuCall*)p; c->k(c->a); } };
+/* A test may set emu_launch_tap to see every R4D_KLAUNCH as the card backend does (core/device/aql.cpp hipLaunchKernel): the kernel, the grid, the kernel-argument BYTES, and a
+ * closure that plays the launch again from exactly those bytes (a recorded pass's replay). The tap returns whether the launch also runs now (a recording issue does; a
+ * test that only wants the bytes may return false). Not called for launches the tap itself plays. */
+struct EmuLaunchRec {
+    const void* kfn = nullptr;
+    dim3 g, b;
+    std::vector<unsigned char> args;
+    std::function<void()> replay;
+};
+extern bool (*emu_launch_tap)(EmuLaunchRec&);
 template <typename A>
 void emu_launch(void (*k)(A), dim3 g, dim3 b, A a) {
+    if (emu_launch_tap) {
+        EmuLaunchRec r;
+        r.kfn = (const void*)k; r.g = g; r.b = b;
+        r.args.assign((const unsigned char*)&a, (const unsigned char*)&a + sizeof a);
+        r.replay = [k, g, b, a]() mutable { EmuCall<void (*)(A), A> c{k, a}; emu_run_grid(g, b, &EmuCall<void (*)(A), A>::run, &c); };
+        if (!emu_launch_tap(r)) return;
+    }
     EmuCall<void (*)(A), A> c{k, a};
     emu_run_grid(g, b, &EmuCall<void (*)(A), A>::run, &c);
 }
@@ -312,6 +335,8 @@ int emu_emit(const char* name, void (*k)(P...), dim3 g, dim3 b, size_t lds, cons
  * past the end faults */
 void* emu_dyn_lds();
 #define R4D_DYN_LDS(type, name) type* const name = (type*)emu_dyn_lds()
+#define R4D_DYN_LDS_ALIGNED(type, name, al) type* const name = (type*)emu_dyn_lds()   /* the start is 16-byte aligned */
+inline const char* hipGetErrorString(hipError_t) { return "emulator"; }
 
 /* HIP's fused multiply-add, round to nearest; the masked shuffle and the wave vote (the full mask
  * only: every lane takes part in a cross-lane op here) */

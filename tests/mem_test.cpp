@@ -2516,6 +2516,194 @@ TEST(a_refill_capped_hit_after_tip_only_retention_still_gives_the_drafter_its_wi
     CHECK_EQ(c.given_back, 128);
 }
 
+/* P2 (core proof): a WINDOW group always holds the rows a drafter's attention reads. The
+ * drafter's only read is the query pass's attention over [anchor - window + 1, total_kv), and
+ * the batch builder rebases the table to the group's first held block, so the property is
+ * `first_block_pos <= anchor - window + 1` (or 0) after every ensure_from whose keep_from is at
+ * or below the anchor. The boundary oracle recomputes that floor from the design's rule, without
+ * KVManager's own window_blocks. */
+TEST(a_window_group_keeps_every_row_a_block_drafter_reads) {
+    /* (b) The floor at windows 127 / 128 / 129, block 64: recycle_window keeps every block from
+     * floor(keep_from / block) - (window_blocks - 1), with window_blocks = ceil(window / block)
+     * + 1. 127 and 128 share a floor; 129 straddles one block more. */
+    for (int64_t window : { 127, 128, 129 }) {
+        const int64_t block = 64;
+        const int64_t wb = (window + block - 1) / block + 1;
+        std::vector<KVGroupInfo> g;
+        g.push_back(null_group());
+        g.push_back(paged_group("full", RAD_KV_FULL, 1, block, { 0 }));
+        g.push_back(paged_group("swa", RAD_KV_WINDOW, 1, block, { 1 }, window));
+        Config cfg = small_config();
+        cfg.max_seqs = 4;
+        cfg.max_tok = 64;
+        cfg.max_ctx = 8192;
+        cfg.checkpoint_slots = 0;
+        cfg.vram_kv_mib = 64;               /* the FULL group holds all 2049 rows at keep_from 2048 */
+        Pools p;
+        CHECK_OK(configure_pools(p, cfg));
+        KVManager kv;
+        CHECK_OK(kv.configure(g, cfg, p.kv()));
+        const int32_t gw = 2;
+        REQUIRE(kv.plan(gw) != nullptr);
+        CHECK_EQ(kv.plan(gw)->window_blocks, wb);
+        int64_t id = 1;
+        for (int64_t keep_from : { 0, 1, 63, 64, 65, 127, 128, 129, 191, 192, 193,
+                                   255, 256, 257, 319, 320, 321, 383, 384, 385,
+                                   511, 512, 513, 1023, 1024, 1025, 2048 }) {
+            CHECK_OK(kv.add_sequence((uint64_t)id));
+            /* Reach a committed end of keep_from the way the scheduler does: grow in chunks of at
+             * most max_tok, each ensure_from followed by the commit's trim. ensure clamps keep_from
+             * to the current token count (kv.cpp:1519), so a fresh sequence cannot recycle in one
+             * step; the window only slides once the sequence is actually that long. */
+            int64_t n_prev = 0;
+            while (n_prev < keep_from) {
+                const int64_t n = std::min(keep_from, n_prev + cfg.max_tok);
+                CHECK_OK(kv.ensure((uint64_t)id, n, n_prev));
+                kv.trim_window((uint64_t)id, n);
+                n_prev = n;
+            }
+            /* The query block's ensure_from, one row past the committed end (scheduler.cpp:3730). */
+            CHECK_OK(kv.ensure((uint64_t)id, keep_from + 1, keep_from));
+            const int64_t want = std::max<int64_t>(0, keep_from / block - (wb - 1)) * block;
+            CHECK_EQ(kv.first_block_pos((uint64_t)id, gw), want);
+            kv.free_sequence((uint64_t)id);
+            ++id;
+        }
+    }
+
+    /* (a) The geometry ERNIE runs: window 128 at block 64, and the fixture's window 8 at block 8.
+     * A step is a prefill chunk of c tokens or a verify of 1 + 7 drafts: the trunk grows to the
+     * step's end, the query block to 7 rows past it, and the commit trims or rolls back. */
+    for (int gi = 0; gi < 2; ++gi) {
+        const int64_t window  = gi == 0 ? 128 : 8;
+        const int64_t block   = gi == 0 ? 64 : 8;
+        const int64_t max_tok = gi == 0 ? 2048 : 64;
+        const int64_t max_ctx = gi == 0 ? (int64_t)2 * 1024 * 1024 : (int64_t)65536;
+        const int64_t wb  = (window + block - 1) / block + 1;
+        const int64_t cap = wb + (max_tok + block - 1) / block + 1;
+        std::vector<KVGroupInfo> g;
+        g.push_back(null_group());
+        g.push_back(paged_group("full", RAD_KV_FULL, 1, block, { 0 }));
+        g.push_back(paged_group("swa", RAD_KV_WINDOW, 1, block, { 1 }, window));
+        Config cfg = small_config();
+        cfg.max_seqs = 4;
+        cfg.max_tok = max_tok;
+        cfg.max_ctx = max_ctx;
+        cfg.checkpoint_slots = 0;
+        cfg.vram_kv_mib = 64;
+        Pools p;
+        CHECK_OK(configure_pools(p, cfg));
+        KVManager kv;
+        CHECK_OK(kv.configure(g, cfg, p.kv()));
+        const int32_t gw = 2;
+        REQUIRE(kv.plan(gw) != nullptr);
+        const uint64_t id = 1;
+        CHECK_OK(kv.add_sequence(id));
+        int64_t nc = 0;
+
+        /* Every row in [anchor - window + 1, total) is in a held block, and the table is within
+         * its per-sequence cap. `anchor` is the committed end for the packet's check, or the
+         * query's own anchor (total - qlen) for the addendum's. */
+        auto held = [&](int64_t anchor) {
+            const int64_t total = kv.seq_tokens(id);
+            const int64_t first = kv.first_block_pos(id, gw);
+            const std::vector<int32_t>& bt = kv.block_table(id, gw);
+            CHECK(first % block == 0);
+            CHECK(first <= std::max<int64_t>(0, anchor - window + 1));
+            CHECK(first + (int64_t)bt.size() * block >= total);
+            CHECK((int64_t)bt.size() <= cap);
+            for (int32_t b : bt) CHECK(b >= 0);
+        };
+
+        uint64_t x = 0x243f6a8885a308d3ull;
+        auto next = [&]() { x = x * 6364136223846793005ull + 1442695040888963407ull; return x; };
+        for (int step = 0; step < 2000 && nc < max_ctx; ++step) {
+            const bool prefill = (next() % 5) != 0;
+            const int64_t c = prefill ? (int64_t)(next() % (uint64_t)max_tok) + 1 : 8;
+            if (nc + c + 7 > max_ctx) break;
+            /* (1) the trunk's ensure_from for the step (scheduler.cpp:1805/2346). */
+            CHECK_OK(kv.ensure(id, nc + c, nc));
+            held(nc);
+            /* (2) the query block's ensure_from, 7 rows past the step's end (scheduler.cpp:3730). */
+            CHECK_OK(kv.ensure(id, nc + c + 7, nc));
+            held(nc);                              /* every anchor is at or above nc */
+            held(kv.seq_tokens(id) - c);           /* the query's anchor: total - qlen */
+            /* (3) commit: a prefill advances and trims; a verify rolls back the rejected drafts. */
+            if (prefill) {
+                nc += c;
+                kv.trim_window(id, nc);            /* scheduler.cpp:3054 */
+            } else {
+                const int64_t a = (int64_t)(next() % 8);
+                CHECK_OK(kv.rollback(id, nc + 1 + a));
+                nc += 1 + a;
+            }
+            held(nc);
+        }
+        kv.free_sequence(id);
+    }
+}
+
+/* P4 addendum: window_rows refuses once the window's floor has passed the position. A WINDOW
+ * group's snapshot is the window behind a checkpoint, [pos / B - (window_blocks - 1), pos / B),
+ * and a sequence's table is rebased to its first held block as the window slides. A position
+ * whose window starts below that block is no longer held, and window_rows must say so rather
+ * than hand back rows the table does not cover: both callers fail closed with RAD_E_STATE on the
+ * false (the restore at engine.cpp:1589, the save at engine.cpp:2091). */
+TEST(a_window_group_window_rows_refuses_when_the_floor_passed_the_position) {
+    const int64_t block  = 64;
+    const int64_t window = 128;
+    const int64_t wb = (window + block - 1) / block + 1;    /* the P2 oracle's rule: 3 */
+    std::vector<KVGroupInfo> g;
+    g.push_back(null_group());
+    g.push_back(paged_group("full", RAD_KV_FULL, 1, block, { 0 }));
+    g.push_back(paged_group("swa", RAD_KV_WINDOW, 1, block, { 1 }, window));
+    Config cfg = small_config();
+    cfg.max_seqs = 4;
+    cfg.max_tok = 64;
+    cfg.max_ctx = 8192;
+    cfg.checkpoint_slots = 0;
+    cfg.vram_kv_mib = 64;               /* the FULL group holds all 1025 rows at keep_from 1024 */
+    Pools p;
+    CHECK_OK(configure_pools(p, cfg));
+    KVManager kv;
+    CHECK_OK(kv.configure(g, cfg, p.kv()));
+    const int32_t gw = 2;
+    REQUIRE(kv.plan(gw) != nullptr);
+    CHECK_EQ(kv.plan(gw)->window_blocks, wb);
+    REQUIRE(kv.has_window_snapshot());  /* else window_rows has no snapshot section to refuse */
+
+    const uint64_t id = 1;
+    CHECK_OK(kv.add_sequence(id));
+    /* Reach a committed end of 1024 the way the scheduler does (chunks of at most max_tok, each
+     * ensure_from followed by the commit's trim), then the query block's ensure_from one row past
+     * it (scheduler.cpp:3730). The floor is then 1024 / 64 - (3 - 1) = 14, so block 13 is gone. */
+    for (int64_t n = 64; n <= 1024; n += 64) {
+        CHECK_OK(kv.ensure(id, n, n - 64));
+        kv.trim_window(id, n);
+    }
+    CHECK_OK(kv.ensure(id, 1025, 1024));
+    CHECK_EQ(kv.first_block_pos(id, gw), 14 * block);
+
+    std::vector<int32_t> rows;
+    /* A block boundary whose window starts below the rebased table: 960 is block 15, its window
+     * is [13, 15) and the table starts at 14. window_rows clears `out` on entry but on a refusal
+     * leaves the partially filled vector (it resize()s per group before the checks); the contract
+     * callers rely on is the bool, so we assert only the refusal here. */
+    CHECK(!kv.window_rows(id, 960, &rows));
+    /* Off a block boundary there is no window at all. */
+    CHECK(!kv.window_rows(id, 1000, &rows));
+    /* One block further the window is [14, 16), which the table holds: the two blocks the window
+     * covers, padded to window_blocks. */
+    CHECK(kv.window_rows(id, 1024, &rows));
+    CHECK_EQ(rows.size(), (size_t)wb);
+    CHECK(rows[0] >= 0);
+    CHECK(rows[1] >= 0);
+    CHECK_EQ(rows[2], -1);
+    /* And a position past the end is refused too: the table does not reach it. */
+    CHECK(!kv.window_rows(id, 4096, &rows));
+    kv.free_sequence(id);
+}
+
 /* A checkpoint at a prompt's tail, off the interval, is one the next turn resumes from: lookup
  * takes the deepest snapshot under the hit at any block boundary. */
 TEST(a_checkpoint_at_the_tail_of_a_prompt_is_found_and_the_deepest_wins) {

@@ -49,7 +49,8 @@ set(RAD_TESTS_WITH_LEGACY chatparse_test chatparse_gemma4_test)
 # r4d_ar_links_test checks libr4d's header-only link reader, so it needs only the include path.
 # relayout_iqr_test holds the IQR relayout to the stored form r4d_iqr.h describes, so it also
 # compiles r4d_iqr_layout.cpp.
-set(RAD_TESTS_WITH_R4D_HOST relayout_parity_test r4d_ar_links_test relayout_iqr_test)
+set(RAD_TESTS_WITH_R4D_HOST relayout_parity_test r4d_ar_links_test relayout_iqr_test
+                             ernie_dspark_shape_parity_test ernie_pins_test)
 # Their relayouts' vector loops, at every CPU level (libr4d/r4d_hsimd.h), built for these tests
 # whether or not libr4d itself is.
 include(${CMAKE_SOURCE_DIR}/cmake/RadSimdLevels.cmake)
@@ -236,6 +237,16 @@ foreach(t ${RAD_TESTS})
       target_sources(${n} PRIVATE ${CMAKE_SOURCE_DIR}/tools/opshapes.cpp)
       target_include_directories(${n} PRIVATE ${CMAKE_SOURCE_DIR}/tools)
     endif()
+    if(n STREQUAL ernie_pins_test)
+      target_include_directories(${n} PRIVATE ${CMAKE_SOURCE_DIR}/arch/ernie55)   # ernie55_pins.h
+    endif()
+    if(n STREQUAL ernie_dspark_shape_parity_test)
+      # libr4d's operand descriptions are host code; libref's come from the built plugin (dlopen).
+      target_sources(${n} PRIVATE ${CMAKE_SOURCE_DIR}/libr4d/r4d_shapes.cpp)
+      if(TARGET libref)
+        add_dependencies(${n} libref)
+      endif()
+    endif()
     if(n STREQUAL relayout_iqr_test)
       target_sources(${n} PRIVATE ${CMAKE_SOURCE_DIR}/libr4d/r4d_iqr_layout.cpp)
     endif()
@@ -413,6 +424,13 @@ foreach(t engine_e2e_test convert_test clef_decision_test laya_decision_test spa
     endif()
   endif()
 endforeach()
+# A kernel library with no kernels that reports a refused launch (poll_error_plugin.cpp): the engine's reaction to rad_kernel_poll_error without a card.
+if(TARGET engine_e2e_test)
+  add_library(poll_error_plugin MODULE poll_error_plugin.cpp)
+  target_link_libraries(poll_error_plugin PRIVATE radiance::abi)
+  target_compile_definitions(engine_e2e_test PRIVATE RAD_E2E_POLL_PLUGIN="$<TARGET_FILE:poll_error_plugin>")
+  add_dependencies(engine_e2e_test poll_error_plugin)
+endif()
 # 6 to 17 s by build type and load, mostly libref's GEMMs and decode steps and the engine's own
 # startups, so labelled `e2e` and kept out of the fast tier; the host and full tiers run it.
 if(TARGET engine_e2e_test)
@@ -594,8 +612,16 @@ set_tests_properties(isa_tools PROPERTIES TIMEOUT ${RAD_TEST_TIMEOUT})
 # sanitiser. With no clang at all the tests are not registered.
 set(R4D_DIR ${CMAKE_SOURCE_DIR}/libr4d)
 set(R4D_EMU ${CMAKE_CURRENT_SOURCE_DIR}/r4d_emu)
+if(TARGET libref)
+  add_executable(ernie_hca_origin_test ${R4D_EMU}/test_ernie_hca_origin.cpp)
+  target_link_libraries(ernie_hca_origin_test PRIVATE rad_abi ${CMAKE_DL_LIBS})
+  add_dependencies(ernie_hca_origin_test libref)
+  add_test(NAME ernie_hca_origin_test COMMAND ernie_hca_origin_test $<TARGET_FILE:libref>)
+  set_tests_properties(ernie_hca_origin_test PROPERTIES LABELS unit TIMEOUT ${RAD_TEST_TIMEOUT}
+                       ENVIRONMENT "${RAD_TEST_ENV}")
+endif()
 set(R4D_EMU_HIP ${R4D_DIR}/r4d_attn_paged_window.hip ${R4D_DIR}/r4d_pair_argmax_f32.hip
-                ${R4D_DIR}/r4d_norm_join_bf16.hip ${R4D_DIR}/r4d_expert_scale_bf16.hip
+                ${R4D_DIR}/r4d_norm_join_bf16.hip ${R4D_DIR}/r4d_expert_scale_bf16.hip ${R4D_DIR}/r4d_ernie_small.hip
                 ${R4D_DIR}/r4d_qsa_select_bf16.hip ${R4D_DIR}/r4d_lora_bf16.hip ${R4D_DIR}/r4d_glm.hip
                 ${R4D_DIR}/r4d_mhc.hip ${R4D_DIR}/r4d_kda.hip
                 ${R4D_DIR}/r4d_mla.hip ${R4D_DIR}/r4d_quant_act_fp8.hip
@@ -603,13 +629,25 @@ set(R4D_EMU_HIP ${R4D_DIR}/r4d_attn_paged_window.hip ${R4D_DIR}/r4d_pair_argmax_
                 ${R4D_DIR}/r4d_keyed.hip ${R4D_DIR}/r4d_lili.hip
                 ${R4D_DIR}/r4d_vit_muse.hip)
 set(R4D_EMU_TESTS attn pick norm escale qsa lora f32 mhc kda mla moefuse kvres
-                  dsa lili vit)
+                  dsa lili vit ernie_small)
+if(TARGET libref)
+  list(APPEND R4D_EMU_HIP ${R4D_DIR}/r4d_ernie_hca.hip ${R4D_DIR}/r4d_ernie_dspark.hip ${R4D_DIR}/r4d_ernie_mhc.hip ${R4D_DIR}/r4d_ernie_ops.hip)
+  list(APPEND R4D_EMU_TESTS ernie_hca_origin ernie_hca_block ernie_dspark ernie_hca_state mhc_pin ernie_dsa_tiled ernie_dsa_select ernie_hca_pipe ernie_latent_fp8 ernie_latent_i8 ernie_latent_bf16id row_identity pair_pin)
+  list(APPEND R4D_EMU_HIP ${R4D_DIR}/r4d_ernie_mla.hip ${R4D_DIR}/r4d_fp8_f32scale.hip ${R4D_DIR}/r4d_moe_mxfp4.hip
+                ${R4D_DIR}/r4d_moe.hip ${R4D_DIR}/r4d_gemm_bf16_nt_m16.hip ${R4D_DIR}/r4d_gemm_bf16_nt_m64.hip ${R4D_DIR}/r4d_gemm_bf16_nt_tiled.hip)
+  list(APPEND R4D_EMU_HIP ${R4D_DIR}/r4d_shapes.cpp)   # r4d_shape_ernie_dsa_topk_tiled: the direct callback tests of r4d_emu_ernie_dsa_tiled
+  # kv-fp8-latent: the fp8_ds_mla / i8 / bf16id latent writers and readers of r4d_ernie_mla.hip against libref
+endif()
+set(R4D_EMU_TEST_SOURCES "")
+foreach(t ${R4D_EMU_TESTS})
+  list(APPEND R4D_EMU_TEST_SOURCES ${R4D_EMU}/test_${t}.cpp)
+endforeach()
 set(R4D_EMU_BUILT OFF)
 if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$")
   # No fiber switch for this ISA.
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT RAD_ASAN AND NOT RAD_TSAN)
   set_source_files_properties(${R4D_EMU_HIP} PROPERTIES LANGUAGE CXX COMPILE_OPTIONS "-x;c++")
-  add_library(r4d_emu_kernels OBJECT ${R4D_EMU_HIP} ${R4D_EMU}/ref_host.cpp
+  add_library(r4d_emu_kernels OBJECT ${R4D_EMU_HIP} ${R4D_EMU}/ref_host.cpp ${R4D_EMU}/cfg_host.cpp
                                      ${R4D_EMU}/emu/emu.cpp)
   target_include_directories(r4d_emu_kernels PUBLIC ${R4D_EMU}/emu ${R4D_EMU} ${R4D_DIR})
   target_link_libraries(r4d_emu_kernels PUBLIC rad_abi)
@@ -621,6 +659,37 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT RAD_ASAN AND NOT RAD_TSAN)
     target_compile_options(r4d_emu_${t} PRIVATE -ffp-contract=off -Wno-psabi)
     set_target_properties(r4d_emu_${t} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests)
   endforeach()
+  if(TARGET r4d_emu_ernie_hca_origin)
+    target_compile_definitions(r4d_emu_ernie_hca_origin PRIVATE RAD_TEST_HIP_EMU)
+    add_dependencies(r4d_emu_ernie_hca_origin libref)
+  endif()
+  if(TARGET r4d_emu_ernie_hca_block)
+    add_dependencies(r4d_emu_ernie_hca_block libref)
+  endif()
+  if(TARGET r4d_emu_ernie_dspark)
+    add_dependencies(r4d_emu_ernie_dspark libref)
+  endif()
+  if(TARGET r4d_emu_ernie_hca_state)
+    add_dependencies(r4d_emu_ernie_hca_state libref)
+  endif()
+  if(TARGET r4d_emu_mhc_pin)
+    add_dependencies(r4d_emu_mhc_pin libref)
+  endif()
+  if(TARGET r4d_emu_pair_pin)
+    add_dependencies(r4d_emu_pair_pin libref)
+  endif()
+  if(TARGET r4d_emu_ernie_dsa_tiled)
+    add_dependencies(r4d_emu_ernie_dsa_tiled libref)
+    if(TARGET libr4d)
+      add_dependencies(r4d_emu_ernie_dsa_tiled libr4d)   # the registry check reads the device row's constraints from libr4d.so
+    endif()
+  endif()
+  if(TARGET r4d_emu_ernie_dsa_select)
+    add_dependencies(r4d_emu_ernie_dsa_select libref)
+  endif()
+  if(TARGET r4d_emu_ernie_hca_pipe)
+    add_dependencies(r4d_emu_ernie_hca_pipe libref)
+  endif()
   set(R4D_EMU_BUILT ON)
 else()
   if(RAD_HIP_FOUND AND CMAKE_HIP_COMPILER_ID MATCHES "Clang")
@@ -635,21 +704,16 @@ else()
   if(R4D_EMU_CXX)
     set(dir ${CMAKE_CURRENT_BINARY_DIR}/r4d_emu)
     file(MAKE_DIRECTORY ${dir})
-    set(flags -std=c++20 -O2 -ffp-contract=off -Wno-psabi -I${R4D_EMU}/emu -I${R4D_EMU}
+    set(flags -std=c++20 -O2 -fPIC -ffp-contract=off -Wno-psabi -I${R4D_EMU}/emu -I${R4D_EMU}
               -I${CMAKE_SOURCE_DIR}/abi -I${R4D_DIR})
     set(objs "")
-    foreach(src ${R4D_EMU_HIP} ${R4D_EMU}/ref_host.cpp ${R4D_EMU}/emu/emu.cpp
-                ${R4D_EMU}/test_attn.cpp ${R4D_EMU}/test_pick.cpp ${R4D_EMU}/test_norm.cpp
-                ${R4D_EMU}/test_escale.cpp ${R4D_EMU}/test_qsa.cpp ${R4D_EMU}/test_lora.cpp
-                ${R4D_EMU}/test_f32.cpp ${R4D_EMU}/test_mhc.cpp
-                ${R4D_EMU}/test_kda.cpp ${R4D_EMU}/test_mla.cpp
-                ${R4D_EMU}/test_moefuse.cpp ${R4D_EMU}/test_kvres.cpp
-                ${R4D_EMU}/test_dsa.cpp ${R4D_EMU}/test_lili.cpp
-                ${R4D_EMU}/test_vit.cpp)
+    foreach(src ${R4D_EMU_HIP} ${R4D_EMU}/ref_host.cpp ${R4D_EMU}/cfg_host.cpp ${R4D_EMU}/emu/emu.cpp ${R4D_EMU_TEST_SOURCES})
       get_filename_component(stem ${src} NAME_WE)
       set(lang "")
       if(src MATCHES "\\.hip$")
         set(lang -x c++)
+      elseif(stem STREQUAL "test_ernie_hca_origin")
+        set(lang -DRAD_TEST_HIP_EMU)
       endif()
       add_custom_command(OUTPUT ${dir}/${stem}.o
         COMMAND ${R4D_EMU_CXX} ${flags} -MD -MF ${dir}/${stem}.o.d ${lang} -c ${src}
@@ -679,12 +743,133 @@ else()
     endforeach()
     add_custom_target(r4d_emu ALL DEPENDS ${exes})
     set(R4D_EMU_BUILT ON)
+    # The REAL libr4d poll over these emulated kernels, as a kernel library for engine_e2e_test (emu_poll_plugin.cpp): one launch libref would refuse per family, in card
+    # form, reaches the engine through rad_kernel_poll_error unchanged.
+    if(TARGET engine_e2e_test)
+      set(plug ${CMAKE_BINARY_DIR}/tests/emu_poll_plugin.so)
+      add_custom_command(OUTPUT ${dir}/emu_poll_plugin.o
+        COMMAND ${R4D_EMU_CXX} ${flags} -MD -MF ${dir}/emu_poll_plugin.o.d -c ${R4D_EMU}/emu_poll_plugin.cpp -o ${dir}/emu_poll_plugin.o
+        DEPENDS ${R4D_EMU}/emu_poll_plugin.cpp
+        DEPFILE ${dir}/emu_poll_plugin.o.d
+        COMMENT "Building r4d_emu emu_poll_plugin.o with ${R4D_EMU_CXX}"
+        VERBATIM)
+      add_custom_command(OUTPUT ${plug}
+        COMMAND ${R4D_EMU_CXX} -shared ${dir}/emu_poll_plugin.o ${objs} ${dl} -o ${plug}
+        DEPENDS ${dir}/emu_poll_plugin.o ${objs}
+        COMMENT "Linking emu_poll_plugin.so"
+        VERBATIM)
+      add_custom_target(emu_poll_plugin DEPENDS ${plug})
+      target_compile_definitions(engine_e2e_test PRIVATE RAD_E2E_EMU_POLL_PLUGIN="${plug}")
+      add_dependencies(engine_e2e_test emu_poll_plugin)
+    endif()
   endif()
+endif()
+# The REAL libr4d poll over the emulated kernels, as a kernel library for engine_e2e_test (emu_poll_plugin.cpp): one launch libref would refuse per family, in card form,
+# reaches the engine through rad_kernel_poll_error unchanged. The emulator objects are position independent so they can be linked into the module.
+if(R4D_EMU_BUILT AND TARGET engine_e2e_test AND TARGET r4d_emu_kernels)
+  set_target_properties(r4d_emu_kernels PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  add_library(emu_poll_plugin MODULE ${R4D_EMU}/emu_poll_plugin.cpp $<TARGET_OBJECTS:r4d_emu_kernels>)
+  target_include_directories(emu_poll_plugin PRIVATE ${R4D_EMU}/emu ${R4D_EMU} ${R4D_DIR})
+  target_link_libraries(emu_poll_plugin PRIVATE rad_abi ${CMAKE_DL_LIBS})
+  target_compile_options(emu_poll_plugin PRIVATE -ffp-contract=off -Wno-psabi)
+  target_compile_definitions(engine_e2e_test PRIVATE RAD_E2E_EMU_POLL_PLUGIN="$<TARGET_FILE:emu_poll_plugin>")
+  add_dependencies(engine_e2e_test emu_poll_plugin)
 endif()
 if(R4D_EMU_BUILT)
   foreach(t pick norm escale qsa lora f32 mhc kda mla moefuse kvres dsa lili vit)
     add_test(NAME r4d_emu_${t} COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_${t})
   endforeach()
+  if(TARGET libref)
+    add_test(NAME r4d_emu_ernie_hca_origin
+             COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_ernie_hca_origin $<TARGET_FILE:libref>)
+    set_tests_properties(r4d_emu_ernie_hca_origin PROPERTIES LABELS r4d_emu TIMEOUT ${RAD_TEST_TIMEOUT}
+                         ENVIRONMENT "${RAD_TEST_ENV}")
+    add_test(NAME r4d_emu_mhc_pin_default COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_mhc_pin $<TARGET_FILE:libref> default)
+    add_test(NAME r4d_emu_mhc_pin_pinned COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_mhc_pin $<TARGET_FILE:libref> pinned)
+    set_tests_properties(r4d_emu_mhc_pin_default r4d_emu_mhc_pin_pinned PROPERTIES LABELS r4d_emu TIMEOUT ${RAD_TEST_TIMEOUT})
+    set_tests_properties(r4d_emu_mhc_pin_pinned PROPERTIES ENVIRONMENT "R4D_MHC_DECODE_ROWS=4")
+    # gemm_nt_f32_pair layouts the row-identity suite does not build: misaligned operands, pitched (sliced) outputs with untouched padding, f32 weights; row identity
+    # in each and values within the sum's error bound of libref
+    add_test(NAME r4d_emu_pair_pin COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_pair_pin $<TARGET_FILE:libref>)
+    set_tests_properties(r4d_emu_pair_pin PROPERTIES LABELS r4d_emu TIMEOUT ${RAD_TEST_TIMEOUT})
+    add_test(NAME r4d_emu_ernie_hca_state
+             COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_ernie_hca_state $<TARGET_FILE:libref>)
+    set_tests_properties(r4d_emu_ernie_hca_state PROPERTIES LABELS r4d_emu TIMEOUT ${RAD_TEST_TIMEOUT}
+                         ENVIRONMENT "${RAD_TEST_ENV}")
+    add_test(NAME r4d_emu_ernie_dspark
+             COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_ernie_dspark $<TARGET_FILE:libref>)
+    set_tests_properties(r4d_emu_ernie_dspark PROPERTIES LABELS r4d_emu TIMEOUT ${RAD_TEST_TIMEOUT}
+                         ENVIRONMENT "${RAD_TEST_ENV}")
+    add_test(NAME r4d_emu_ernie_hca_block
+             COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_ernie_hca_block $<TARGET_FILE:libref>)
+    set_tests_properties(r4d_emu_ernie_hca_block PROPERTIES LABELS r4d_emu TIMEOUT ${RAD_TEST_TIMEOUT}
+                         ENVIRONMENT "${RAD_TEST_ENV}")
+    set(R4D_EMU_DSA_LIBR4D "")
+    if(TARGET libr4d)
+      set(R4D_EMU_DSA_LIBR4D $<TARGET_FILE:libr4d>)
+    endif()
+    add_test(NAME r4d_emu_ernie_dsa_tiled
+             COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_ernie_dsa_tiled $<TARGET_FILE:libref> ${R4D_EMU_DSA_LIBR4D})
+    set(R4D_EMU_DSA_ENV ${RAD_TEST_ENV})
+    if(NOT TARGET libr4d)
+      list(APPEND R4D_EMU_DSA_ENV "R4D_EMU_NO_LIBR4D=1")   # a build without HIP has no libr4d.so to read the row from
+    endif()
+    set_tests_properties(r4d_emu_ernie_dsa_tiled PROPERTIES LABELS r4d_emu TIMEOUT ${RAD_TEST_TIMEOUT}
+                         ENVIRONMENT "${R4D_EMU_DSA_ENV}")
+    add_test(NAME r4d_emu_ernie_hca_pipe
+             COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_ernie_hca_pipe $<TARGET_FILE:libref>)
+    set_tests_properties(r4d_emu_ernie_hca_pipe PROPERTIES LABELS r4d_emu TIMEOUT ${RAD_TEST_TIMEOUT}
+                         ENVIRONMENT "${RAD_TEST_ENV}")
+    add_test(NAME r4d_emu_ernie_dsa_select
+             COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_ernie_dsa_select $<TARGET_FILE:libref>)
+    set_tests_properties(r4d_emu_ernie_dsa_select PROPERTIES LABELS r4d_emu TIMEOUT ${RAD_TEST_TIMEOUT}
+                         ENVIRONMENT "${RAD_TEST_ENV}")
+    add_test(NAME r4d_emu_ernie_latent_fp8
+             COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_ernie_latent_fp8 $<TARGET_FILE:libref>)
+    set_tests_properties(r4d_emu_ernie_latent_fp8 PROPERTIES LABELS r4d_emu TIMEOUT ${RAD_TEST_TIMEOUT}
+                         ENVIRONMENT "${RAD_TEST_ENV}")
+    # kv-fp8-latent v2: the i8_ds_mla latent writer and reader
+    add_test(NAME r4d_emu_ernie_latent_i8
+             COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_ernie_latent_i8 $<TARGET_FILE:libref>)
+    set_tests_properties(r4d_emu_ernie_latent_i8 PROPERTIES LABELS r4d_emu TIMEOUT ${RAD_TEST_TIMEOUT}
+                         ENVIRONMENT "${RAD_TEST_ENV}")
+    # the 10- and 12-bit fallback rows (int8 high byte + packed low bits), same test source and the same checks
+    foreach(lay i10 i12)
+      add_test(NAME r4d_emu_ernie_latent_${lay}
+               COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_ernie_latent_i8 $<TARGET_FILE:libref> ${lay}_ds_mla)
+      set_tests_properties(r4d_emu_ernie_latent_${lay} PROPERTIES LABELS r4d_emu TIMEOUT ${RAD_TEST_TIMEOUT}
+                           ENVIRONMENT "${RAD_TEST_ENV}")
+    endforeach()
+    # diagnostic identity row bf16_ds_mla (selector bf16id): lossless through the quantised-row path, bit-identical to the bf16 reader; the 1-ulp flip arm
+    add_test(NAME r4d_emu_ernie_latent_bf16id
+             COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_ernie_latent_bf16id $<TARGET_FILE:libref>)
+    set_tests_properties(r4d_emu_ernie_latent_bf16id PROPERTIES LABELS r4d_emu TIMEOUT ${RAD_TEST_TIMEOUT}
+                         ENVIRONMENT "${RAD_TEST_ENV}")
+  endif()
+  # Row identity (the row-identity checks): a row's output is the same bits whatever else shares its launch, 1..2048 rows.
+  if(TARGET libref)
+  foreach(fam pair woa mlaproj hca hcawide hcadec mla mlawide mhc moe f8a8 f8a8env f8a8ctl gemmnt gemmntctl idxl router gather gatherchain)
+    add_test(NAME r4d_emu_row_identity_${fam} COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_row_identity ${fam})
+    set_tests_properties(r4d_emu_row_identity_${fam} PROPERTIES LABELS "r4d_emu" TIMEOUT ${RAD_TEST_TIMEOUT})
+  endforeach()
+  # The one-row compressed pass (R4D_HCA_UNION_BATCH=0, decode-depth's A/B switch) must give the same row bits as the pipelined pass inside each partition.
+  foreach(fam hca hcawide hcadec)
+    add_test(NAME r4d_emu_row_identity_${fam}_batch0 COMMAND ${CMAKE_BINARY_DIR}/tests/r4d_emu_row_identity ${fam})
+    set_tests_properties(r4d_emu_row_identity_${fam}_batch0 PROPERTIES LABELS "r4d_emu" TIMEOUT ${RAD_TEST_TIMEOUT} ENVIRONMENT "R4D_HCA_UNION_BATCH=0")
+  endforeach()
+  endif()
+  # Review B2: no `__device__` variable in the ERNIE kernel sources (the verdict state is a buffer the library allocates and passes by pointer).
+  add_test(NAME ernie_no_device_globals COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -P ${CMAKE_CURRENT_SOURCE_DIR}/r4d_emu/ernie_no_device_globals.cmake)
+  set_tests_properties(ernie_no_device_globals PROPERTIES LABELS r4d_emu TIMEOUT 60)
+  set(_lint ${CMAKE_CURRENT_SOURCE_DIR}/r4d_emu/ernie_no_device_globals.cmake)
+  set(_fix  ${CMAKE_CURRENT_SOURCE_DIR}/r4d_emu/lint_fixtures)
+  # The same lint, argument declarations (m-1), over the launcher sources; and the two lints held to fixtures (a lint that finds nothing must not be mistaken for a clean tree).
+  add_test(NAME ernie_arg_decl COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DCHECK=args -P ${_lint})
+  add_test(NAME ernie_lint_fixture_globals_bad COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DFILES=${_fix}/bad_globals.hip -DEXPECT_FAIL=1 -P ${_lint})
+  add_test(NAME ernie_lint_fixture_globals_good COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DFILES=${_fix}/good_globals.hip -P ${_lint})
+  add_test(NAME ernie_lint_fixture_args_bad COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DCHECK=args -DFILES=${_fix}/bad_args.hip -DEXPECT_FAIL=1 -P ${_lint})
+  add_test(NAME ernie_lint_fixture_args_good COMMAND ${CMAKE_COMMAND} -DSRC=${CMAKE_SOURCE_DIR} -DCHECK=args -DFILES=${_fix}/good_args.hip -P ${_lint})
+  set_tests_properties(ernie_arg_decl ernie_lint_fixture_globals_bad ernie_lint_fixture_globals_good ernie_lint_fixture_args_bad ernie_lint_fixture_args_good PROPERTIES LABELS r4d_emu TIMEOUT 60)
   # The attention cases take about 11 s, 7 of them in the two long prefills on the WMMA kernel,
   # which three shards put in different entries.
   foreach(k 0 1 2)
