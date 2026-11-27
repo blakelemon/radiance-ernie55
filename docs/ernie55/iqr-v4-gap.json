@@ -1,0 +1,9163 @@
+{
+ "schema": "ernie55-iqr-v4-gap/1",
+ "target": "gfx1201",
+ "abi": 43,
+ "formats": [
+  "iqr_v4",
+  "iq8r",
+  "bf16"
+ ],
+ "m_bands": [
+  1,
+  16,
+  64,
+  2048
+ ],
+ "classes": [
+  {
+   "class_name": "model.layers.L.mlp.down_proj.weight_scale_inv",
+   "shape": [
+    32,
+    112
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 14336,
+   "example": "model.layers.0.mlp.down_proj.weight_scale_inv",
+   "layers": [
+    0
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.mlp.gate_proj.weight_scale_inv",
+   "shape": [
+    112,
+    32
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 14336,
+   "example": "model.layers.0.mlp.gate_proj.weight_scale_inv",
+   "layers": [
+    0
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.mlp.up_proj.weight_scale_inv",
+   "shape": [
+    112,
+    32
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 14336,
+   "example": "model.layers.0.mlp.up_proj.weight_scale_inv",
+   "layers": [
+    0
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.mlp_hyper_connection.alpha_post",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 172,
+   "example": "model.layers.0.mlp_hyper_connection.alpha_post",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.mlp_hyper_connection.alpha_pre",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 172,
+   "example": "model.layers.0.mlp_hyper_connection.alpha_pre",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.mlp_hyper_connection.alpha_res",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 172,
+   "example": "model.layers.0.mlp_hyper_connection.alpha_res",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.mlp_hyper_connection.bias",
+   "shape": [
+    24
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 4128,
+   "example": "model.layers.0.mlp_hyper_connection.bias",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.mlp_hyper_connection.mapping_proj.weight",
+   "shape": [
+    16384,
+    24
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 67633152,
+   "example": "model.layers.0.mlp_hyper_connection.mapping_proj.weight",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42
+   ],
+   "experts": 0,
+   "role": "mHC mixing matrix [hc*hidden, 24] f32 (read inside ernie_mhc_pre_rms)",
+   "kind": "custom",
+   "op": "ernie_mhc_pre_rms",
+   "logical": "blk.L.{attn,ffn}_hc.fn",
+   "N": 16384,
+   "K": 24,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_pre_rms has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_pre_bf16 (n up to 16384, hc 2..8, f32 coefficients)"
+     ]
+    },
+    "iq8r": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_pre_rms has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_pre_bf16 (n up to 16384, hc 2..8, f32 coefficients)"
+     ]
+    },
+    "bf16": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_pre_rms has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_pre_bf16 (n up to 16384, hc 2..8, f32 coefficients)"
+     ]
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attention_hyper_connection.alpha_post",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 172,
+   "example": "model.layers.0.self_attention_hyper_connection.alpha_post",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attention_hyper_connection.alpha_pre",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 172,
+   "example": "model.layers.0.self_attention_hyper_connection.alpha_pre",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attention_hyper_connection.alpha_res",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 172,
+   "example": "model.layers.0.self_attention_hyper_connection.alpha_res",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attention_hyper_connection.bias",
+   "shape": [
+    24
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 4128,
+   "example": "model.layers.0.self_attention_hyper_connection.bias",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attention_hyper_connection.mapping_proj.weight",
+   "shape": [
+    16384,
+    24
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 67633152,
+   "example": "model.layers.0.self_attention_hyper_connection.mapping_proj.weight",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42
+   ],
+   "experts": 0,
+   "role": "mHC mixing matrix [hc*hidden, 24] f32 (read inside ernie_mhc_pre_rms)",
+   "kind": "custom",
+   "op": "ernie_mhc_pre_rms",
+   "logical": "blk.L.{attn,ffn}_hc.fn",
+   "N": 16384,
+   "K": 24,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_pre_rms has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_pre_bf16 (n up to 16384, hc 2..8, f32 coefficients)"
+     ]
+    },
+    "iq8r": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_pre_rms has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_pre_bf16 (n up to 16384, hc 2..8, f32 coefficients)"
+     ]
+    },
+    "bf16": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_pre_rms has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_pre_bf16 (n up to 16384, hc 2..8, f32 coefficients)"
+     ]
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.attn_sink",
+   "shape": [
+    64
+   ],
+   "dtype": "F32",
+   "count": 37,
+   "bytes": 9472,
+   "example": "model.layers.0.self_attn.core_attention.attn_sink",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.compressor.ape",
+   "shape": [
+    128,
+    512
+   ],
+   "dtype": "F32",
+   "count": 37,
+   "bytes": 9699328,
+   "example": "model.layers.0.self_attn.core_attention.compressor.ape",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "HCA compressor position bias (read inside ernie_hca_compress)",
+   "kind": "custom",
+   "op": "ernie_hca_compress",
+   "logical": "blk.L.attn_comp_ape.weight",
+   "N": 128,
+   "K": 512,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_hca_compress has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": []
+    },
+    "iq8r": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_hca_compress has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": []
+    },
+    "bf16": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_hca_compress has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": []
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.gate_proj.weight_scale_inv",
+   "shape": [
+    64,
+    8
+   ],
+   "dtype": "F32",
+   "count": 37,
+   "bytes": 75776,
+   "example": "model.layers.0.self_attn.gate_proj.weight_scale_inv",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.linear_kv_proj.weight_scale_inv",
+   "shape": [
+    4,
+    32
+   ],
+   "dtype": "F32",
+   "count": 37,
+   "bytes": 18944,
+   "example": "model.layers.0.self_attn.linear_kv_proj.weight_scale_inv",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.linear_o_group_proj_scale_inv",
+   "shape": [
+    64,
+    32
+   ],
+   "dtype": "F32",
+   "count": 37,
+   "bytes": 303104,
+   "example": "model.layers.0.self_attn.linear_o_group_proj_scale_inv",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.linear_q_down_proj.weight_scale_inv",
+   "shape": [
+    8,
+    32
+   ],
+   "dtype": "F32",
+   "count": 37,
+   "bytes": 37888,
+   "example": "model.layers.0.self_attn.linear_q_down_proj.weight_scale_inv",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.linear_q_up_proj.weight_scale_inv",
+   "shape": [
+    256,
+    8
+   ],
+   "dtype": "F32",
+   "count": 37,
+   "bytes": 303104,
+   "example": "model.layers.0.self_attn.linear_q_up_proj.weight_scale_inv",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.o_proj.weight_scale_inv",
+   "shape": [
+    32,
+    64
+   ],
+   "dtype": "F32",
+   "count": 37,
+   "bytes": 303104,
+   "example": "model.layers.0.self_attn.o_proj.weight_scale_inv",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.e_score_correction_bias",
+   "shape": [
+    512
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 88064,
+   "example": "model.layers.1.block_sparse_moe.e_score_correction_bias",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.experts.E.w1.weight_scale_inv",
+   "shape": [
+    16,
+    16
+   ],
+   "dtype": "F32",
+   "count": 22016,
+   "bytes": 22544384,
+   "example": "model.layers.1.block_sparse_moe.experts.0.w1.weight_scale_inv",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 512,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.experts.E.w2.weight_scale_inv",
+   "shape": [
+    16,
+    16
+   ],
+   "dtype": "F32",
+   "count": 22016,
+   "bytes": 22544384,
+   "example": "model.layers.1.block_sparse_moe.experts.0.w2.weight_scale_inv",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 512,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.experts.E.w3.weight_scale_inv",
+   "shape": [
+    16,
+    16
+   ],
+   "dtype": "F32",
+   "count": 22016,
+   "bytes": 22544384,
+   "example": "model.layers.1.block_sparse_moe.experts.0.w3.weight_scale_inv",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 512,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.embed_tokens.weight",
+   "shape": [
+    201216,
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 1,
+   "bytes": 1648361472,
+   "example": "model.embed_tokens.weight",
+   "layers": [],
+   "experts": 0,
+   "role": "token embedding",
+   "kind": "embed",
+   "op": "embed_lookup",
+   "logical": "token_embd.weight",
+   "N": 201216,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "embed_lookup_iqr"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "embed_lookup_iqr"
+      ],
+      "16": [
+       "embed_lookup_iqr"
+      ],
+      "64": [
+       "embed_lookup_iqr"
+      ],
+      "2048": [
+       "embed_lookup_iqr"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "embed_lookup_q_bf16"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "embed_lookup_q_bf16"
+      ],
+      "16": [
+       "embed_lookup_q_bf16"
+      ],
+      "64": [
+       "embed_lookup_q_bf16"
+      ],
+      "2048": [
+       "embed_lookup_q_bf16"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "embed_lookup_bf16"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "embed_lookup_bf16"
+      ],
+      "16": [
+       "embed_lookup_bf16"
+      ],
+      "64": [
+       "embed_lookup_bf16"
+      ],
+      "2048": [
+       "embed_lookup_bf16"
+      ]
+     },
+     "unevaluated": []
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.input_layernorm.weight",
+   "shape": [
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 44,
+   "bytes": 360448,
+   "example": "model.layers.0.input_layernorm.weight",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.post_attention_layernorm.weight",
+   "shape": [
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 44,
+   "bytes": 360448,
+   "example": "model.layers.0.post_attention_layernorm.weight",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.compressor.linear_wgate.weight",
+   "shape": [
+    512,
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 37,
+   "bytes": 155189248,
+   "example": "model.layers.0.self_attn.core_attention.compressor.linear_wgate.weight",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "HCA compressor kv/score projections (bf16 stored, f32 compute)",
+   "kind": "gemm_f32",
+   "op": "gemm_nt_f32",
+   "logical": "blk.L.attn_comp_{kv,gate}.weight",
+   "N": 512,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "missing",
+     "rows": [],
+     "reason": "no libr4d gemm_f32 row for format iqr_v4",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "missing",
+     "rows": [],
+     "reason": "no libr4d gemm_f32 row for format iq8r",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_nt_f32_bf16"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_nt_f32_bf16"
+      ],
+      "16": [
+       "gemm_nt_f32_bf16"
+      ],
+      "64": [
+       "gemm_nt_f32_bf16"
+      ],
+      "2048": [
+       "gemm_nt_f32_bf16"
+      ]
+     },
+     "unevaluated": []
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.compressor.linear_wkv.weight",
+   "shape": [
+    512,
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 37,
+   "bytes": 155189248,
+   "example": "model.layers.0.self_attn.core_attention.compressor.linear_wkv.weight",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "HCA compressor kv/score projections (bf16 stored, f32 compute)",
+   "kind": "gemm_f32",
+   "op": "gemm_nt_f32",
+   "logical": "blk.L.attn_comp_{kv,gate}.weight",
+   "N": 512,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "missing",
+     "rows": [],
+     "reason": "no libr4d gemm_f32 row for format iqr_v4",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "missing",
+     "rows": [],
+     "reason": "no libr4d gemm_f32 row for format iq8r",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_nt_f32_bf16"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_nt_f32_bf16"
+      ],
+      "16": [
+       "gemm_nt_f32_bf16"
+      ],
+      "64": [
+       "gemm_nt_f32_bf16"
+      ],
+      "2048": [
+       "gemm_nt_f32_bf16"
+      ]
+     },
+     "unevaluated": []
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.compressor.norm.weight",
+   "shape": [
+    512
+   ],
+   "dtype": "BF16",
+   "count": 37,
+   "bytes": 37888,
+   "example": "model.layers.0.self_attn.core_attention.compressor.norm.weight",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.kv_layernorm.weight",
+   "shape": [
+    512
+   ],
+   "dtype": "BF16",
+   "count": 37,
+   "bytes": 37888,
+   "example": "model.layers.0.self_attn.kv_layernorm.weight",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.q_layernorm.weight",
+   "shape": [
+    1024
+   ],
+   "dtype": "BF16",
+   "count": 37,
+   "bytes": 75776,
+   "example": "model.layers.0.self_attn.q_layernorm.weight",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.vha_postmix_U",
+   "shape": [
+    64,
+    16
+   ],
+   "dtype": "BF16",
+   "count": 44,
+   "bytes": 90112,
+   "example": "model.layers.0.self_attn.vha_postmix_U",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "VHA post-mix low-rank factors (read inside ernie_vha_mix)",
+   "kind": "custom",
+   "op": "ernie_vha_mix",
+   "logical": "blk.L.attn_vha_{u,v}.weight",
+   "N": 64,
+   "K": 16,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_vha_mix has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": []
+    },
+    "iq8r": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_vha_mix has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": []
+    },
+    "bf16": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_vha_mix has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": []
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.vha_postmix_V",
+   "shape": [
+    64,
+    16
+   ],
+   "dtype": "BF16",
+   "count": 44,
+   "bytes": 90112,
+   "example": "model.layers.0.self_attn.vha_postmix_V",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "VHA post-mix low-rank factors (read inside ernie_vha_mix)",
+   "kind": "custom",
+   "op": "ernie_vha_mix",
+   "logical": "blk.L.attn_vha_{u,v}.weight",
+   "N": 64,
+   "K": 16,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_vha_mix has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": []
+    },
+    "iq8r": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_vha_mix has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": []
+    },
+    "bf16": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_vha_mix has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": []
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.mlp.down_proj.weight",
+   "shape": [
+    4096,
+    14336
+   ],
+   "dtype": "F8_E4M3",
+   "count": 1,
+   "bytes": 58720256,
+   "example": "model.layers.0.mlp.down_proj.weight",
+   "layers": [
+    0
+   ],
+   "experts": 0,
+   "role": "layer-0 dense feed-forward",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.0.ffn_{gate,up,down}.weight",
+   "N": 4096,
+   "K": 14336,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.mlp.gate_proj.weight",
+   "shape": [
+    14336,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 1,
+   "bytes": 58720256,
+   "example": "model.layers.0.mlp.gate_proj.weight",
+   "layers": [
+    0
+   ],
+   "experts": 0,
+   "role": "layer-0 dense feed-forward",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.0.ffn_{gate,up,down}.weight",
+   "N": 14336,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.mlp.up_proj.weight",
+   "shape": [
+    14336,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 1,
+   "bytes": 58720256,
+   "example": "model.layers.0.mlp.up_proj.weight",
+   "layers": [
+    0
+   ],
+   "experts": 0,
+   "role": "layer-0 dense feed-forward",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.0.ffn_{gate,up,down}.weight",
+   "N": 14336,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.self_attn.gate_proj.weight",
+   "shape": [
+    8192,
+    1024
+   ],
+   "dtype": "F8_E4M3",
+   "count": 37,
+   "bytes": 310378496,
+   "example": "model.layers.0.self_attn.gate_proj.weight",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "attention output gate (sigmoid)",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.attn_gate.weight",
+   "N": 8192,
+   "K": 1024,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.self_attn.linear_kv_proj.weight",
+   "shape": [
+    512,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 37,
+   "bytes": 77594624,
+   "example": "model.layers.0.self_attn.linear_kv_proj.weight",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "HCA kv (one 512-wide head)",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.attn_kv_a_mqa.weight",
+   "N": 512,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 512
+  },
+  {
+   "class_name": "model.layers.L.self_attn.linear_o_group_proj",
+   "shape": [
+    8192,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 37,
+   "bytes": 1241513984,
+   "example": "model.layers.0.self_attn.linear_o_group_proj",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "HCA grouped output projection wo_a (read inside ernie_hca_wo_a)",
+   "kind": "custom",
+   "op": "ernie_hca_wo_a",
+   "logical": "blk.L.attn_o_group.weight",
+   "N": 8192,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_hca_wo_a has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": []
+    },
+    "iq8r": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_hca_wo_a has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": []
+    },
+    "bf16": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_hca_wo_a has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": []
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.linear_q_down_proj.weight",
+   "shape": [
+    1024,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 37,
+   "bytes": 155189248,
+   "example": "model.layers.0.self_attn.linear_q_down_proj.weight",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "HCA q down",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.attn_q_a.weight",
+   "N": 1024,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.self_attn.linear_q_up_proj.weight",
+   "shape": [
+    32768,
+    1024
+   ],
+   "dtype": "F8_E4M3",
+   "count": 37,
+   "bytes": 1241513984,
+   "example": "model.layers.0.self_attn.linear_q_up_proj.weight",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "HCA q up (64 heads x 512)",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.attn_q_b.weight",
+   "N": 32768,
+   "K": 1024,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.self_attn.o_proj.weight",
+   "shape": [
+    4096,
+    8192
+   ],
+   "dtype": "F8_E4M3",
+   "count": 37,
+   "bytes": 1241513984,
+   "example": "model.layers.0.self_attn.o_proj.weight",
+   "layers": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41
+   ],
+   "experts": 0,
+   "role": "attention output projection wo_b",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.attn_output.weight",
+   "N": 4096,
+   "K": 8192,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.experts.E.w1.weight",
+   "shape": [
+    2048,
+    2048
+   ],
+   "dtype": "F8_E4M3",
+   "count": 22016,
+   "bytes": 92341796864,
+   "example": "model.layers.1.block_sparse_moe.experts.0.w1.weight",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 512,
+   "role": "routed expert w1/w3 (gate/up) and w2 (down), latent width 2048",
+   "kind": "moe",
+   "op": "moe_gemm",
+   "logical": "blk.L.ffn_{gate,up,down}_exps.E.weight",
+   "N": 2048,
+   "K": 2048,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "moe_gemm_iqr"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "moe_gemm_iqr"
+      ],
+      "16": [
+       "moe_gemm_iqr"
+      ],
+      "64": [
+       "moe_gemm_iqr"
+      ],
+      "2048": [
+       "moe_gemm_iqr"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "moe_gemm_i8a8"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "moe_gemm_i8a8"
+      ],
+      "16": [
+       "moe_gemm_i8a8"
+      ],
+      "64": [
+       "moe_gemm_i8a8"
+      ],
+      "2048": [
+       "moe_gemm_i8a8"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "moe_gemm_bf16"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "moe_gemm_bf16"
+      ],
+      "16": [
+       "moe_gemm_bf16"
+      ],
+      "64": [
+       "moe_gemm_bf16"
+      ],
+      "2048": [
+       "moe_gemm_bf16"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.experts.E.w2.weight",
+   "shape": [
+    2048,
+    2048
+   ],
+   "dtype": "F8_E4M3",
+   "count": 22016,
+   "bytes": 92341796864,
+   "example": "model.layers.1.block_sparse_moe.experts.0.w2.weight",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 512,
+   "role": "routed expert w1/w3 (gate/up) and w2 (down), latent width 2048",
+   "kind": "moe",
+   "op": "moe_gemm",
+   "logical": "blk.L.ffn_{gate,up,down}_exps.E.weight",
+   "N": 2048,
+   "K": 2048,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "moe_gemm_iqr"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "moe_gemm_iqr"
+      ],
+      "16": [
+       "moe_gemm_iqr"
+      ],
+      "64": [
+       "moe_gemm_iqr"
+      ],
+      "2048": [
+       "moe_gemm_iqr"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "moe_gemm_i8a8"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "moe_gemm_i8a8"
+      ],
+      "16": [
+       "moe_gemm_i8a8"
+      ],
+      "64": [
+       "moe_gemm_i8a8"
+      ],
+      "2048": [
+       "moe_gemm_i8a8"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "moe_gemm_bf16"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "moe_gemm_bf16"
+      ],
+      "16": [
+       "moe_gemm_bf16"
+      ],
+      "64": [
+       "moe_gemm_bf16"
+      ],
+      "2048": [
+       "moe_gemm_bf16"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.experts.E.w3.weight",
+   "shape": [
+    2048,
+    2048
+   ],
+   "dtype": "F8_E4M3",
+   "count": 22016,
+   "bytes": 92341796864,
+   "example": "model.layers.1.block_sparse_moe.experts.0.w3.weight",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 512,
+   "role": "routed expert w1/w3 (gate/up) and w2 (down), latent width 2048",
+   "kind": "moe",
+   "op": "moe_gemm",
+   "logical": "blk.L.ffn_{gate,up,down}_exps.E.weight",
+   "N": 2048,
+   "K": 2048,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "moe_gemm_iqr"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "moe_gemm_iqr"
+      ],
+      "16": [
+       "moe_gemm_iqr"
+      ],
+      "64": [
+       "moe_gemm_iqr"
+      ],
+      "2048": [
+       "moe_gemm_iqr"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "moe_gemm_i8a8"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "moe_gemm_i8a8"
+      ],
+      "16": [
+       "moe_gemm_i8a8"
+      ],
+      "64": [
+       "moe_gemm_i8a8"
+      ],
+      "2048": [
+       "moe_gemm_i8a8"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "moe_gemm_bf16"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "moe_gemm_bf16"
+      ],
+      "16": [
+       "moe_gemm_bf16"
+      ],
+      "64": [
+       "moe_gemm_bf16"
+      ],
+      "2048": [
+       "moe_gemm_bf16"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.fc1_latent_proj.weight_scale_inv",
+   "shape": [
+    16,
+    32
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 88064,
+   "example": "model.layers.1.block_sparse_moe.fc1_latent_proj.weight_scale_inv",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.fc2_latent_proj.weight_scale_inv",
+   "shape": [
+    32,
+    16
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 88064,
+   "example": "model.layers.1.block_sparse_moe.fc2_latent_proj.weight_scale_inv",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.gate.routed_scaling_factor_param",
+   "shape": [
+    512
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 88064,
+   "example": "model.layers.1.block_sparse_moe.gate.routed_scaling_factor_param",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.shared_experts.w1.weight_scale_inv",
+   "shape": [
+    16,
+    32
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 88064,
+   "example": "model.layers.1.block_sparse_moe.shared_experts.w1.weight_scale_inv",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.shared_experts.w2.weight_scale_inv",
+   "shape": [
+    32,
+    16
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 88064,
+   "example": "model.layers.1.block_sparse_moe.shared_experts.w2.weight_scale_inv",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.shared_experts.w3.weight_scale_inv",
+   "shape": [
+    16,
+    32
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "bytes": 88064,
+   "example": "model.layers.1.block_sparse_moe.shared_experts.w3.weight_scale_inv",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.gate.weight",
+   "shape": [
+    512,
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 43,
+   "bytes": 180355072,
+   "example": "model.layers.1.block_sparse_moe.gate.weight",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "the two f32 routers (bf16 stored, f32 compute)",
+   "kind": "gemm_f32",
+   "op": "gemm_nt_f32",
+   "logical": "blk.L.ffn_gate_inp{,_1}.weight",
+   "N": 512,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "missing",
+     "rows": [],
+     "reason": "no libr4d gemm_f32 row for format iqr_v4",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "missing",
+     "rows": [],
+     "reason": "no libr4d gemm_f32 row for format iq8r",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_nt_f32_bf16"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_nt_f32_bf16"
+      ],
+      "16": [
+       "gemm_nt_f32_bf16"
+      ],
+      "64": [
+       "gemm_nt_f32_bf16"
+      ],
+      "2048": [
+       "gemm_nt_f32_bf16"
+      ]
+     },
+     "unevaluated": []
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.gate.weight_1",
+   "shape": [
+    512,
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 43,
+   "bytes": 180355072,
+   "example": "model.layers.1.block_sparse_moe.gate.weight_1",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "the two f32 routers (bf16 stored, f32 compute)",
+   "kind": "gemm_f32",
+   "op": "gemm_nt_f32",
+   "logical": "blk.L.ffn_gate_inp{,_1}.weight",
+   "N": 512,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "missing",
+     "rows": [],
+     "reason": "no libr4d gemm_f32 row for format iqr_v4",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "missing",
+     "rows": [],
+     "reason": "no libr4d gemm_f32 row for format iq8r",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_nt_f32_bf16"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_nt_f32_bf16"
+      ],
+      "16": [
+       "gemm_nt_f32_bf16"
+      ],
+      "64": [
+       "gemm_nt_f32_bf16"
+      ],
+      "2048": [
+       "gemm_nt_f32_bf16"
+      ]
+     },
+     "unevaluated": []
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.latent_norm.weight",
+   "shape": [
+    2048
+   ],
+   "dtype": "BF16",
+   "count": 43,
+   "bytes": 176128,
+   "example": "model.layers.1.block_sparse_moe.latent_norm.weight",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.fc1_latent_proj.weight",
+   "shape": [
+    2048,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 43,
+   "bytes": 360710144,
+   "example": "model.layers.1.block_sparse_moe.fc1_latent_proj.weight",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "latent down/up projection around the routed block",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.ffn_latent_{in,out}.weight",
+   "N": 2048,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.fc2_latent_proj.weight",
+   "shape": [
+    4096,
+    2048
+   ],
+   "dtype": "F8_E4M3",
+   "count": 43,
+   "bytes": 360710144,
+   "example": "model.layers.1.block_sparse_moe.fc2_latent_proj.weight",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "latent down/up projection around the routed block",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.ffn_latent_{in,out}.weight",
+   "N": 4096,
+   "K": 2048,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.shared_experts.w1.weight",
+   "shape": [
+    2048,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 43,
+   "bytes": 360710144,
+   "example": "model.layers.1.block_sparse_moe.shared_experts.w1.weight",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "shared expert gate/up/down (4096 <-> 2048)",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.ffn_{gate,up,down}_shexp.weight",
+   "N": 2048,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.shared_experts.w2.weight",
+   "shape": [
+    4096,
+    2048
+   ],
+   "dtype": "F8_E4M3",
+   "count": 43,
+   "bytes": 360710144,
+   "example": "model.layers.1.block_sparse_moe.shared_experts.w2.weight",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "shared expert gate/up/down (4096 <-> 2048)",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.ffn_{gate,up,down}_shexp.weight",
+   "N": 4096,
+   "K": 2048,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.shared_experts.w3.weight",
+   "shape": [
+    2048,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 43,
+   "bytes": 360710144,
+   "example": "model.layers.1.block_sparse_moe.shared_experts.w3.weight",
+   "layers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "shared expert gate/up/down (4096 <-> 2048)",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.ffn_{gate,up,down}_shexp.weight",
+   "N": 2048,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.indexer.wq_b.weight_scale_inv",
+   "shape": [
+    64,
+    8
+   ],
+   "dtype": "F32",
+   "count": 7,
+   "bytes": 14336,
+   "example": "model.layers.7.self_attn.core_attention.indexer.wq_b.weight_scale_inv",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.gate_proj.weight_scale_inv",
+   "shape": [
+    128,
+    8
+   ],
+   "dtype": "F32",
+   "count": 7,
+   "bytes": 28672,
+   "example": "model.layers.7.self_attn.gate_proj.weight_scale_inv",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.kv_a_proj_with_mqa.weight_scale_inv",
+   "shape": [
+    5,
+    32
+   ],
+   "dtype": "F32",
+   "count": 7,
+   "bytes": 4480,
+   "example": "model.layers.7.self_attn.kv_a_proj_with_mqa.weight_scale_inv",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.kv_b_proj.weight_scale_inv",
+   "shape": [
+    224,
+    4
+   ],
+   "dtype": "F32",
+   "count": 7,
+   "bytes": 25088,
+   "example": "model.layers.7.self_attn.kv_b_proj.weight_scale_inv",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.o_proj.weight_scale_inv",
+   "shape": [
+    32,
+    128
+   ],
+   "dtype": "F32",
+   "count": 7,
+   "bytes": 114688,
+   "example": "model.layers.7.self_attn.o_proj.weight_scale_inv",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.q_a_proj.weight_scale_inv",
+   "shape": [
+    8,
+    32
+   ],
+   "dtype": "F32",
+   "count": 7,
+   "bytes": 7168,
+   "example": "model.layers.7.self_attn.q_a_proj.weight_scale_inv",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.q_b_proj.weight_scale_inv",
+   "shape": [
+    128,
+    8
+   ],
+   "dtype": "F32",
+   "count": 7,
+   "bytes": 28672,
+   "example": "model.layers.7.self_attn.q_b_proj.weight_scale_inv",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.indexer.k_norm.bias",
+   "shape": [
+    128
+   ],
+   "dtype": "BF16",
+   "count": 7,
+   "bytes": 1792,
+   "example": "model.layers.7.self_attn.core_attention.indexer.k_norm.bias",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.indexer.k_norm.weight",
+   "shape": [
+    128
+   ],
+   "dtype": "BF16",
+   "count": 7,
+   "bytes": 1792,
+   "example": "model.layers.7.self_attn.core_attention.indexer.k_norm.weight",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.indexer.weights_proj.weight",
+   "shape": [
+    64,
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 7,
+   "bytes": 3670016,
+   "example": "model.layers.7.self_attn.core_attention.indexer.weights_proj.weight",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "DSA indexer head weights (f32 compute)",
+   "kind": "gemm_f32",
+   "op": "gemm_nt_f32",
+   "logical": "blk.L.attn_idx_w.weight",
+   "N": 64,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "missing",
+     "rows": [],
+     "reason": "no libr4d gemm_f32 row for format iqr_v4",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "missing",
+     "rows": [],
+     "reason": "no libr4d gemm_f32 row for format iq8r",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_nt_f32_bf16"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_nt_f32_bf16"
+      ],
+      "16": [
+       "gemm_nt_f32_bf16"
+      ],
+      "64": [
+       "gemm_nt_f32_bf16"
+      ],
+      "2048": [
+       "gemm_nt_f32_bf16"
+      ]
+     },
+     "unevaluated": []
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.indexer.wk.weight",
+   "shape": [
+    128,
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 7,
+   "bytes": 7340032,
+   "example": "model.layers.7.self_attn.core_attention.indexer.wk.weight",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "DSA indexer key",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.attn_idx_k.weight",
+   "N": 128,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 128
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.softmax_offset",
+   "shape": [
+    64
+   ],
+   "dtype": "BF16",
+   "count": 7,
+   "bytes": 896,
+   "example": "model.layers.7.self_attn.core_attention.softmax_offset",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.kv_a_layernorm.weight",
+   "shape": [
+    512
+   ],
+   "dtype": "BF16",
+   "count": 7,
+   "bytes": 7168,
+   "example": "model.layers.7.self_attn.kv_a_layernorm.weight",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.q_a_layernorm.weight",
+   "shape": [
+    1024
+   ],
+   "dtype": "BF16",
+   "count": 7,
+   "bytes": 14336,
+   "example": "model.layers.7.self_attn.q_a_layernorm.weight",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.indexer.wq_b.weight",
+   "shape": [
+    8192,
+    1024
+   ],
+   "dtype": "F8_E4M3",
+   "count": 7,
+   "bytes": 58720256,
+   "example": "model.layers.7.self_attn.core_attention.indexer.wq_b.weight",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "DSA indexer query up (64 heads x 128)",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.attn_idx_q_b.weight",
+   "N": 8192,
+   "K": 1024,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.self_attn.gate_proj.weight",
+   "shape": [
+    16384,
+    1024
+   ],
+   "dtype": "F8_E4M3",
+   "count": 7,
+   "bytes": 117440512,
+   "example": "model.layers.7.self_attn.gate_proj.weight",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "attention output gate (sigmoid)",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.attn_gate.weight",
+   "N": 16384,
+   "K": 1024,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.self_attn.kv_a_proj_with_mqa.weight",
+   "shape": [
+    576,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 7,
+   "bytes": 16515072,
+   "example": "model.layers.7.self_attn.kv_a_proj_with_mqa.weight",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "MLA-DSA kv_a (latent 512 + rope 64)",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.attn_kv_a_mqa.weight",
+   "N": 576,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "partial",
+     "rows": [
+      "gemm_iqr_nt_m64"
+     ],
+     "reason": "gemm_iqr_tiled: N multiple of 128 (given 576); gemm_iqr_nt_m64: M <= 64 (given 2048)",
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64"
+      ],
+      "2048": []
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "partial",
+     "rows": [
+      "gemm_iq8r_nt_m16"
+     ],
+     "reason": "gemm_iq8r_tiled: N multiple of 128 (given 576); gemm_iq8r_nt_m16: M <= 64 (given 2048)",
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16"
+      ],
+      "2048": []
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 64
+  },
+  {
+   "class_name": "model.layers.L.self_attn.kv_b_proj.weight",
+   "shape": [
+    28672,
+    512
+   ],
+   "dtype": "F8_E4M3",
+   "count": 7,
+   "bytes": 102760448,
+   "example": "model.layers.7.self_attn.kv_b_proj.weight",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "MLA-DSA kv_b (read inside ernie_mla_project, absorb and expand)",
+   "kind": "custom",
+   "op": "ernie_mla_project",
+   "logical": "blk.L.attn_kv_b.weight",
+   "N": 28672,
+   "K": 512,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mla_project has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mla_project_bf16 (head_dim 128 or 256, latent 512; ERNIE k_dim 192 / v_dim 256, 64 heads)"
+     ]
+    },
+    "iq8r": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mla_project has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mla_project_bf16 (head_dim 128 or 256, latent 512; ERNIE k_dim 192 / v_dim 256, 64 heads)"
+     ]
+    },
+    "bf16": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mla_project has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mla_project_bf16 (head_dim 128 or 256, latent 512; ERNIE k_dim 192 / v_dim 256, 64 heads)"
+     ]
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.self_attn.o_proj.weight",
+   "shape": [
+    4096,
+    16384
+   ],
+   "dtype": "F8_E4M3",
+   "count": 7,
+   "bytes": 469762048,
+   "example": "model.layers.7.self_attn.o_proj.weight",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "attention output projection wo_b",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.attn_output.weight",
+   "N": 4096,
+   "K": 16384,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.self_attn.q_a_proj.weight",
+   "shape": [
+    1024,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 7,
+   "bytes": 29360128,
+   "example": "model.layers.7.self_attn.q_a_proj.weight",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "MLA-DSA q down",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.attn_q_a.weight",
+   "N": 1024,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.self_attn.q_b_proj.weight",
+   "shape": [
+    16384,
+    1024
+   ],
+   "dtype": "F8_E4M3",
+   "count": 7,
+   "bytes": 117440512,
+   "example": "model.layers.7.self_attn.q_b_proj.weight",
+   "layers": [
+    7,
+    14,
+    21,
+    28,
+    35,
+    42,
+    43
+   ],
+   "experts": 0,
+   "role": "MLA-DSA q up (64 heads x (192+64))",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.L.attn_q_b.weight",
+   "N": 16384,
+   "K": 1024,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.e_proj.weight_scale_inv",
+   "shape": [
+    32,
+    32
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 4096,
+   "example": "model.layers.43.e_proj.weight_scale_inv",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.h_proj.weight_scale_inv",
+   "shape": [
+    32,
+    32
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 4096,
+   "example": "model.layers.43.h_proj.weight_scale_inv",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "fp8 block-scale plane of its weight (a source-only plane; the converter folds it)",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.hc_head_base",
+   "shape": [
+    4
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 16,
+   "example": "model.layers.43.hc_head_base",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.hc_head_fn",
+   "shape": [
+    16384,
+    4
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 262144,
+   "example": "model.layers.43.hc_head_fn",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "mHC head mixing matrix f32 (read inside ernie_mhc_head)",
+   "kind": "custom",
+   "op": "ernie_mhc_head",
+   "logical": "head_hc.fn",
+   "N": 16384,
+   "K": 4,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_head has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_contract_bf16"
+     ]
+    },
+    "iq8r": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_head has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_contract_bf16"
+     ]
+    },
+    "bf16": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_head has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_contract_bf16"
+     ]
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.hc_head_scale",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 4,
+   "example": "model.layers.43.hc_head_scale",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.mlp_hyper_connection.alpha_post",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 4,
+   "example": "model.layers.43.transformer_layer.mlp_hyper_connection.alpha_post",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.mlp_hyper_connection.alpha_pre",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 4,
+   "example": "model.layers.43.transformer_layer.mlp_hyper_connection.alpha_pre",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.mlp_hyper_connection.alpha_res",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 4,
+   "example": "model.layers.43.transformer_layer.mlp_hyper_connection.alpha_res",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.mlp_hyper_connection.bias",
+   "shape": [
+    24
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 96,
+   "example": "model.layers.43.transformer_layer.mlp_hyper_connection.bias",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.mlp_hyper_connection.mapping_proj.weight",
+   "shape": [
+    16384,
+    24
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 1572864,
+   "example": "model.layers.43.transformer_layer.mlp_hyper_connection.mapping_proj.weight",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "mHC mixing matrix [hc*hidden, 24] f32 (read inside ernie_mhc_pre_rms)",
+   "kind": "custom",
+   "op": "ernie_mhc_pre_rms",
+   "logical": "blk.L.{attn,ffn}_hc.fn",
+   "N": 16384,
+   "K": 24,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_pre_rms has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_pre_bf16 (n up to 16384, hc 2..8, f32 coefficients)"
+     ]
+    },
+    "iq8r": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_pre_rms has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_pre_bf16 (n up to 16384, hc 2..8, f32 coefficients)"
+     ]
+    },
+    "bf16": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_pre_rms has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_pre_bf16 (n up to 16384, hc 2..8, f32 coefficients)"
+     ]
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.self_attention_hyper_connection.alpha_post",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 4,
+   "example": "model.layers.43.transformer_layer.self_attention_hyper_connection.alpha_post",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.self_attention_hyper_connection.alpha_pre",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 4,
+   "example": "model.layers.43.transformer_layer.self_attention_hyper_connection.alpha_pre",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.self_attention_hyper_connection.alpha_res",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 4,
+   "example": "model.layers.43.transformer_layer.self_attention_hyper_connection.alpha_res",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.self_attention_hyper_connection.bias",
+   "shape": [
+    24
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 96,
+   "example": "model.layers.43.transformer_layer.self_attention_hyper_connection.bias",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.self_attention_hyper_connection.mapping_proj.weight",
+   "shape": [
+    16384,
+    24
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 1572864,
+   "example": "model.layers.43.transformer_layer.self_attention_hyper_connection.mapping_proj.weight",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "mHC mixing matrix [hc*hidden, 24] f32 (read inside ernie_mhc_pre_rms)",
+   "kind": "custom",
+   "op": "ernie_mhc_pre_rms",
+   "logical": "blk.L.{attn,ffn}_hc.fn",
+   "N": 16384,
+   "K": 24,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_pre_rms has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_pre_bf16 (n up to 16384, hc 2..8, f32 coefficients)"
+     ]
+    },
+    "iq8r": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_pre_rms has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_pre_bf16 (n up to 16384, hc 2..8, f32 coefficients)"
+     ]
+    },
+    "bf16": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_pre_rms has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_pre_bf16 (n up to 16384, hc 2..8, f32 coefficients)"
+     ]
+    }
+   }
+  },
+  {
+   "class_name": "model.mhc_contract.hc_head_base",
+   "shape": [
+    4
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 16,
+   "example": "model.mhc_contract.hc_head_base",
+   "layers": [],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.mhc_contract.hc_head_fn",
+   "shape": [
+    16384,
+    4
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 262144,
+   "example": "model.mhc_contract.hc_head_fn",
+   "layers": [],
+   "experts": 0,
+   "role": "mHC head mixing matrix f32 (read inside ernie_mhc_head)",
+   "kind": "custom",
+   "op": "ernie_mhc_head",
+   "logical": "head_hc.fn",
+   "N": 16384,
+   "K": 4,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_head has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_contract_bf16"
+     ]
+    },
+    "iq8r": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_head has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_contract_bf16"
+     ]
+    },
+    "bf16": {
+     "verdict": "missing",
+     "rows": [],
+     "bands": {},
+     "reason": "operation ernie_mhc_head has no row in the libr4d table, so no weight format can be read by it (the weight is read inside the operation)",
+     "neighbours": [
+      "mhc_contract_bf16"
+     ]
+    }
+   }
+  },
+  {
+   "class_name": "model.mhc_contract.hc_head_scale",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "bytes": 4,
+   "example": "model.mhc_contract.hc_head_scale",
+   "layers": [],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "lm_head.weight",
+   "shape": [
+    201216,
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 1,
+   "bytes": 1648361472,
+   "example": "lm_head.weight",
+   "layers": [],
+   "experts": 0,
+   "role": "output head (MultiMax transform follows in f32)",
+   "kind": "logits",
+   "op": "logits_gemm",
+   "logical": "output.weight",
+   "N": 201216,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "logits_gemm_iqr",
+      "logits_gemm_vocab_iqr"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "logits_gemm_iqr",
+       "logits_gemm_vocab_iqr"
+      ],
+      "16": [
+       "logits_gemm_iqr",
+       "logits_gemm_vocab_iqr"
+      ],
+      "64": [
+       "logits_gemm_iqr",
+       "logits_gemm_vocab_iqr"
+      ],
+      "2048": [
+       "logits_gemm_iqr",
+       "logits_gemm_vocab_iqr"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "logits_gemm_i8"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "logits_gemm_i8"
+      ],
+      "16": [
+       "logits_gemm_i8"
+      ],
+      "64": [
+       "logits_gemm_i8"
+      ],
+      "2048": [
+       "logits_gemm_i8"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "logits_gemm_bf16",
+      "logits_gemm_bf16_cols"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "logits_gemm_bf16",
+       "logits_gemm_bf16_cols"
+      ],
+      "16": [
+       "logits_gemm_bf16",
+       "logits_gemm_bf16_cols"
+      ],
+      "64": [
+       "logits_gemm_bf16",
+       "logits_gemm_bf16_cols"
+      ],
+      "2048": [
+       "logits_gemm_bf16",
+       "logits_gemm_bf16_cols"
+      ]
+     },
+     "unevaluated": []
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.enorm.weight",
+   "shape": [
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 1,
+   "bytes": 8192,
+   "example": "model.layers.43.enorm.weight",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.hnorm.weight",
+   "shape": [
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 1,
+   "bytes": 8192,
+   "example": "model.layers.43.hnorm.weight",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.shared_head.norm.weight",
+   "shape": [
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 1,
+   "bytes": 8192,
+   "example": "model.layers.43.shared_head.norm.weight",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.lm_head.multimax_ranges",
+   "shape": [
+    4
+   ],
+   "dtype": "BF16",
+   "count": 1,
+   "bytes": 8,
+   "example": "model.lm_head.multimax_ranges",
+   "layers": [],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.lm_head.multimax_ts",
+   "shape": [
+    4
+   ],
+   "dtype": "BF16",
+   "count": 1,
+   "bytes": 8,
+   "example": "model.lm_head.multimax_ts",
+   "layers": [],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.norm.weight",
+   "shape": [
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 1,
+   "bytes": 8192,
+   "example": "model.norm.weight",
+   "layers": [],
+   "experts": 0,
+   "role": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+   "kind": "plain",
+   "op": null,
+   "logical": null,
+   "N": null,
+   "K": null,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "iq8r": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    },
+    "bf16": {
+     "verdict": "not_applicable",
+     "rows": [],
+     "reason": "vector or scalar (norm gain, bias, sink, mHC alpha/base/scale, MultiMax table): stored plain, never a GEMM operand",
+     "bands": {}
+    }
+   }
+  },
+  {
+   "class_name": "model.layers.L.e_proj.weight",
+   "shape": [
+    4096,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 1,
+   "bytes": 16777216,
+   "example": "model.layers.43.e_proj.weight",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "MTP e/h projections",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.43.mtp_{e,h}_proj.weight",
+   "N": 4096,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  },
+  {
+   "class_name": "model.layers.L.h_proj.weight",
+   "shape": [
+    4096,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 1,
+   "bytes": 16777216,
+   "example": "model.layers.43.h_proj.weight",
+   "layers": [
+    43
+   ],
+   "experts": 0,
+   "role": "MTP e/h projections",
+   "kind": "gemm",
+   "op": "gemm_nt",
+   "logical": "blk.43.mtp_{e,h}_proj.weight",
+   "N": 4096,
+   "K": 4096,
+   "formats": {
+    "iqr_v4": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iqr_nt_m64",
+      "gemm_iqr_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "16": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "64": [
+       "gemm_iqr_nt_m64",
+       "gemm_iqr_tiled"
+      ],
+      "2048": [
+       "gemm_iqr_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "iq8r": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_iq8r_nt_m16",
+      "gemm_iq8r_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "16": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "64": [
+       "gemm_iq8r_nt_m16",
+       "gemm_iq8r_tiled"
+      ],
+      "2048": [
+       "gemm_iq8r_tiled"
+      ]
+     },
+     "unevaluated": []
+    },
+    "bf16": {
+     "verdict": "exists",
+     "rows": [
+      "gemm_bf16_nt_m16",
+      "gemm_bf16_nt_m64",
+      "gemm_bf16_nt_tiled"
+     ],
+     "reason": null,
+     "bands": {
+      "1": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "16": [
+       "gemm_bf16_nt_m16",
+       "gemm_bf16_nt_m64"
+      ],
+      "64": [
+       "gemm_bf16_nt_m64"
+      ],
+      "2048": [
+       "gemm_bf16_nt_m64",
+       "gemm_bf16_nt_tiled"
+      ]
+     },
+     "unevaluated": []
+    }
+   },
+   "trellis_run_max": 1024
+  }
+ ],
+ "operations": [
+  {
+   "op": "act_mul",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "act_mul_bf16"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "add",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "add_bf16",
+    "add_f32"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "embed_lookup",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "embed_lookup_bf16",
+    "embed_lookup_iqr"
+   ],
+   "neighbours": [],
+   "formats": {
+    "iqr_v4": [
+     "exists"
+    ],
+    "iq8r": [
+     "exists"
+    ],
+    "bf16": [
+     "exists"
+    ]
+   },
+   "weight_classes": 1
+  },
+  {
+   "op": "ernie_dsa_select",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": []
+  },
+  {
+   "op": "ernie_hca_compress",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": [],
+   "formats": {
+    "iqr_v4": [
+     "missing"
+    ],
+    "iq8r": [
+     "missing"
+    ],
+    "bf16": [
+     "missing"
+    ]
+   },
+   "weight_classes": 1
+  },
+  {
+   "op": "ernie_hca_gather_slots",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": []
+  },
+  {
+   "op": "ernie_hca_q_prep",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": []
+  },
+  {
+   "op": "ernie_hca_state_write",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": []
+  },
+  {
+   "op": "ernie_hca_union_attn",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": [
+    "attn_paged / attn_paged_sink (rows with macro-built names, unparsed by 4-1)"
+   ]
+  },
+  {
+   "op": "ernie_hca_wo_a",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": [],
+   "formats": {
+    "iqr_v4": [
+     "missing"
+    ],
+    "iq8r": [
+     "missing"
+    ],
+    "bf16": [
+     "missing"
+    ]
+   },
+   "weight_classes": 1
+  },
+  {
+   "op": "ernie_head_slice",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": []
+  },
+  {
+   "op": "ernie_idx_key",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": [
+    "dsa_pool_fp8 (n=128, ratio 4)"
+   ]
+  },
+  {
+   "op": "ernie_idx_logits",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": [
+    "dsa_score_fp8 (n=128, heads=32; ERNIE has 64 indexer heads)"
+   ]
+  },
+  {
+   "op": "ernie_idx_query",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": [
+    "dsa_query_fp8 (n=128, flattened heads)"
+   ]
+  },
+  {
+   "op": "ernie_mhc_head",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": [
+    "mhc_contract_bf16"
+   ],
+   "formats": {
+    "iqr_v4": [
+     "missing"
+    ],
+    "iq8r": [
+     "missing"
+    ],
+    "bf16": [
+     "missing"
+    ]
+   },
+   "weight_classes": 2
+  },
+  {
+   "op": "ernie_mhc_pre_rms",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": [
+    "mhc_pre_bf16 (n up to 16384, hc 2..8, f32 coefficients)"
+   ],
+   "formats": {
+    "iqr_v4": [
+     "missing"
+    ],
+    "iq8r": [
+     "missing"
+    ],
+    "bf16": [
+     "missing"
+    ]
+   },
+   "weight_classes": 4
+  },
+  {
+   "op": "ernie_mla_project",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": [
+    "mla_project_bf16 (head_dim 128 or 256, latent 512; ERNIE k_dim 192 / v_dim 256, 64 heads)"
+   ],
+   "formats": {
+    "iqr_v4": [
+     "missing"
+    ],
+    "iq8r": [
+     "missing"
+    ],
+    "bf16": [
+     "missing"
+    ]
+   },
+   "weight_classes": 1
+  },
+  {
+   "op": "ernie_mla_sparse_attn",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": [
+    "mla_attn_paged_bf16 (latent 512, rope 64, heads<=64, block<=256; dense page table, not the DSA gather)",
+    "mla_attn_bf16 / mla_attn_rows_bf16 (latent 512, heads<=64, block_size 4)"
+   ]
+  },
+  {
+   "op": "ernie_multimax",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": []
+  },
+  {
+   "op": "ernie_rope_tail",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": []
+  },
+  {
+   "op": "ernie_router_topk",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": [
+    "router_sigmoid_topk_f32 (single group, experts<=512, top_k<=32, f32 bias)",
+    "router_gemm_topk_scatter_bf16"
+   ]
+  },
+  {
+   "op": "ernie_row_req",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": []
+  },
+  {
+   "op": "ernie_vha_mix",
+   "status": "missing",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [],
+   "neighbours": [],
+   "formats": {
+    "iqr_v4": [
+     "missing"
+    ],
+    "iq8r": [
+     "missing"
+    ],
+    "bf16": [
+     "missing"
+    ]
+   },
+   "weight_classes": 2
+  },
+  {
+   "op": "gather_rows",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "gather_rows_bf16",
+    "gather_rows_u8"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "gemm_nt",
+   "status": "exists",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "exists",
+   "rows": [
+    "gemm_bf16_muse_patch",
+    "gemm_bf16_nt_m16",
+    "gemm_bf16_nt_m64",
+    "gemm_bf16_nt_tiled",
+    "gemm_bf16_pixtral_patch",
+    "gemm_f32_nt"
+   ],
+   "neighbours": [],
+   "formats": {
+    "iqr_v4": [
+     "exists",
+     "partial"
+    ],
+    "iq8r": [
+     "exists",
+     "partial"
+    ],
+    "bf16": [
+     "exists"
+    ]
+   },
+   "weight_classes": 22
+  },
+  {
+   "op": "gemm_nt_f32",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "gemm_nt_f32_bf16"
+   ],
+   "neighbours": [],
+   "formats": {
+    "iqr_v4": [
+     "missing"
+    ],
+    "iq8r": [
+     "missing"
+    ],
+    "bf16": [
+     "exists"
+    ]
+   },
+   "weight_classes": 5
+  },
+  {
+   "op": "hc_enter",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "hc_enter_bf16"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "kv_store",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "exists",
+   "rows": [
+    "kv_store_bf16",
+    "kv_store_fp8",
+    "kv_store_i8"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "logits_gemm",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "logits_gemm_bf16",
+    "logits_gemm_bf16_cols",
+    "logits_gemm_i8",
+    "logits_gemm_iqr"
+   ],
+   "neighbours": [],
+   "formats": {
+    "iqr_v4": [
+     "exists"
+    ],
+    "iq8r": [
+     "exists"
+    ],
+    "bf16": [
+     "exists"
+    ]
+   },
+   "weight_classes": 1
+  },
+  {
+   "op": "mhc_post",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "mhc_post_bf16"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "moe_gather",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "moe_gather_bf16"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "moe_gemm",
+   "status": "exists",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "exists",
+   "rows": [
+    "moe_gemm_bf16"
+   ],
+   "neighbours": [],
+   "formats": {
+    "iqr_v4": [
+     "exists"
+    ],
+    "iq8r": [
+     "exists"
+    ],
+    "bf16": [
+     "exists"
+    ]
+   },
+   "weight_classes": 3
+  },
+  {
+   "op": "moe_scatter",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "moe_scatter_i32"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "rmsnorm",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "exists",
+   "rows": [
+    "rmsnorm_bf16"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "sample_argmax",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "sample_argmax_f32"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "sample_dry",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "sample_dry_f32"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "sample_logprobs",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "sample_logprobs_f32"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "sample_mask",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "sample_mask_f32"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "sample_minp",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "sample_minp_f32"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "sample_ngram_ban",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "sample_ngram_ban_f32"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "sample_penalties",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "sample_penalties_f32"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "sample_pick",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "sample_pick_f32"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "sample_temp",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "sample_temp_f32"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "sample_topk",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "sample_topk_f32"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "sample_topp",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "sample_topp_f32"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "sample_typical",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "sample_typical_f32"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "sample_xtc",
+   "status": "exists",
+   "status_4_1": "exists",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "sample_xtc_f32"
+   ],
+   "neighbours": []
+  },
+  {
+   "op": "situ_mul",
+   "status": "rows_present_unverified",
+   "status_4_1": "missing",
+   "status_at_production_geometry": "not probed",
+   "rows": [
+    "situ_mul_bf16"
+   ],
+   "neighbours": [
+    "silu_mul_bf16 / swiglu_step_bf16 / swiglu_clamped_bf16 (SiLU family; SiTU has no row)"
+   ]
+  }
+ ],
+ "summary": {
+  "classes": 109,
+  "tensors": 134231,
+  "per_format": {
+   "iqr_v4": {
+    "exists": 26,
+    "partial": 1,
+    "shape_rejected": 0,
+    "missing": 16
+   },
+   "iq8r": {
+    "exists": 26,
+    "partial": 1,
+    "shape_rejected": 0,
+    "missing": 16
+   },
+   "bf16": {
+    "exists": 32,
+    "partial": 0,
+    "shape_rejected": 0,
+    "missing": 11
+   }
+  },
+  "plain_classes": 66,
+  "ops": {
+   "exists": 27,
+   "missing": 20,
+   "rows_present_unverified": 1
+  }
+ },
+ "extra_gaps": [
+  {
+   "kernel": "situ_had_quant (SiTU gate then rotated int8 quantise)",
+   "why": "gemm_iqr_gated and gated_had_quant_i8g fold SiLU only (act silu); SiTU has no row, so the routed w2 and shared/dense down inputs need situ_mul plus had_quant_act_i8g as two launches, or a new fused row",
+   "classes": [
+    "routed w2",
+    "shared w2",
+    "dense down"
+   ]
+  },
+  {
+   "kernel": "quantised-activation producers after the ERNIE fused ops",
+   "why": "ernie_mhc_pre_rms and ernie_vha_mix write bf16; IQ8R/IQR GEMMs read rotated int8 (i8a8h). had_quant_act_i8g / rmsnorm_had_quant rows exist (n multiple of 128), the plugin graph must add them",
+   "classes": [
+    "every IQR/IQ8R gemm and moe_gemm input"
+   ]
+  },
+  {
+   "kernel": "IQR trellis run vs N",
+   "why": "IQR rows need N a multiple of the trellis run (tcq_rows); kv_a N=576 allows 64, q_b/kv/gate widths allow 256-1024, the 128-wide indexer key allows 128",
+   "classes": [
+    "attn kv_a",
+    "indexer wk"
+   ]
+  },
+  {
+   "kernel": "PLUGIN: arch/ernie55 declares BF16 gemm_nt / moe_gemm only and refuses quantised weights",
+   "why": "rad-convert --plan-only with the IQR-V4 expert rule stops at declare: 'checkpoint tensor model.layers.1.block_sparse_moe.experts.0.w1.weight ... is u4 [2048, 2048], but this model needs bf16 [2048, 2048] (or block-fp8 of that shape)' (arch/ernie55/ernie55.cpp:293, :645). The graph builds gemm_nt dtype bf16 (:1083) and moe_gemm at bf16 (:1414); IQ8R/IQR need gemm_nt_q / moe_gemm_q at i8a8h, a had_quant_act_i8g producer after each norm and the f32 hc.fn cast rules",
+   "classes": [
+    "every IQR-V4 and IQ8R class"
+   ]
+  },
+  {
+   "kernel": "HOST: no libref or libavx kernel reads an IQR (trellis) weight",
+   "why": "grep of libref/ and libavx/ finds no trellis/tcq reader; libref's gemm_nt_q reads rotated int8 only. The core's decoder (enc_decode_rows) reads every form, so a CPU parity path is a load-time decode to int8 or a new libref reader: until one exists CPU-only stories cannot run the IQR-V4 forward pass, only compare decoded weights (this story's measurement)",
+   "classes": [
+    "routed experts"
+   ]
+  },
+  {
+   "kernel": "moe_gemm_iqr at n_expert 512 is the row's ceiling",
+   "why": "C_LE n_expert 512: ERNIE has exactly 512 experts per layer; the MTP layer too",
+   "classes": [
+    "routed experts"
+   ]
+  }
+ ]
+}

@@ -55,6 +55,8 @@ plugin claims.
 | `arch/minimaxh3` | `minimaxh3` | *(empty)* | MiniMax-H3, a video with its stereo soundtrack from text, between keyframes or from reference media: Qwen3-VL-32B's language model as the text encoder, a 33B single-stream diffusion transformer, a tiled ViT video decoder and a BigVGAN audio decoder, from the diffusers pipeline directory; every quantised linear int8, the text encoder's, the refiner's and the modulation projections' rotated (`data/recipes/minimax-h3-i8.recipe`) |
 | `arch/ltx2` | `ltx2` | *(empty)* | LTX-2.5 (base and distilled), a video with its stereo soundtrack from text or from text and a first frame: Gemma 4's language model and two text connectors, the duration head, a dual-stream audio-video DiT with four-way guidance, the causal video VAE (tiled past the default canvas) or the diffusion decoder, the audio VAE with a BigVGAN vocoder and bandwidth extension, the x2 latent upsampler; bf16 or IQ8R, one card |
 
+| `arch/ernie55` | `ernie55moe` | *(empty)* | ERNIE 5.5 Flash (`model_type: ernie5_5_moe`): MLA-DSA and HCA attention branches over mHC residual streams, a latent routed-MoE, and the DSpark block-diffusion drafter; the pinned release's block-fp8 descriptor reaches the plugin through the family's single-plugin rule ([ERNIE55](ERNIE55.md)) |
+
 The traps below are readings that are wrong without any error: the model produces fluent output.
 
 ## Common rule

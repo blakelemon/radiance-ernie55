@@ -1,0 +1,42 @@
+{
+  "model": "baidu/ERNIE-5.5-Flash-Base",
+  "revision": "028544b2ffceea189b2d8768ed2b9d09b06f2343",
+  "files": [
+    {
+      "path": "config.json",
+      "url": "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base/resolve/028544b2ffceea189b2d8768ed2b9d09b06f2343/config.json",
+      "bytes": 3814,
+      "sha256": "89e8fb64b12d57b9d6965c63497e14fd58c771ac2e58a3be66778e72e6c84555"
+    },
+    {
+      "path": "model.safetensors.index.json",
+      "url": "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base/resolve/028544b2ffceea189b2d8768ed2b9d09b06f2343/model.safetensors.index.json",
+      "bytes": 13757080,
+      "sha256": "c11bdf33ebbe42c822de20d14682e0e32e6646641f5b4d8ce5ccabd33b027e09"
+    },
+    {
+      "path": "tokenizer.json",
+      "url": "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base/resolve/028544b2ffceea189b2d8768ed2b9d09b06f2343/tokenizer.json",
+      "bytes": 15883304,
+      "sha256": "20e7c81f36fdfb90db664583fc6426d5c2ac6d6bcaf631c910941a8d8f30f2d9"
+    },
+    {
+      "path": "tokenizer_config.json",
+      "url": "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base/resolve/028544b2ffceea189b2d8768ed2b9d09b06f2343/tokenizer_config.json",
+      "bytes": 221,
+      "sha256": "4aa95a8391ea27f0f619200ca2ab078ab122bf5be5134101051793c2380d0127"
+    },
+    {
+      "path": "generation_config.json",
+      "url": "https://huggingface.co/baidu/ERNIE-5.5-Flash-Base/resolve/028544b2ffceea189b2d8768ed2b9d09b06f2343/generation_config.json",
+      "bytes": 197,
+      "sha256": "8b853a408d423508d3bc50c726afc252bd2ab41ea3a4a5b4fbfe9f13b5e8f482"
+    },
+    {
+      "path": "vllm-activation.py",
+      "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/model_executor/layers/activation.py",
+      "sha256": "bebeddbd4997f49f54471ee31ac42b22c3c11dfe25244e55d20c36f390489c05",
+      "bytes": 30247
+    }
+  ]
+}

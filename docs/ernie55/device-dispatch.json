@@ -1,0 +1,6661 @@
+{
+ "schema": 1,
+ "story": "4-1-device-dispatch-inventory",
+ "abi": 43,
+ "plugin": {
+  "id": "ernie55moe",
+  "abi": 43,
+  "path": "dd-plugin.so"
+ },
+ "graph": {
+  "banner": "==== declared graph: ernie55moe [ernie55moe]  rank 0/1  max_tok 64  max_seqs 4",
+  "single_rank": true,
+  "world_size": 1,
+  "max_tokens": 64,
+  "max_seqs": 4,
+  "operations_declared": 164,
+  "distinct_entries": 74
+ },
+ "baseline": {
+  "dtype": "bf16",
+  "kv_cache_dtype": "bf16",
+  "note": "BF16 model and cache; the fp8 expert/attention checkpoints are a separate inventory"
+ },
+ "targets": [
+  {
+   "name": "host",
+   "library": "libref",
+   "role": "reference and fallback"
+  },
+  {
+   "name": "gfx1201",
+   "library": "libr4d",
+   "rows": 463,
+   "unparsed_rows": [
+    {
+     "opener": "attn_window_h",
+     "op_guess": "attn_paged"
+    },
+    {
+     "opener": "attn_qrow_h",
+     "op_guess": "attn_paged_qrow"
+    },
+    {
+     "opener": "attn_window_sink_h",
+     "op_guess": "attn_paged_sink"
+    },
+    {
+     "opener": "attn_anchor_window_h",
+     "op_guess": "attn_paged_anchor_window"
+    },
+    {
+     "opener": "attn_ahead_h",
+     "op_guess": "attn_paged_ahead"
+    },
+    {
+     "opener": "attn_qrow_ahead_h",
+     "op_guess": "attn_paged_qrow_ahead"
+    },
+    {
+     "opener": "attn_qrow_tree_h",
+     "op_guess": "attn_paged_qrow_tree"
+    },
+    {
+     "opener": "ar_twoshot_3rank_exact",
+     "op_guess": "all_reduce"
+    },
+    {
+     "opener": "ar_twoshot_4rank_exact",
+     "op_guess": "all_reduce"
+    },
+    {
+     "opener": "ar_twoshot_4rank_exact_lane",
+     "op_guess": "all_reduce"
+    },
+    {
+     "opener": "ar_twoshot_8rank_exact",
+     "op_guess": "all_reduce"
+    },
+    {
+     "opener": "ar_oneshot_3rank_exact",
+     "op_guess": "all_reduce"
+    }
+   ],
+   "compile_only": {
+    "executed": false,
+    "reason": "no hipcc on the CPU host; the commands are listed for the GPU work items",
+    "commands": [
+     "cmake -S . -B build-gfx1201 -G Ninja -DRAD_WITH_HIP=ON -DRAD_GPU_TARGETS=gfx1201",
+     "nice ninja -C build-gfx1201 -j 8 libr4d   # compile only: gfx1201 code objects, nothing is launched"
+    ]
+   }
+  }
+ ],
+ "operations": [
+  {
+   "op": "act_mul",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n": "6",
+    "act": "sigmoid",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_act_mul",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "act_mul_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": false,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "act_mul_bf16",
+      "shape_constraint": "any n; a, b and y each at their own row pitch, so both may be column slices of one buffer",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "bf16 in and out, f32 arithmetic, libm silu / erf / tanh",
+      "verified": false,
+      "unresolved_clauses": [
+       "pitch"
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_act_mul",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "in"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y = act(a) * b, `act` \\\"silu\\\", \\\"gelu\\\" (exact erf), \\\"gelu_tanh\\\", \\\"sigmoid\\\", \\\"quick_gelu\\\" or \\\"relu\\\" (relu(x)^2 with one tensor in both operands). The activation is rounded to y's dtype before the product, which is the unfused pair. `a` and `b` may be column slices of one fused row.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "act_mul",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n": "8",
+    "act": "sigmoid",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_act_mul",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "act_mul_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": false,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "act_mul_bf16",
+      "shape_constraint": "any n; a, b and y each at their own row pitch, so both may be column slices of one buffer",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "bf16 in and out, f32 arithmetic, libm silu / erf / tanh",
+      "verified": false,
+      "unresolved_clauses": [
+       "pitch"
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_act_mul",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "in"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y = act(a) * b, `act` \\\"silu\\\", \\\"gelu\\\" (exact erf), \\\"gelu_tanh\\\", \\\"sigmoid\\\", \\\"quick_gelu\\\" or \\\"relu\\\" (relu(x)^2 with one tensor in both operands). The activation is rounded to y's dtype before the product, which is the unfused pair. `a` and `b` may be column slices of one fused row.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "add",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n": "8",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_add",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "add_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": false,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "add_bf16",
+      "shape_constraint": "any n; `b` with exactly n elements broadcasts along rows and nothing else does",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "bf16 in and out, fp32 arithmetic",
+      "verified": false,
+      "unresolved_clauses": [
+       "exactly"
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_add",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "in"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y = a + b. An operand carrying exactly n elements against a taller output broadcasts along rows; nothing else broadcasts. With `div`, y = rd(rd(a + b) / div), rd y's dtype: the last sum of a mean taken pairwise.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "embed_lookup",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n_embd": "8",
+    "n_vocab": "19",
+    "dtype": "bf16",
+    "vocab_offset": "0",
+    "mult": "1"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_embed_lookup",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "embed_lookup_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": true,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "embed_lookup_bf16",
+      "shape_constraint": "any n_embd and n_vocab; a negative or out-of-range id writes a zero row",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "i32 tokens, a plain bf16 table and bf16 output",
+      "verified": true,
+      "unresolved_clauses": []
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_embed_lookup",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "tokens",
+      "role": "in"
+     },
+     {
+      "name": "wte",
+      "role": "weight"
+     },
+     {
+      "name": "x",
+      "role": "out"
+     }
+    ],
+    "doc": "A gather from wte[n_vocab, n_embd]. A negative token id writes a zero row (padding); an id at or above n_vocab fails the launch. `mult`, when given, multiplies every gathered row and the product is rounded once to x's dtype (Gemma's sqrt(hidden)); absent it is a plain copy.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "ernie_dsa_select",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "topk": "3",
+    "window": "8",
+    "block_size": "8"
+   },
+   "cache_layout": {
+    "block_size": "8",
+    "window": "8"
+   },
+   "host": {
+    "kernel": "ref_ernie_dsa_select",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_dsa_select"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_dsa_select",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "scores",
+      "role": "in"
+     },
+     {
+      "name": "positions",
+      "role": "in"
+     },
+     {
+      "name": "req",
+      "role": "in"
+     },
+     {
+      "name": "block_table",
+      "role": "in"
+     },
+     {
+      "name": "ids",
+      "role": "out"
+     },
+     {
+      "name": "slots",
+      "role": "out"
+     }
+    ],
+    "doc": "Single-rank DSA selection row: for the query at positions[r] (seq = p + 1) of request req[r], the indexer's top-k LOGICAL token ids from `scores` [rows, L] restricted to [0, seq - window) with -inf (masked) and uninitialised-page tokens excluded, then the window seq - min(seq, window) .. seq - 1 ascending, then -1: `ids` is [rows, >= topk + window]. At most topk candidates are all listed in ascending id order, more are cut to the topk best by descending score with ties to the LOWER id (the pinned kernels leave tie order unspecified). `slots` is the same row translated through `block_table` [seqs, blocks] after selection: table[id / block_size] * block_size + id % block_size, -1 where the id is -1. A page is initialised when 0 <= entry < num_pages. NaN or +inf inside the candidate range, a bad position or request, or scores narrower than the candidate range refuses before any store.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-dsa-select",
+    "host_parity": "device ernie_dsa_select against the libref reference ref_ernie_dsa_select within the recorded parity band",
+    "code_map": [
+     "libref/ref_dsa.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_dsa_select)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_hca_compress",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "ratio": "4",
+    "head_dim": "16",
+    "rope_dim": "4",
+    "eps": "0.01",
+    "theta": "160000",
+    "yarn_factor": "16",
+    "yarn_beta_fast": "32",
+    "yarn_beta_slow": "1",
+    "yarn_original_max": "65536"
+   },
+   "cache_layout": {
+    "ratio": "4"
+   },
+   "host": {
+    "kernel": "ref_ernie_hca_compress",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_hca_compress"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_hca_compress",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "state",
+      "role": "in"
+     },
+     {
+      "name": "gather_slots",
+      "role": "in"
+     },
+     {
+      "name": "positions",
+      "role": "in"
+     },
+     {
+      "name": "out_slots",
+      "role": "in"
+     },
+     {
+      "name": "norm_weight",
+      "role": "weight"
+     },
+     {
+      "name": "out",
+      "role": "inout"
+     }
+    ],
+    "doc": "HCA group compression: each row whose out_slots[m] >= 0 and (positions[m] + 1) % ratio == 0 pools the coff * ratio state rows listed oldest first in gather_slots[m] (-1 masked) with a per-channel softmax (ratio 4: previous rows read lane 0, channels [0, D), current rows lane 1, [D, 2D)), RMS-normalises with the bf16 norm_weight, rotates the trailing rope_dim channels at the group start (positions / ratio * ratio, plain RoPE at theta) from the un-rounded row, and stores one row at out[out_slots[m]]: layout bf16_full (default) bf16 [R, D]; fp8_ds_mla u8 [R, nope + 2 * rope + nope / quant_block + 1] = E4M3 nope codes, bf16 rope, UE8M0 scale bytes (scale floored at 1e-4), a zero pad byte. Rows with out slot -1 are ignored, rows that do not complete a group store nothing. An illegal ratio, odd or oversized rope_dim, a slot out of range, a negative position, a stored row whose whole window is masked, or a non-finite row refuses before any store. Optional yarn_factor (>= 1; 0 or absent = plain RoPE), yarn_beta_fast (32), yarn_beta_slow (1), yarn_original_max (required with a factor) select the YaRN table of the HCA layers (story 3-4a).",
+    "dtype_words_in_doc": [
+     "bf16",
+     "e4m3",
+     "fp8",
+     "u8"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-hca-compress",
+    "host_parity": "device ernie_hca_compress against the libref reference ref_ernie_hca_compress within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_hca.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_hca_compress)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_hca_gather_slots",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "ratio": "4",
+    "block_size": "8"
+   },
+   "cache_layout": {
+    "block_size": "8",
+    "ratio": "4"
+   },
+   "host": {
+    "kernel": "ref_ernie_hca_gather_slots",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_hca_gather_slots"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_hca_gather_slots",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "positions",
+      "role": "in"
+     },
+     {
+      "name": "req",
+      "role": "in"
+     },
+     {
+      "name": "block_table",
+      "role": "in"
+     },
+     {
+      "name": "gather_slots",
+      "role": "out"
+     }
+    ],
+    "doc": "State slots a HCA group completion reads: for the row at position p of request req whose (p + 1) % ratio == 0, the slots of the coff * ratio state rows ending at p (oldest first, logical id q -> block_table[req][q / block_size] * block_size + q % block_size, -1 for q < 0); every other row is all -1. An unallocated page (-1) for a needed row, a block index past the table, a negative position or an out-of-range request refuses before any store.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-hca-gather-slots",
+    "host_parity": "device ernie_hca_gather_slots against the libref reference ref_ernie_hca_gather_slots within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_hca.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_hca_gather_slots)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_hca_q_prep",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "heads": "4",
+    "head_dim": "16",
+    "rope_dim": "4",
+    "eps": "0.01",
+    "theta": "160000",
+    "yarn_factor": "16",
+    "yarn_beta_fast": "32",
+    "yarn_beta_slow": "1",
+    "yarn_original_max": "65536"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_ernie_hca_q_prep",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_hca_q_prep"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_hca_q_prep",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "x",
+      "role": "inout"
+     },
+     {
+      "name": "positions",
+      "role": "in"
+     }
+    ],
+    "doc": "HCA query preparation in place on x [M, heads * head_dim] (bf16): per head the weightless RMS norm y = x * rsqrt(mean(x^2) + eps) in f32, then GPT-J interleaved rope on the trailing rope_dim values at the absolute position (f32 cos/sin table, YaRN with the optional yarn_* parameters), rounded once to bf16. A negative position, an odd or oversized rope_dim, a negative eps or a non-positive theta refuses before any store.",
+    "dtype_words_in_doc": [
+     "bf16",
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-hca-q-prep",
+    "host_parity": "device ernie_hca_q_prep against the libref reference ref_ernie_hca_q_prep within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_hca.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_hca_q_prep)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_hca_state_write",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "ratio": "4",
+    "head_dim": "16",
+    "block_size": "8"
+   },
+   "cache_layout": {
+    "block_size": "8",
+    "ratio": "4"
+   },
+   "host": {
+    "kernel": "ref_ernie_hca_state_write",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_hca_state_write"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_hca_state_write",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "kv",
+      "role": "in"
+     },
+     {
+      "name": "score",
+      "role": "in"
+     },
+     {
+      "name": "ape",
+      "role": "weight"
+     },
+     {
+      "name": "positions",
+      "role": "in"
+     },
+     {
+      "name": "slots",
+      "role": "in"
+     },
+     {
+      "name": "state",
+      "role": "inout"
+     }
+    ],
+    "doc": "HCA compressor state write: for each row m with slots[m] >= 0 the fp32 state row [kv | score + ape[positions[m] % ratio]] (width 2 * coff * head_dim, coff 2 at ratio 4 and 1 at ratio 128) is stored at state[slots[m]]; slot -1 skips the row, a repeated slot keeps the last. The APE row follows the absolute position, so the state does not depend on the chunking. A ratio other than 4 or 128, a slot outside [-1, S) or a negative position of a stored row refuses before any store.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-hca-state-write",
+    "host_parity": "device ernie_hca_state_write against the libref reference ref_ernie_hca_state_write within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_hca.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_hca_state_write)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_hca_union_attn",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "heads": "4",
+    "head_dim": "16",
+    "ratio": "4",
+    "window": "8",
+    "scale": "0.25",
+    "cmp_layout": "token"
+   },
+   "cache_layout": {
+    "cmp_layout": "token",
+    "ratio": "4",
+    "window": "8"
+   },
+   "host": {
+    "kernel": "ref_ernie_hca_union_attn",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_hca_union_attn"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_hca_union_attn",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "q",
+      "role": "in"
+     },
+     {
+      "name": "win_kv",
+      "role": "in"
+     },
+     {
+      "name": "cmp_kv",
+      "role": "in"
+     },
+     {
+      "name": "positions",
+      "role": "in"
+     },
+     {
+      "name": "req",
+      "role": "in"
+     },
+     {
+      "name": "win_table",
+      "role": "in"
+     },
+     {
+      "name": "cmp_table",
+      "role": "in"
+     },
+     {
+      "name": "sink",
+      "role": "weight"
+     },
+     {
+      "name": "out",
+      "role": "out"
+     }
+    ],
+    "doc": "HCA attention over the union of the complete compressed rows 0 .. (p + 1) / ratio - 1 (cmp_kv [pages, 1, block, head_dim], through cmp_table[req]) and the window tokens p - window + 1 .. p (win_kv, through win_table[req]), one softmax with the per-head fp32 sink (max and denominator only). Key = value = the cache row, score = scale * q . row. The window and the newest complete group overlap and are not de-duplicated. A table entry of -1 is skipped; an entry past the pool, a block index past the table, a negative position or request, a NaN or +inf sink or an illegal ratio refuses before any store.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-hca-union-attn",
+    "host_parity": "device ernie_hca_union_attn against the libref reference ref_ernie_hca_union_attn within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_hca.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_hca_union_attn)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_hca_wo_a",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "heads": "4",
+    "head_dim": "16",
+    "rope_dim": "4",
+    "groups": "2",
+    "rank": "3",
+    "theta": "160000",
+    "yarn_factor": "16",
+    "yarn_beta_fast": "32",
+    "yarn_beta_slow": "1",
+    "yarn_original_max": "65536"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_ernie_hca_wo_a",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_hca_wo_a"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_hca_wo_a",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "o",
+      "role": "in"
+     },
+     {
+      "name": "positions",
+      "role": "in"
+     },
+     {
+      "name": "wo_a",
+      "role": "weight"
+     },
+     {
+      "name": "out",
+      "role": "out"
+     }
+    ],
+    "doc": "HCA output transform: o [M, heads * head_dim] (bf16) has the trailing rope_dim values of every head rotated by the INVERSE rotary at the row position (f32 table, YaRN optional, rounded to bf16) and goes through the grouped wo_a [groups * rank, heads / groups * head_dim]: group g reads its heads/groups contiguous heads and weight rows g * rank .. (g + 1) * rank - 1; out [M, groups * rank]. A negative position, groups not dividing heads, an odd or oversized rope_dim or a bad YaRN set refuses before any store.",
+    "dtype_words_in_doc": [
+     "bf16",
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-hca-wo-a",
+    "host_parity": "device ernie_hca_wo_a against the libref reference ref_ernie_hca_wo_a within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_hca.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_hca_wo_a)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_head_slice",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "heads": "2",
+    "width": "8",
+    "offset": "4",
+    "count": "4"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_ernie_head_slice",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_head_slice"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_head_slice",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "x",
+      "role": "in"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[m, h, j] = x[m, h, offset + j] (bf16): the `count` columns from `offset` of each `width`-wide head of x [M, heads * width], compacted to y [M, heads * count]. Overlapping operands refuse.",
+    "dtype_words_in_doc": [
+     "bf16"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-head-slice",
+    "host_parity": "device ernie_head_slice against the libref reference ref_ernie_head_slice within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_attn.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_head_slice)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_idx_key",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "head_dim": "8",
+    "rope_dim": "4",
+    "theta": "10000",
+    "rope_table": "bf16",
+    "block_size": "8"
+   },
+   "cache_layout": {
+    "block_size": "8",
+    "rope_table": "bf16"
+   },
+   "host": {
+    "kernel": "ref_ernie_idx_key",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_idx_key"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_idx_key",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "k",
+      "role": "in"
+     },
+     {
+      "name": "gamma",
+      "role": "weight"
+     },
+     {
+      "name": "beta",
+      "role": "weight"
+     },
+     {
+      "name": "positions",
+      "role": "in"
+     },
+     {
+      "name": "slots",
+      "role": "in"
+     },
+     {
+      "name": "cache",
+      "role": "inout"
+     }
+    ],
+    "doc": "DSA indexer key side: each row of k [M, head_dim] (bf16) goes through LayerNorm (eps default 1e-6, weight `gamma`, bias `beta`, bf16 out) and then the same rope-first NeoX rope, Hadamard and per-row power-of-two E4M3 quantiser as ernie_idx_query; the row (head_dim code bytes then the fp32 scale, little endian) is stored in cache [pages, block, head_dim + 4] u8 at slot positions[...] = page * block + offset. A negative slot is padding; rows apply in order, a repeated slot keeps the last; a slot past the pool, a slot below -1 or a negative position refuses before any store.",
+    "dtype_words_in_doc": [
+     "bf16",
+     "e4m3",
+     "u8"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-idx-key",
+    "host_parity": "device ernie_idx_key against the libref reference ref_ernie_idx_key within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_attn.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_idx_key)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_idx_logits",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "heads": "4",
+    "head_dim": "8",
+    "window": "8"
+   },
+   "cache_layout": {
+    "window": "8"
+   },
+   "host": {
+    "kernel": "ref_ernie_idx_logits",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_idx_logits"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_idx_logits",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "qf",
+      "role": "in"
+     },
+     {
+      "name": "qs",
+      "role": "in"
+     },
+     {
+      "name": "w",
+      "role": "in"
+     },
+     {
+      "name": "cache",
+      "role": "in"
+     },
+     {
+      "name": "block_table",
+      "role": "in"
+     },
+     {
+      "name": "req",
+      "role": "in"
+     },
+     {
+      "name": "positions",
+      "role": "in"
+     },
+     {
+      "name": "scores",
+      "role": "out"
+     }
+    ],
+    "doc": "DSA indexer logits: for query row m (position p, request req[m]) and every logical token j < max(p + 1 - window, 0): sum over heads of relu((qf_h . key_j) * key_scale_j) * (w_h * qs_h * head_dim^-1/2 * heads^-1/2), the key read through block_table[req][j / block] from cache [pages, block, head_dim + 4] u8. scores [M, L] f32 is indexed by logical token; columns from the window start, and tokens on an uninitialised page, are -inf. This is the row ernie_dsa_select reads.",
+    "dtype_words_in_doc": [
+     "f32",
+     "u8"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-idx-logits",
+    "host_parity": "device ernie_idx_logits against the libref reference ref_ernie_idx_logits within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_attn.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_idx_logits)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_idx_query",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "heads": "4",
+    "head_dim": "8",
+    "rope_dim": "4",
+    "theta": "10000",
+    "rope_table": "bf16"
+   },
+   "cache_layout": {
+    "rope_table": "bf16"
+   },
+   "host": {
+    "kernel": "ref_ernie_idx_query",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_idx_query"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_idx_query",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "q",
+      "role": "in"
+     },
+     {
+      "name": "positions",
+      "role": "in"
+     },
+     {
+      "name": "qf",
+      "role": "out"
+     },
+     {
+      "name": "qs",
+      "role": "out"
+     }
+    ],
+    "doc": "DSA indexer query side: each head_dim-wide head of q [M, heads * head_dim] (bf16) is split rope first [rope_dim | rest], the rope part rotated NeoX split-half (pair i is (i, i + rope_dim/2), angle position * theta^(-2i / rope_dim), cos/sin in the `rope_table` dtype, bf16 by default) at the absolute position, rejoined, Hadamard-transformed over head_dim (orthonormal, bf16) and quantised to E4M3 with a power-of-two scale (2^ceil(log2(max(absmax, 1e-10) / 448)); `quant_rule` nvidia (default) | rocm (floor 1e-4) | rocm_fnuz (floor 1e-4, / 224)): qf [M, heads * head_dim], qs [M, heads] f32.",
+    "dtype_words_in_doc": [
+     "bf16",
+     "e4m3",
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-idx-query",
+    "host_parity": "device ernie_idx_query against the libref reference ref_ernie_idx_query within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_attn.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_idx_query)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_mhc_head",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "n": "8",
+    "hc": "3",
+    "eps": "0.01",
+    "gate_eps": "0.02"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_ernie_mhc_head",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_mhc_head"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_mhc_head",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "h",
+      "role": "in"
+     },
+     {
+      "name": "fn",
+      "role": "weight"
+     },
+     {
+      "name": "scale",
+      "role": "weight"
+     },
+     {
+      "name": "base",
+      "role": "weight"
+     },
+     {
+      "name": "x",
+      "role": "out"
+     }
+    ],
+    "doc": "ERNIE final residual read: each fn row is dotted with the whole hc*n residual and scaled by rsqrt(mean(h*h) + eps) (epsilon inside the root) times the scalar scale plus a per-stream bias, sigmoided and added gate_eps to form a gate; the gates weight the hc streams and they are summed into x with one BF16 rounding. h and x are bf16; fn, scale and base are f32. The final RMSNorm stays in the graph. M is the dispatch band ceiling; the live row count comes from h and x must match it. hc is 2..8. The learned counterpart to mhc_contract's unweighted mean.",
+    "dtype_words_in_doc": [
+     "bf16",
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-mhc-head",
+    "host_parity": "device ernie_mhc_head against the libref reference ref_ernie_mhc_head within the recorded parity band",
+    "code_map": [
+     "libref/ref_mhc.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_mhc_head)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_mhc_pre_rms",
+   "count": 8,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n": "8",
+    "hc": "3",
+    "iterations": "4",
+    "eps": "0.01",
+    "pre_eps": "0.02",
+    "sinkhorn_eps": "0.02",
+    "post_mult": "2",
+    "rms_eps": "0.01",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_ernie_mhc_pre_rms",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_mhc_pre_rms"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_mhc_pre_rms",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "h",
+      "role": "in"
+     },
+     {
+      "name": "fn",
+      "role": "weight"
+     },
+     {
+      "name": "scale",
+      "role": "weight"
+     },
+     {
+      "name": "base",
+      "role": "weight"
+     },
+     {
+      "name": "gain",
+      "role": "weight"
+     },
+     {
+      "name": "x",
+      "role": "out"
+     },
+     {
+      "name": "post",
+      "role": "out"
+     },
+     {
+      "name": "comb",
+      "role": "out"
+     }
+    ],
+    "doc": "ernie_mhc_pre with ERNIE's fused weighted RMSNorm over the collapsed x (ordinary branch). The collapse sum is kept in f32: the variance is mean(collapse^2) from that unrounded value, x = bf16(bf16(collapse) * gain * rsqrt(variance + rms_eps)) -- the numerator reads the collapse after its bf16 narrowing and the output is rounded once. gain is a bf16 [n] weight between base and x; h and x are bf16 only; eps, pre_eps, sinkhorn_eps and post_mult keep their ernie_mhc_pre meaning and post and comb are unchanged. rms_eps must be finite and positive.",
+    "dtype_words_in_doc": [
+     "bf16",
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-mhc-pre-rms",
+    "host_parity": "device ernie_mhc_pre_rms against the libref reference ref_ernie_mhc_pre_rms within the recorded parity band",
+    "code_map": [
+     "libref/ref_mhc.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_mhc_pre_rms)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_mla_project",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "heads": "2",
+    "k_dim": "4",
+    "v_dim": "4",
+    "latent_dim": "6",
+    "mode": "absorb",
+    "q_width": "8"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_ernie_mla_project",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_mla_project"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_mla_project",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "x",
+      "role": "in"
+     },
+     {
+      "name": "w",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "kv_b_proj with unequal key and value widths: w is [heads * (k_dim + v_dim), latent_dim], per head k_dim key rows then v_dim value rows. mode absorb: y [M, heads * latent] = the nope part (first k_dim columns) of each q_width-wide head of x times that head's key rows; mode expand: y [M, heads * v_dim] = x [M, heads * latent] times the value rows transposed. bf16, f32 accumulation.",
+    "dtype_words_in_doc": [
+     "bf16",
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-mla-project",
+    "host_parity": "device ernie_mla_project against the libref reference ref_ernie_mla_project within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_attn.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_mla_project)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_mla_project",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "heads": "2",
+    "k_dim": "4",
+    "v_dim": "4",
+    "latent_dim": "6",
+    "mode": "expand"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_ernie_mla_project",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_mla_project"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_mla_project",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "x",
+      "role": "in"
+     },
+     {
+      "name": "w",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "kv_b_proj with unequal key and value widths: w is [heads * (k_dim + v_dim), latent_dim], per head k_dim key rows then v_dim value rows. mode absorb: y [M, heads * latent] = the nope part (first k_dim columns) of each q_width-wide head of x times that head's key rows; mode expand: y [M, heads * v_dim] = x [M, heads * latent] times the value rows transposed. bf16, f32 accumulation.",
+    "dtype_words_in_doc": [
+     "bf16",
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-mla-project",
+    "host_parity": "device ernie_mla_project against the libref reference ref_ernie_mla_project within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_attn.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_mla_project)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_mla_sparse_attn",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "heads": "2",
+    "latent_dim": "6",
+    "rope_dim": "4",
+    "block_size": "8",
+    "width": "11",
+    "scale": "0.353553"
+   },
+   "cache_layout": {
+    "block_size": "8"
+   },
+   "host": {
+    "kernel": "ref_ernie_mla_sparse_attn",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_mla_sparse_attn"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_mla_sparse_attn",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "q",
+      "role": "in"
+     },
+     {
+      "name": "q_rope",
+      "role": "in"
+     },
+     {
+      "name": "kv",
+      "role": "in"
+     },
+     {
+      "name": "slots",
+      "role": "in"
+     },
+     {
+      "name": "sink",
+      "role": "weight"
+     },
+     {
+      "name": "out",
+      "role": "out"
+     }
+    ],
+    "doc": "Absorbed latent MQA over the cache rows listed in slots [M, width] (physical slot = page * block_size + offset, -1 pads): score = scale * (q . latent + q_rope . rope) over the [latent | rope] row of kv [pages, 1, block_size, latent + rope], value = latent. The per-head fp32 sink logit joins the max and the denominator only. -inf sink = no sink; no key and a finite sink = zero. A slot outside [-1, pages * block_size), a NaN or +inf sink refuses before any store.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-mla-sparse-attn",
+    "host_parity": "device ernie_mla_sparse_attn against the libref reference ref_ernie_mla_sparse_attn within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_attn.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_mla_sparse_attn)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_multimax",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "f32",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n": "19",
+    "dtype": "f32"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_ernie_multimax",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_multimax"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_multimax",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "x",
+      "role": "in"
+     },
+     {
+      "name": "ranges",
+      "role": "weight"
+     },
+     {
+      "name": "coefficients",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y = x + t[0]*max(r[0]-x,0) + t[1]*max(x-r[1],0) + t[2]*max(r[2]-x,0)^2 + t[3]*max(x-r[3],0)^2: ERNIE's learned piecewise logit transform (the pinned Baidu reference's Ernie5_5ParallelLMHead.multimax, commit b8414da6). Four hinge terms -- two linear, two quadratic -- each a learned threshold r (operand `ranges` [4]) and a learned coefficient t (`coefficients` [4]). Inside the learned ranges every hinge is zero and the transform is the identity, so the thresholds are exact boundaries, NOT a temperature: the quadratic tails are the learned shape. x [M,n] in, y [M,n] out. ALL FOUR operands are float32 -- logits and learned tensors alike -- so a non-f32 operand or a learned tensor not four long is refused. f32 throughout, one rounding.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-multimax",
+    "host_parity": "device ernie_multimax against the libref reference ref_ernie_multimax within the recorded parity band",
+    "code_map": [
+     "libref/ref_elementwise.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_multimax)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_rope_tail",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "heads": "1",
+    "width": "10",
+    "rope_dim": "4",
+    "theta": "10000",
+    "rope_table": "bf16"
+   },
+   "cache_layout": {
+    "rope_table": "bf16"
+   },
+   "host": {
+    "kernel": "ref_ernie_rope_tail",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_rope_tail"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_rope_tail",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "x",
+      "role": "inout"
+     },
+     {
+      "name": "positions",
+      "role": "in"
+     }
+    ],
+    "doc": "GPT-J interleaved rotary in place on the TRAILING rope_dim values of each width-wide head of x [M, heads * width] (bf16), at the absolute position positions[r] (pair i is (2i, 2i + 1) of the slice, angle position * theta^(-2i / rope_dim)); the leading width - rope_dim values are not touched. A negative position, an odd or oversized rope_dim or a non-positive theta refuses before any store.",
+    "dtype_words_in_doc": [
+     "bf16"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-rope-tail",
+    "host_parity": "device ernie_rope_tail against the libref reference ref_ernie_rope_tail within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_attn.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_rope_tail)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_rope_tail",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "heads": "1",
+    "width": "16",
+    "rope_dim": "4",
+    "theta": "160000",
+    "yarn_factor": "16",
+    "yarn_beta_fast": "32",
+    "yarn_beta_slow": "1",
+    "yarn_original_max": "65536"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_ernie_rope_tail",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_rope_tail"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_rope_tail",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "x",
+      "role": "inout"
+     },
+     {
+      "name": "positions",
+      "role": "in"
+     }
+    ],
+    "doc": "GPT-J interleaved rotary in place on the TRAILING rope_dim values of each width-wide head of x [M, heads * width] (bf16), at the absolute position positions[r] (pair i is (2i, 2i + 1) of the slice, angle position * theta^(-2i / rope_dim)); the leading width - rope_dim values are not touched. A negative position, an odd or oversized rope_dim or a non-positive theta refuses before any store.",
+    "dtype_words_in_doc": [
+     "bf16"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-rope-tail",
+    "host_parity": "device ernie_rope_tail against the libref reference ref_ernie_rope_tail within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_attn.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_rope_tail)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_rope_tail",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "heads": "2",
+    "width": "8",
+    "rope_dim": "4",
+    "theta": "10000",
+    "rope_table": "bf16"
+   },
+   "cache_layout": {
+    "rope_table": "bf16"
+   },
+   "host": {
+    "kernel": "ref_ernie_rope_tail",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_rope_tail"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_rope_tail",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "x",
+      "role": "inout"
+     },
+     {
+      "name": "positions",
+      "role": "in"
+     }
+    ],
+    "doc": "GPT-J interleaved rotary in place on the TRAILING rope_dim values of each width-wide head of x [M, heads * width] (bf16), at the absolute position positions[r] (pair i is (2i, 2i + 1) of the slice, angle position * theta^(-2i / rope_dim)); the leading width - rope_dim values are not touched. A negative position, an odd or oversized rope_dim or a non-positive theta refuses before any store.",
+    "dtype_words_in_doc": [
+     "bf16"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-rope-tail",
+    "host_parity": "device ernie_rope_tail against the libref reference ref_ernie_rope_tail within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_attn.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_rope_tail)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_router_topk",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "experts": "6",
+    "topk": "3",
+    "renormalize": "1"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_ernie_router_topk",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_router_topk"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_router_topk",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "logits",
+      "role": "in"
+     },
+     {
+      "name": "bias",
+      "role": "weight"
+     },
+     {
+      "name": "scale",
+      "role": "weight"
+     },
+     {
+      "name": "ids",
+      "role": "out"
+     },
+     {
+      "name": "weights",
+      "role": "out"
+     }
+    ],
+    "doc": "ERNIE routing between the two router projections and the latent dispatch: each expert's score is sigmoid(logits[e]) + sigmoid(logits[experts+e]), so `logits` is [M, 2*experts] and `experts` is the LOGICAL count. The correction `bias` SELECTS (descending score + bias, ties to the lower expert id); the UNCORRECTED score weights. The per-expert `scale` -- a weight indexed by the logical expert id -- is ALWAYS applied, and only after the division. With `renormalize` the kept weights are first divided by their own sum, clamped to a minimum of 1e-20; with it off they are used as-is. F32 throughout, ids I32.",
+    "dtype_words_in_doc": [
+     "f32",
+     "i32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-router-topk",
+    "host_parity": "device ernie_router_topk against the libref reference ref_ernie_router_topk within the recorded parity band",
+    "code_map": [
+     "libref/ref_moe.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_router_topk)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_row_req",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {},
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_ernie_row_req",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_row_req"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_row_req",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "cu_seqlens",
+      "role": "in"
+     },
+     {
+      "name": "req",
+      "role": "out"
+     }
+    ],
+    "doc": "The request index of each live row: req[r] = s for cu_seqlens[s] <= r < cu_seqlens[s + 1] (cu starts at 0, never decreases and ends at the row count). The per-row request ids ernie_dsa_select and ernie_idx_logits read.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-row-req",
+    "host_parity": "device ernie_row_req against the libref reference ref_ernie_row_req within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_attn.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_row_req)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_vha_mix",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "heads": "4",
+    "dim": "16",
+    "rank": "2",
+    "fold": "bf16"
+   },
+   "cache_layout": {
+    "fold": "bf16"
+   },
+   "host": {
+    "kernel": "ref_ernie_vha_mix",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_vha_mix"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_vha_mix",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "o",
+      "role": "in"
+     },
+     {
+      "name": "u",
+      "role": "weight"
+     },
+     {
+      "name": "v",
+      "role": "weight"
+     },
+     {
+      "name": "out",
+      "role": "out"
+     }
+    ],
+    "doc": "Value-head mixing on the head axis: out[t, h, c] = sum_g m[h, g] o[t, g, c] with m = I + V U^T folded from the [heads, rank] matrices u and v (m[h, g] = [h == g] + sum_r v[h, r] u[g, r]). `fold` f32 (default) keeps m in f32, bf16 rounds each entry to bf16 first (m18 is open in the sources). bf16 activations, f32 accumulation.",
+    "dtype_words_in_doc": [
+     "bf16",
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-vha-mix",
+    "host_parity": "device ernie_vha_mix against the libref reference ref_ernie_vha_mix within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_attn.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_vha_mix)"
+    ]
+   }
+  },
+  {
+   "op": "ernie_vha_mix",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "heads": "2",
+    "dim": "4",
+    "rank": "2",
+    "fold": "bf16"
+   },
+   "cache_layout": {
+    "fold": "bf16"
+   },
+   "host": {
+    "kernel": "ref_ernie_vha_mix",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation ernie_vha_mix"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_ernie_vha_mix",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "o",
+      "role": "in"
+     },
+     {
+      "name": "u",
+      "role": "weight"
+     },
+     {
+      "name": "v",
+      "role": "weight"
+     },
+     {
+      "name": "out",
+      "role": "out"
+     }
+    ],
+    "doc": "Value-head mixing on the head axis: out[t, h, c] = sum_g m[h, g] o[t, g, c] with m = I + V U^T folded from the [heads, rank] matrices u and v (m[h, g] = [h == g] + sum_r v[h, r] u[g, r]). `fold` f32 (default) keeps m in f32, bf16 rounds each entry to bf16 first (m18 is open in the sources). bf16 activations, f32 accumulation.",
+    "dtype_words_in_doc": [
+     "bf16",
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-ernie-vha-mix",
+    "host_parity": "device ernie_vha_mix against the libref reference ref_ernie_vha_mix within the recorded parity band",
+    "code_map": [
+     "libref/ref_ernie_attn.cpp",
+     "libr4d/r4d_rows.cpp (new row for ernie_vha_mix)"
+    ]
+   }
+  },
+  {
+   "op": "gather_rows",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n": "24",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_gather_rows",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "gather_rows_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": false,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "gather_rows_bf16",
+      "shape_constraint": "any n; source and destination row pitches are read off the operands",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "i32 indices, bf16 rows",
+      "verified": false,
+      "unresolved_clauses": [
+       "pitch"
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_gather_rows",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "x",
+      "role": "in"
+     },
+     {
+      "name": "idx",
+      "role": "in"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[i, :] = x[idx[i], :]. `M` is a RANGE, so the rows gathered are `y`'s extent and not the declared worst case. A negative index writes a zero row, as embed_lookup's padding does; an index at or past x's row count is RAD_E_INVAL, because reading it would be reading another sequence's hidden state.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "gemm_nt",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "8",
+    "K": "10",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_gemm_nt",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "candidates": [
+     {
+      "kernel": "gemm_bf16_pixtral_patch",
+      "shape_constraint": "K=588, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 588",
+        "value": 10,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_muse_patch",
+      "shape_constraint": "K=1176, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 1176",
+        "value": 10,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m16",
+      "shape_constraint": "M <= 16; K divisible by SK and K/SK by 256; N, K otherwise runtime",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "per-split divisible by (K a multiple of N) 256",
+        "value": 10,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "divisible"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m64",
+      "shape_constraint": "signed-int M, bounded row launches; K divisible by SK*16; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "divisible by <split>*N (K a multiple of N) 16",
+        "value": 10,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "bounded",
+       "<="
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_tiled",
+      "shape_constraint": "64 < M <= INT_MAX; N >= 128; K%64; bounded row launches; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "% (a multiple of) 64",
+        "value": 10,
+        "ok": false
+       },
+       {
+        "param": "N",
+        "rule": ">= 128",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate. BYTE-IDENTICAL to gemm_bf16_nt_m64: the same WMMA sequence a tile and the same split count, the slices summed in the same order from 0.f",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "bounded",
+       "<="
+      ]
+     }
+    ],
+    "missing_reason": "every libr4d row for gemm_nt rejects this shape: K=10 violates '= 588' (5 candidate row(s))"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_gemm_nt",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "rows exist, shape rejected: re-run at production geometry before writing a kernel",
+    "story": "dev-gemm-nt",
+    "host_parity": "device gemm_nt against the libref reference ref_gemm_nt within the recorded parity band",
+    "code_map": [
+     "libref/ref_gemm.cpp",
+     "libr4d/r4d_rows.cpp (existing gemm_nt rows reject this shape: see device.candidates)"
+    ]
+   }
+  },
+  {
+   "op": "gemm_nt",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "8",
+    "K": "12",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_gemm_nt",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "candidates": [
+     {
+      "kernel": "gemm_bf16_pixtral_patch",
+      "shape_constraint": "K=588, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 588",
+        "value": 12,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_muse_patch",
+      "shape_constraint": "K=1176, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 1176",
+        "value": 12,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m16",
+      "shape_constraint": "M <= 16; K divisible by SK and K/SK by 256; N, K otherwise runtime",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "per-split divisible by (K a multiple of N) 256",
+        "value": 12,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "divisible"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m64",
+      "shape_constraint": "signed-int M, bounded row launches; K divisible by SK*16; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "divisible by <split>*N (K a multiple of N) 16",
+        "value": 12,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "bounded",
+       "<="
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_tiled",
+      "shape_constraint": "64 < M <= INT_MAX; N >= 128; K%64; bounded row launches; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "% (a multiple of) 64",
+        "value": 12,
+        "ok": false
+       },
+       {
+        "param": "N",
+        "rule": ">= 128",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate. BYTE-IDENTICAL to gemm_bf16_nt_m64: the same WMMA sequence a tile and the same split count, the slices summed in the same order from 0.f",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "bounded",
+       "<="
+      ]
+     }
+    ],
+    "missing_reason": "every libr4d row for gemm_nt rejects this shape: K=12 violates '= 588' (5 candidate row(s))"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_gemm_nt",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "rows exist, shape rejected: re-run at production geometry before writing a kernel",
+    "story": "dev-gemm-nt",
+    "host_parity": "device gemm_nt against the libref reference ref_gemm_nt within the recorded parity band",
+    "code_map": [
+     "libref/ref_gemm.cpp",
+     "libr4d/r4d_rows.cpp (existing gemm_nt rows reject this shape: see device.candidates)"
+    ]
+   }
+  },
+  {
+   "op": "gemm_nt",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "8",
+    "K": "4",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_gemm_nt",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "candidates": [
+     {
+      "kernel": "gemm_bf16_pixtral_patch",
+      "shape_constraint": "K=588, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 588",
+        "value": 4,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_muse_patch",
+      "shape_constraint": "K=1176, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 1176",
+        "value": 4,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m16",
+      "shape_constraint": "M <= 16; K divisible by SK and K/SK by 256; N, K otherwise runtime",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "per-split divisible by (K a multiple of N) 256",
+        "value": 4,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "divisible"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m64",
+      "shape_constraint": "signed-int M, bounded row launches; K divisible by SK*16; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "divisible by <split>*N (K a multiple of N) 16",
+        "value": 4,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "bounded",
+       "<="
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_tiled",
+      "shape_constraint": "64 < M <= INT_MAX; N >= 128; K%64; bounded row launches; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "% (a multiple of) 64",
+        "value": 4,
+        "ok": false
+       },
+       {
+        "param": "N",
+        "rule": ">= 128",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate. BYTE-IDENTICAL to gemm_bf16_nt_m64: the same WMMA sequence a tile and the same split count, the slices summed in the same order from 0.f",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "bounded",
+       "<="
+      ]
+     }
+    ],
+    "missing_reason": "every libr4d row for gemm_nt rejects this shape: K=4 violates '= 588' (5 candidate row(s))"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_gemm_nt",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "rows exist, shape rejected: re-run at production geometry before writing a kernel",
+    "story": "dev-gemm-nt",
+    "host_parity": "device gemm_nt against the libref reference ref_gemm_nt within the recorded parity band",
+    "code_map": [
+     "libref/ref_gemm.cpp",
+     "libr4d/r4d_rows.cpp (existing gemm_nt rows reject this shape: see device.candidates)"
+    ]
+   }
+  },
+  {
+   "op": "gemm_nt",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "16",
+    "K": "6",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_gemm_nt",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "candidates": [
+     {
+      "kernel": "gemm_bf16_pixtral_patch",
+      "shape_constraint": "K=588, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 588",
+        "value": 6,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_muse_patch",
+      "shape_constraint": "K=1176, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 1176",
+        "value": 6,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m16",
+      "shape_constraint": "M <= 16; K divisible by SK and K/SK by 256; N, K otherwise runtime",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "per-split divisible by (K a multiple of N) 256",
+        "value": 6,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "divisible"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m64",
+      "shape_constraint": "signed-int M, bounded row launches; K divisible by SK*16; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "divisible by <split>*N (K a multiple of N) 16",
+        "value": 6,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "bounded",
+       "<="
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_tiled",
+      "shape_constraint": "64 < M <= INT_MAX; N >= 128; K%64; bounded row launches; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "% (a multiple of) 64",
+        "value": 6,
+        "ok": false
+       },
+       {
+        "param": "N",
+        "rule": ">= 128",
+        "value": 16,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate. BYTE-IDENTICAL to gemm_bf16_nt_m64: the same WMMA sequence a tile and the same split count, the slices summed in the same order from 0.f",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "bounded",
+       "<="
+      ]
+     }
+    ],
+    "missing_reason": "every libr4d row for gemm_nt rejects this shape: K=6 violates '= 588' (5 candidate row(s))"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_gemm_nt",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "rows exist, shape rejected: re-run at production geometry before writing a kernel",
+    "story": "dev-gemm-nt",
+    "host_parity": "device gemm_nt against the libref reference ref_gemm_nt within the recorded parity band",
+    "code_map": [
+     "libref/ref_gemm.cpp",
+     "libr4d/r4d_rows.cpp (existing gemm_nt rows reject this shape: see device.candidates)"
+    ]
+   }
+  },
+  {
+   "op": "gemm_nt",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "32",
+    "K": "6",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_gemm_nt",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "candidates": [
+     {
+      "kernel": "gemm_bf16_pixtral_patch",
+      "shape_constraint": "K=588, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 588",
+        "value": 6,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_muse_patch",
+      "shape_constraint": "K=1176, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 1176",
+        "value": 6,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m16",
+      "shape_constraint": "M <= 16; K divisible by SK and K/SK by 256; N, K otherwise runtime",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "per-split divisible by (K a multiple of N) 256",
+        "value": 6,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "divisible"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m64",
+      "shape_constraint": "signed-int M, bounded row launches; K divisible by SK*16; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "divisible by <split>*N (K a multiple of N) 16",
+        "value": 6,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "bounded",
+       "<="
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_tiled",
+      "shape_constraint": "64 < M <= INT_MAX; N >= 128; K%64; bounded row launches; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "% (a multiple of) 64",
+        "value": 6,
+        "ok": false
+       },
+       {
+        "param": "N",
+        "rule": ">= 128",
+        "value": 32,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate. BYTE-IDENTICAL to gemm_bf16_nt_m64: the same WMMA sequence a tile and the same split count, the slices summed in the same order from 0.f",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "bounded",
+       "<="
+      ]
+     }
+    ],
+    "missing_reason": "every libr4d row for gemm_nt rejects this shape: K=6 violates '= 588' (5 candidate row(s))"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_gemm_nt",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "rows exist, shape rejected: re-run at production geometry before writing a kernel",
+    "story": "dev-gemm-nt",
+    "host_parity": "device gemm_nt against the libref reference ref_gemm_nt within the recorded parity band",
+    "code_map": [
+     "libref/ref_gemm.cpp",
+     "libr4d/r4d_rows.cpp (existing gemm_nt rows reject this shape: see device.candidates)"
+    ]
+   }
+  },
+  {
+   "op": "gemm_nt",
+   "count": 4,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "8",
+    "K": "6",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_gemm_nt",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "candidates": [
+     {
+      "kernel": "gemm_bf16_pixtral_patch",
+      "shape_constraint": "K=588, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 588",
+        "value": 6,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_muse_patch",
+      "shape_constraint": "K=1176, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 1176",
+        "value": 6,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m16",
+      "shape_constraint": "M <= 16; K divisible by SK and K/SK by 256; N, K otherwise runtime",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "per-split divisible by (K a multiple of N) 256",
+        "value": 6,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "divisible"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m64",
+      "shape_constraint": "signed-int M, bounded row launches; K divisible by SK*16; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "divisible by <split>*N (K a multiple of N) 16",
+        "value": 6,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "bounded",
+       "<="
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_tiled",
+      "shape_constraint": "64 < M <= INT_MAX; N >= 128; K%64; bounded row launches; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "% (a multiple of) 64",
+        "value": 6,
+        "ok": false
+       },
+       {
+        "param": "N",
+        "rule": ">= 128",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate. BYTE-IDENTICAL to gemm_bf16_nt_m64: the same WMMA sequence a tile and the same split count, the slices summed in the same order from 0.f",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "bounded",
+       "<="
+      ]
+     }
+    ],
+    "missing_reason": "every libr4d row for gemm_nt rejects this shape: K=6 violates '= 588' (5 candidate row(s))"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_gemm_nt",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "rows exist, shape rejected: re-run at production geometry before writing a kernel",
+    "story": "dev-gemm-nt",
+    "host_parity": "device gemm_nt against the libref reference ref_gemm_nt within the recorded parity band",
+    "code_map": [
+     "libref/ref_gemm.cpp",
+     "libr4d/r4d_rows.cpp (existing gemm_nt rows reject this shape: see device.candidates)"
+    ]
+   }
+  },
+  {
+   "op": "gemm_nt",
+   "count": 6,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "10",
+    "K": "8",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_gemm_nt",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "candidates": [
+     {
+      "kernel": "gemm_bf16_pixtral_patch",
+      "shape_constraint": "K=588, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 588",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_muse_patch",
+      "shape_constraint": "K=1176, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 1176",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m16",
+      "shape_constraint": "M <= 16; K divisible by SK and K/SK by 256; N, K otherwise runtime",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "per-split divisible by (K a multiple of N) 256",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "divisible"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m64",
+      "shape_constraint": "signed-int M, bounded row launches; K divisible by SK*16; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "divisible by <split>*N (K a multiple of N) 16",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "bounded",
+       "<="
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_tiled",
+      "shape_constraint": "64 < M <= INT_MAX; N >= 128; K%64; bounded row launches; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "% (a multiple of) 64",
+        "value": 8,
+        "ok": false
+       },
+       {
+        "param": "N",
+        "rule": ">= 128",
+        "value": 10,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate. BYTE-IDENTICAL to gemm_bf16_nt_m64: the same WMMA sequence a tile and the same split count, the slices summed in the same order from 0.f",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "bounded",
+       "<="
+      ]
+     }
+    ],
+    "missing_reason": "every libr4d row for gemm_nt rejects this shape: K=8 violates '= 588' (5 candidate row(s))"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_gemm_nt",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "rows exist, shape rejected: re-run at production geometry before writing a kernel",
+    "story": "dev-gemm-nt",
+    "host_parity": "device gemm_nt against the libref reference ref_gemm_nt within the recorded parity band",
+    "code_map": [
+     "libref/ref_gemm.cpp",
+     "libr4d/r4d_rows.cpp (existing gemm_nt rows reject this shape: see device.candidates)"
+    ]
+   }
+  },
+  {
+   "op": "gemm_nt",
+   "count": 4,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "12",
+    "K": "8",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_gemm_nt",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "candidates": [
+     {
+      "kernel": "gemm_bf16_pixtral_patch",
+      "shape_constraint": "K=588, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 588",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_muse_patch",
+      "shape_constraint": "K=1176, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 1176",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m16",
+      "shape_constraint": "M <= 16; K divisible by SK and K/SK by 256; N, K otherwise runtime",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "per-split divisible by (K a multiple of N) 256",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "divisible"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m64",
+      "shape_constraint": "signed-int M, bounded row launches; K divisible by SK*16; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "divisible by <split>*N (K a multiple of N) 16",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "bounded",
+       "<="
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_tiled",
+      "shape_constraint": "64 < M <= INT_MAX; N >= 128; K%64; bounded row launches; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "% (a multiple of) 64",
+        "value": 8,
+        "ok": false
+       },
+       {
+        "param": "N",
+        "rule": ">= 128",
+        "value": 12,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate. BYTE-IDENTICAL to gemm_bf16_nt_m64: the same WMMA sequence a tile and the same split count, the slices summed in the same order from 0.f",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "bounded",
+       "<="
+      ]
+     }
+    ],
+    "missing_reason": "every libr4d row for gemm_nt rejects this shape: K=8 violates '= 588' (5 candidate row(s))"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_gemm_nt",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "rows exist, shape rejected: re-run at production geometry before writing a kernel",
+    "story": "dev-gemm-nt",
+    "host_parity": "device gemm_nt against the libref reference ref_gemm_nt within the recorded parity band",
+    "code_map": [
+     "libref/ref_gemm.cpp",
+     "libr4d/r4d_rows.cpp (existing gemm_nt rows reject this shape: see device.candidates)"
+    ]
+   }
+  },
+  {
+   "op": "gemm_nt",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "16",
+    "K": "8",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_gemm_nt",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "candidates": [
+     {
+      "kernel": "gemm_bf16_pixtral_patch",
+      "shape_constraint": "K=588, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 588",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_muse_patch",
+      "shape_constraint": "K=1176, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 1176",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m16",
+      "shape_constraint": "M <= 16; K divisible by SK and K/SK by 256; N, K otherwise runtime",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "per-split divisible by (K a multiple of N) 256",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "divisible"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m64",
+      "shape_constraint": "signed-int M, bounded row launches; K divisible by SK*16; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "divisible by <split>*N (K a multiple of N) 16",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "bounded",
+       "<="
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_tiled",
+      "shape_constraint": "64 < M <= INT_MAX; N >= 128; K%64; bounded row launches; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "% (a multiple of) 64",
+        "value": 8,
+        "ok": false
+       },
+       {
+        "param": "N",
+        "rule": ">= 128",
+        "value": 16,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate. BYTE-IDENTICAL to gemm_bf16_nt_m64: the same WMMA sequence a tile and the same split count, the slices summed in the same order from 0.f",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "bounded",
+       "<="
+      ]
+     }
+    ],
+    "missing_reason": "every libr4d row for gemm_nt rejects this shape: K=8 violates '= 588' (5 candidate row(s))"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_gemm_nt",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "rows exist, shape rejected: re-run at production geometry before writing a kernel",
+    "story": "dev-gemm-nt",
+    "host_parity": "device gemm_nt against the libref reference ref_gemm_nt within the recorded parity band",
+    "code_map": [
+     "libref/ref_gemm.cpp",
+     "libr4d/r4d_rows.cpp (existing gemm_nt rows reject this shape: see device.candidates)"
+    ]
+   }
+  },
+  {
+   "op": "gemm_nt",
+   "count": 4,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "4",
+    "K": "8",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_gemm_nt",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "candidates": [
+     {
+      "kernel": "gemm_bf16_pixtral_patch",
+      "shape_constraint": "K=588, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 588",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_muse_patch",
+      "shape_constraint": "K=1176, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 1176",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m16",
+      "shape_constraint": "M <= 16; K divisible by SK and K/SK by 256; N, K otherwise runtime",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "per-split divisible by (K a multiple of N) 256",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "divisible"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m64",
+      "shape_constraint": "signed-int M, bounded row launches; K divisible by SK*16; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "divisible by <split>*N (K a multiple of N) 16",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "bounded",
+       "<="
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_tiled",
+      "shape_constraint": "64 < M <= INT_MAX; N >= 128; K%64; bounded row launches; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "% (a multiple of) 64",
+        "value": 8,
+        "ok": false
+       },
+       {
+        "param": "N",
+        "rule": ">= 128",
+        "value": 4,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate. BYTE-IDENTICAL to gemm_bf16_nt_m64: the same WMMA sequence a tile and the same split count, the slices summed in the same order from 0.f",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "bounded",
+       "<="
+      ]
+     }
+    ],
+    "missing_reason": "every libr4d row for gemm_nt rejects this shape: K=8 violates '= 588' (5 candidate row(s))"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_gemm_nt",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "rows exist, shape rejected: re-run at production geometry before writing a kernel",
+    "story": "dev-gemm-nt",
+    "host_parity": "device gemm_nt against the libref reference ref_gemm_nt within the recorded parity band",
+    "code_map": [
+     "libref/ref_gemm.cpp",
+     "libr4d/r4d_rows.cpp (existing gemm_nt rows reject this shape: see device.candidates)"
+    ]
+   }
+  },
+  {
+   "op": "gemm_nt",
+   "count": 4,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "6",
+    "K": "8",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_gemm_nt",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "candidates": [
+     {
+      "kernel": "gemm_bf16_pixtral_patch",
+      "shape_constraint": "K=588, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 588",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_muse_patch",
+      "shape_constraint": "K=1176, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 1176",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m16",
+      "shape_constraint": "M <= 16; K divisible by SK and K/SK by 256; N, K otherwise runtime",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "per-split divisible by (K a multiple of N) 256",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "divisible"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m64",
+      "shape_constraint": "signed-int M, bounded row launches; K divisible by SK*16; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "divisible by <split>*N (K a multiple of N) 16",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "bounded",
+       "<="
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_tiled",
+      "shape_constraint": "64 < M <= INT_MAX; N >= 128; K%64; bounded row launches; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "% (a multiple of) 64",
+        "value": 8,
+        "ok": false
+       },
+       {
+        "param": "N",
+        "rule": ">= 128",
+        "value": 6,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate. BYTE-IDENTICAL to gemm_bf16_nt_m64: the same WMMA sequence a tile and the same split count, the slices summed in the same order from 0.f",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "bounded",
+       "<="
+      ]
+     }
+    ],
+    "missing_reason": "every libr4d row for gemm_nt rejects this shape: K=8 violates '= 588' (5 candidate row(s))"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_gemm_nt",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "rows exist, shape rejected: re-run at production geometry before writing a kernel",
+    "story": "dev-gemm-nt",
+    "host_parity": "device gemm_nt against the libref reference ref_gemm_nt within the recorded parity band",
+    "code_map": [
+     "libref/ref_gemm.cpp",
+     "libr4d/r4d_rows.cpp (existing gemm_nt rows reject this shape: see device.candidates)"
+    ]
+   }
+  },
+  {
+   "op": "gemm_nt",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "64",
+    "K": "8",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_gemm_nt",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "candidates": [
+     {
+      "kernel": "gemm_bf16_pixtral_patch",
+      "shape_constraint": "K=588, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 588",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_muse_patch",
+      "shape_constraint": "K=1176, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 1176",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m16",
+      "shape_constraint": "M <= 16; K divisible by SK and K/SK by 256; N, K otherwise runtime",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "per-split divisible by (K a multiple of N) 256",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "divisible"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m64",
+      "shape_constraint": "signed-int M, bounded row launches; K divisible by SK*16; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "divisible by <split>*N (K a multiple of N) 16",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "bounded",
+       "<="
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_tiled",
+      "shape_constraint": "64 < M <= INT_MAX; N >= 128; K%64; bounded row launches; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "% (a multiple of) 64",
+        "value": 8,
+        "ok": false
+       },
+       {
+        "param": "N",
+        "rule": ">= 128",
+        "value": 64,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate. BYTE-IDENTICAL to gemm_bf16_nt_m64: the same WMMA sequence a tile and the same split count, the slices summed in the same order from 0.f",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "bounded",
+       "<="
+      ]
+     }
+    ],
+    "missing_reason": "every libr4d row for gemm_nt rejects this shape: K=8 violates '= 588' (5 candidate row(s))"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_gemm_nt",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "rows exist, shape rejected: re-run at production geometry before writing a kernel",
+    "story": "dev-gemm-nt",
+    "host_parity": "device gemm_nt against the libref reference ref_gemm_nt within the recorded parity band",
+    "code_map": [
+     "libref/ref_gemm.cpp",
+     "libr4d/r4d_rows.cpp (existing gemm_nt rows reject this shape: see device.candidates)"
+    ]
+   }
+  },
+  {
+   "op": "gemm_nt",
+   "count": 6,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "8",
+    "K": "8",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_gemm_nt",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "candidates": [
+     {
+      "kernel": "gemm_bf16_pixtral_patch",
+      "shape_constraint": "K=588, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 588",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_muse_patch",
+      "shape_constraint": "K=1176, M<=INT_MAX, N<=INT_MAX, pitched bf16 rows",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "= 1176",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "<=",
+       "pitch"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m16",
+      "shape_constraint": "M <= 16; K divisible by SK and K/SK by 256; N, K otherwise runtime",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "per-split divisible by (K a multiple of N) 256",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "divisible"
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_m64",
+      "shape_constraint": "signed-int M, bounded row launches; K divisible by SK*16; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "divisible by <split>*N (K a multiple of N) 16",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate, deterministic reduction",
+      "verified": false,
+      "unresolved_clauses": [
+       "bounded",
+       "<="
+      ]
+     },
+     {
+      "kernel": "gemm_bf16_nt_tiled",
+      "shape_constraint": "64 < M <= INT_MAX; N >= 128; K%64; bounded row launches; N*K <= UINT32_MAX elements",
+      "checks": [
+       {
+        "param": "K",
+        "rule": "% (a multiple of) 64",
+        "value": 8,
+        "ok": false
+       },
+       {
+        "param": "N",
+        "rule": ">= 128",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 A / W / C, fp32 accumulate. BYTE-IDENTICAL to gemm_bf16_nt_m64: the same WMMA sequence a tile and the same split count, the slices summed in the same order from 0.f",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "bounded",
+       "<="
+      ]
+     }
+    ],
+    "missing_reason": "every libr4d row for gemm_nt rejects this shape: K=8 violates '= 588' (5 candidate row(s))"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_gemm_nt",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "rows exist, shape rejected: re-run at production geometry before writing a kernel",
+    "story": "dev-gemm-nt",
+    "host_parity": "device gemm_nt against the libref reference ref_gemm_nt within the recorded parity band",
+    "code_map": [
+     "libref/ref_gemm.cpp",
+     "libr4d/r4d_rows.cpp (existing gemm_nt rows reject this shape: see device.candidates)"
+    ]
+   }
+  },
+  {
+   "op": "gemm_nt_f32",
+   "count": 4,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "32",
+    "K": "8",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_gemm_nt_f32",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "gemm_nt_f32_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": false,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "gemm_nt_f32_bf16",
+      "shape_constraint": "N<=512, K<=16384; pitched rows",
+      "checks": [
+       {
+        "param": "N",
+        "rule": "<= 512",
+        "value": 32,
+        "ok": true
+       },
+       {
+        "param": "K",
+        "rule": "<= 16384",
+        "value": 8,
+        "ok": true
+       }
+      ],
+      "eligible": true,
+      "dtypes": "bf16 input, f32 weights and output",
+      "verified": false,
+      "unresolved_clauses": [
+       "pitch"
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_gemm_nt_f32",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "BF16 activations times F32 weights, F32 accumulation and output; preserves routing and index gate precision.",
+    "dtype_words_in_doc": [
+     "bf16",
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "gemm_nt_f32",
+   "count": 4,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "6",
+    "K": "8",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_gemm_nt_f32",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "gemm_nt_f32_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": false,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "gemm_nt_f32_bf16",
+      "shape_constraint": "N<=512, K<=16384; pitched rows",
+      "checks": [
+       {
+        "param": "N",
+        "rule": "<= 512",
+        "value": 6,
+        "ok": true
+       },
+       {
+        "param": "K",
+        "rule": "<= 16384",
+        "value": 8,
+        "ok": true
+       }
+      ],
+      "eligible": true,
+      "dtypes": "bf16 input, f32 weights and output",
+      "verified": false,
+      "unresolved_clauses": [
+       "pitch"
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_gemm_nt_f32",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "b",
+      "role": "weight"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "BF16 activations times F32 weights, F32 accumulation and output; preserves routing and index gate precision.",
+    "dtype_words_in_doc": [
+     "bf16",
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "hc_enter",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n": "8",
+    "hc": "3",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_hc_enter",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "hc_enter_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": true,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "hc_enter_bf16",
+      "shape_constraint": "any M, any n, hc 2..8",
+      "checks": [
+       {
+        "param": "hc",
+        "rule": "2..8",
+        "value": 3,
+        "ok": true
+       }
+      ],
+      "eligible": true,
+      "dtypes": "bf16 in and out",
+      "verified": true,
+      "unresolved_clauses": []
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_hc_enter",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "x",
+      "role": "in"
+     },
+     {
+      "name": "h",
+      "role": "out"
+     }
+    ],
+    "doc": "h[s] = x for each of the hc streams -- the wide residual stream's first value. Shares `hc_write`'s parameter list.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "kv_store",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "head_dim": "5",
+    "n_head_kv": "1",
+    "block_size": "8",
+    "kv_dtype": "bf16"
+   },
+   "cache_layout": {
+    "kv_dtype": "bf16",
+    "block_size": "8",
+    "n_head_kv": "1"
+   },
+   "host": {
+    "kernel": "ref_kv_store",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "kv_store_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": false,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "kv_store_bf16",
+      "shape_constraint": "cache exactly [n_blocks, kv_heads, block_size, 2*head_dim]; a negative or out-of-range slot stores nothing",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "bf16 k / v / cache, i32 slot mapping",
+      "verified": false,
+      "unresolved_clauses": [
+       "exactly"
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_kv_store",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "k",
+      "role": "in"
+     },
+     {
+      "name": "v",
+      "role": "in"
+     },
+     {
+      "name": "slot_mapping",
+      "role": "in"
+     },
+     {
+      "name": "kv_cache",
+      "role": "inout"
+     }
+    ],
+    "doc": "Writes k and v into the paged cache at slot_mapping; a negative slot is skipped. The cache is INOUT rather than the OUT docs/OPS.md draws, because the op touches only the mapped slots.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "kv_store",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "head_dim": "8",
+    "n_head_kv": "1",
+    "block_size": "8",
+    "kv_dtype": "bf16"
+   },
+   "cache_layout": {
+    "kv_dtype": "bf16",
+    "block_size": "8",
+    "n_head_kv": "1"
+   },
+   "host": {
+    "kernel": "ref_kv_store",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "kv_store_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": false,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "kv_store_bf16",
+      "shape_constraint": "cache exactly [n_blocks, kv_heads, block_size, 2*head_dim]; a negative or out-of-range slot stores nothing",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "bf16 k / v / cache, i32 slot mapping",
+      "verified": false,
+      "unresolved_clauses": [
+       "exactly"
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_kv_store",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "k",
+      "role": "in"
+     },
+     {
+      "name": "v",
+      "role": "in"
+     },
+     {
+      "name": "slot_mapping",
+      "role": "in"
+     },
+     {
+      "name": "kv_cache",
+      "role": "inout"
+     }
+    ],
+    "doc": "Writes k and v into the paged cache at slot_mapping; a negative slot is skipped. The cache is INOUT rather than the OUT docs/OPS.md draws, because the op touches only the mapped slots.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "logits_gemm",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n_vocab": "19",
+    "n_embd": "8",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_logits_gemm",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "logits_gemm_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": true,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "logits_gemm_bf16",
+      "shape_constraint": "any M and any vocabulary; n_embd a multiple of 8. One workgroup a vocabulary column",
+      "checks": [
+       {
+        "param": "n_embd",
+        "rule": "a multiple of 8",
+        "value": 8,
+        "ok": true
+       }
+      ],
+      "eligible": true,
+      "dtypes": "bf16 x and lm_head, F32 LOGITS OUT, fp32 accumulate",
+      "verified": true,
+      "unresolved_clauses": []
+     },
+     {
+      "kernel": "logits_gemm_bf16_cols",
+      "shape_constraint": "any M and any vocabulary; n_embd 4096 exactly; the activation's row pitch whole 16 bytes",
+      "checks": [
+       {
+        "param": "n_embd",
+        "rule": "exactly 4096",
+        "value": 8,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 x and lm_head, F32 LOGITS OUT, fp32 accumulate. BYTE-IDENTICAL to logits_gemm_bf16",
+      "verified": false,
+      "unresolved_clauses": [
+       "pitch"
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_logits_gemm",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "x",
+      "role": "in"
+     },
+     {
+      "name": "lm_head",
+      "role": "weight"
+     },
+     {
+      "name": "logits",
+      "role": "out"
+     }
+    ],
+    "doc": "logits[M, n_vocab] = x[M, n_embd] @ lm_head[n_vocab, n_embd]^T. Separate from gemm_nt because lm_head is its own access class and the sampler wants to fuse against it.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "mhc_post",
+   "count": 8,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n": "8",
+    "hc": "3",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_mhc_post",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "mhc_post_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": false,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "mhc_post_bf16",
+      "shape_constraint": "M 1..65535, n 1..16384, hc 2..8",
+      "checks": [
+       {
+        "param": "n",
+        "rule": "1..16384",
+        "value": 8,
+        "ok": true
+       },
+       {
+        "param": "hc",
+        "rule": "2..8",
+        "value": 3,
+        "ok": true
+       }
+      ],
+      "eligible": true,
+      "dtypes": "bf16 activation, f32 coefficients",
+      "verified": false,
+      "unresolved_clauses": [
+       "1..65535"
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_mhc_post",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "x",
+      "role": "in"
+     },
+     {
+      "name": "h",
+      "role": "in"
+     },
+     {
+      "name": "post",
+      "role": "in"
+     },
+     {
+      "name": "comb",
+      "role": "in"
+     },
+     {
+      "name": "out",
+      "role": "out"
+     }
+    ],
+    "doc": "out[dst,i] = post[dst]*x[i] + sum_src comb[src,dst]*h[src,i]. post and comb are f32; out must not alias h. No normalization of the residual stream.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "moe_gather",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n": "4",
+    "top_k": "3",
+    "dtype": "bf16",
+    "act": "none"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_moe_gather",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "moe_gather_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": true,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "moe_gather_bf16",
+      "shape_constraint": "any M and n; the inverse permutation is built in scratch rather than searched",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "bf16 in and out",
+      "verified": true,
+      "unresolved_clauses": []
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_moe_gather",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "y_expert",
+      "role": "in"
+     },
+     {
+      "name": "expert_w",
+      "role": "in"
+     },
+     {
+      "name": "sorted_tok",
+      "role": "in"
+     },
+     {
+      "name": "shared",
+      "role": "in (optional)"
+     },
+     {
+      "name": "shared_gate",
+      "role": "in (optional)"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "Scatters the sorted expert output back and weights it. The sum over a token's slots runs in ASCENDING SLOT order, which is what makes it reproducible.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "moe_gemm",
+   "count": 4,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "5",
+    "K": "4",
+    "n_expert": "6",
+    "top_k": "3",
+    "a_order": "token",
+    "dtype": "bf16"
+   },
+   "cache_layout": {
+    "a_order": "token"
+   },
+   "host": {
+    "kernel": "ref_moe_gemm",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "candidates": [
+     {
+      "kernel": "moe_gemm_bf16",
+      "shape_constraint": "N a multiple of 64, K a multiple of 64; the 16-row decode tiles and the 32-row run-aligned prefill tiles of moe_gemm_q, by the same rule",
+      "checks": [
+       {
+        "param": "N",
+        "rule": "a multiple of 64",
+        "value": 5,
+        "ok": false
+       },
+       {
+        "param": "K",
+        "rule": "a multiple of 64",
+        "value": 4,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 activation, bf16 weight as the checkpoint stores it ([N, K] row-major, no layout hook), f32 accumulate over the whole of K, bf16 out rounded to nearest-even",
+      "verified": false,
+      "unresolved_clauses": [
+       "aligned"
+      ]
+     }
+    ],
+    "missing_reason": "every libr4d row for moe_gemm rejects this shape: N=5 violates 'a multiple of 64' (1 candidate row(s))"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_moe_gemm",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "sorted_tok",
+      "role": "in"
+     },
+     {
+      "name": "expert_offset",
+      "role": "in"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[i] = a[row(i)] @ w[e]^T in SORTED order, e being the expert whose offset range contains i. `a_order` picks row(i): \\\"token\\\" gathers a[sorted_tok[i] / top_k] from an activation with one row per token, \\\"sorted\\\" reads row i of one that is already in the scatter's order. `w` is a WEIGHT TABLE of n_expert entries, each [N, K] -- a layer's experts are separate movement units, so base-plus-stride describes only the case where none was offloaded.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "rows exist, shape rejected: re-run at production geometry before writing a kernel",
+    "story": "dev-moe-gemm",
+    "host_parity": "device moe_gemm against the libref reference ref_moe_gemm within the recorded parity band",
+    "code_map": [
+     "libref/ref_moe.cpp",
+     "libr4d/r4d_rows.cpp (existing moe_gemm rows reject this shape: see device.candidates)"
+    ]
+   }
+  },
+  {
+   "op": "moe_gemm",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "N": "4",
+    "K": "5",
+    "n_expert": "6",
+    "top_k": "3",
+    "a_order": "sorted",
+    "dtype": "bf16"
+   },
+   "cache_layout": {
+    "a_order": "sorted"
+   },
+   "host": {
+    "kernel": "ref_moe_gemm",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "candidates": [
+     {
+      "kernel": "moe_gemm_bf16",
+      "shape_constraint": "N a multiple of 64, K a multiple of 64; the 16-row decode tiles and the 32-row run-aligned prefill tiles of moe_gemm_q, by the same rule",
+      "checks": [
+       {
+        "param": "N",
+        "rule": "a multiple of 64",
+        "value": 4,
+        "ok": false
+       },
+       {
+        "param": "K",
+        "rule": "a multiple of 64",
+        "value": 5,
+        "ok": false
+       }
+      ],
+      "eligible": false,
+      "dtypes": "bf16 activation, bf16 weight as the checkpoint stores it ([N, K] row-major, no layout hook), f32 accumulate over the whole of K, bf16 out rounded to nearest-even",
+      "verified": false,
+      "unresolved_clauses": [
+       "aligned"
+      ]
+     }
+    ],
+    "missing_reason": "every libr4d row for moe_gemm rejects this shape: N=4 violates 'a multiple of 64' (1 candidate row(s))"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_moe_gemm",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "a",
+      "role": "in"
+     },
+     {
+      "name": "sorted_tok",
+      "role": "in"
+     },
+     {
+      "name": "expert_offset",
+      "role": "in"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[i] = a[row(i)] @ w[e]^T in SORTED order, e being the expert whose offset range contains i. `a_order` picks row(i): \\\"token\\\" gathers a[sorted_tok[i] / top_k] from an activation with one row per token, \\\"sorted\\\" reads row i of one that is already in the scatter's order. `w` is a WEIGHT TABLE of n_expert entries, each [N, K] -- a layer's experts are separate movement units, so base-plus-stride describes only the case where none was offloaded.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "rows exist, shape rejected: re-run at production geometry before writing a kernel",
+    "story": "dev-moe-gemm",
+    "host_parity": "device moe_gemm against the libref reference ref_moe_gemm within the recorded parity band",
+    "code_map": [
+     "libref/ref_moe.cpp",
+     "libr4d/r4d_rows.cpp (existing moe_gemm rows reject this shape: see device.candidates)"
+    ]
+   }
+  },
+  {
+   "op": "moe_scatter",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "n_expert": "6",
+    "top_k": "3",
+    "expert_base": "0"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_moe_scatter",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "moe_scatter_i32"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": false,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "moe_scatter_i32",
+      "shape_constraint": "n_expert <= 256; one launch at M*top_k <= 1024 and four above it, and the four exist to keep the sort stable without an atomic deciding the order",
+      "checks": [
+       {
+        "param": "n_expert",
+        "rule": "<= 256",
+        "value": 6,
+        "ok": true
+       }
+      ],
+      "eligible": true,
+      "dtypes": "i32 throughout",
+      "verified": false,
+      "unresolved_clauses": [
+       "<="
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_moe_scatter",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "expert_ids",
+      "role": "in"
+     },
+     {
+      "name": "sorted_tok",
+      "role": "out"
+     },
+     {
+      "name": "expert_offset",
+      "role": "out"
+     },
+     {
+      "name": "expert_count",
+      "role": "out"
+     }
+    ],
+    "doc": "Stable counting sort of the (token, slot) pairs by expert. sorted_tok holds the FLATTENED index token*top_k + slot, not the bare token id; a slot whose expert is outside the range this call owns is dropped and the tail of sorted_tok is filled with -1. THE RANGE IS [expert_base, expert_base + n_expert), which is how EXPERT PARALLELISM is expressed: under it the router stays replicated and picks from every expert in the model, each rank declares and sorts only its own slice, and the slots that went elsewhere simply contribute nothing to this rank's partial -- which the block's end-of-block all-reduce then sums. `expert_base` absent or 0 with n_expert the model's count is the whole-model case.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "rmsnorm",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n": "16",
+    "eps": "0.01",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_rmsnorm",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "rmsnorm_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": true,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "rmsnorm_bf16",
+      "shape_constraint": "any n; the sum of squares accumulates in f32 and only the store narrows",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "bf16 y, x bf16 or (with a gain) f32, bf16 or f32 gain, fp32 reduction",
+      "verified": true,
+      "unresolved_clauses": []
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_rmsnorm",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "x",
+      "role": "in"
+     },
+     {
+      "name": "w",
+      "role": "weight (optional)"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y = x * rsqrt(mean(x^2) + eps) * (w + wadd) * mult. `wadd` is not in docs/OPS.md's elementwise table: it is GemmaRMSNorm's `1 +`, which Qwen3.5, Qwen3-Next and Gemma all need, and it defaults to 0. Spelled `wadd` and not `w_add` because that is what libr4d's fused norms call it and one vocabulary cannot have two spellings of one parameter. `mult` (default 1) scales the row before its one rounding.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "rmsnorm",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n": "4",
+    "eps": "0.01",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_rmsnorm",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "rmsnorm_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": true,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "rmsnorm_bf16",
+      "shape_constraint": "any n; the sum of squares accumulates in f32 and only the store narrows",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "bf16 y, x bf16 or (with a gain) f32, bf16 or f32 gain, fp32 reduction",
+      "verified": true,
+      "unresolved_clauses": []
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_rmsnorm",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "x",
+      "role": "in"
+     },
+     {
+      "name": "w",
+      "role": "weight (optional)"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y = x * rsqrt(mean(x^2) + eps) * (w + wadd) * mult. `wadd` is not in docs/OPS.md's elementwise table: it is GemmaRMSNorm's `1 +`, which Qwen3.5, Qwen3-Next and Gemma all need, and it defaults to 0. Spelled `wadd` and not `w_add` because that is what libr4d's fused norms call it and one vocabulary cannot have two spellings of one parameter. `mult` (default 1) scales the row before its one rounding.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "rmsnorm",
+   "count": 4,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n": "6",
+    "eps": "0.01",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_rmsnorm",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "rmsnorm_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": true,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "rmsnorm_bf16",
+      "shape_constraint": "any n; the sum of squares accumulates in f32 and only the store narrows",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "bf16 y, x bf16 or (with a gain) f32, bf16 or f32 gain, fp32 reduction",
+      "verified": true,
+      "unresolved_clauses": []
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_rmsnorm",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "x",
+      "role": "in"
+     },
+     {
+      "name": "w",
+      "role": "weight (optional)"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y = x * rsqrt(mean(x^2) + eps) * (w + wadd) * mult. `wadd` is not in docs/OPS.md's elementwise table: it is GemmaRMSNorm's `1 +`, which Qwen3.5, Qwen3-Next and Gemma all need, and it defaults to 0. Spelled `wadd` and not `w_add` because that is what libr4d's fused norms call it and one vocabulary cannot have two spellings of one parameter. `mult` (default 1) scales the row before its one rounding.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "rmsnorm",
+   "count": 3,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n": "8",
+    "eps": "0.01",
+    "dtype": "bf16"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_rmsnorm",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "rmsnorm_bf16"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": true,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "rmsnorm_bf16",
+      "shape_constraint": "any n; the sum of squares accumulates in f32 and only the store narrows",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "bf16 y, x bf16 or (with a gain) f32, bf16 or f32 gain, fp32 reduction",
+      "verified": true,
+      "unresolved_clauses": []
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_rmsnorm",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "x",
+      "role": "in"
+     },
+     {
+      "name": "w",
+      "role": "weight (optional)"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y = x * rsqrt(mean(x^2) + eps) * (w + wadd) * mult. `wadd` is not in docs/OPS.md's elementwise table: it is GemmaRMSNorm's `1 +`, which Qwen3.5, Qwen3-Next and Gemma all need, and it defaults to 0. Spelled `wadd` and not `w_add` because that is what libr4d's fused norms call it and one vocabulary cannot have two spellings of one parameter. `mult` (default 1) scales the row before its one rounding.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "sample_argmax",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "n_vocab": "19"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_sample_argmax",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "sample_argmax_f32"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": true,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "sample_argmax_f32",
+      "shape_constraint": "any vocabulary; the (key, ~id) packing makes the tie rule fall out of an unsigned max",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "f32 logits, i32 token",
+      "verified": true,
+      "unresolved_clauses": []
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_sample_argmax",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "logits",
+      "role": "in"
+     },
+     {
+      "name": "params",
+      "role": "in"
+     },
+     {
+      "name": "token",
+      "role": "out"
+     }
+    ],
+    "doc": "Greedy, ties to the lower token id.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "sample_dry",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "n_vocab": "19"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_sample_dry",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "sample_dry_f32"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": false,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "sample_dry_f32",
+      "shape_constraint": "any vocabulary, a history row of at most 16384 tokens (one u16 repeat length each in LDS); ONE BLOCK A ROW, and each continuation token has exactly one writing thread -- its longest repeat's -- so no atomic sum and no order-dependent rounding",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "f32 logits in place, i32 history, optional u8 breaker plane, per-row params",
+      "verified": false,
+      "unresolved_clauses": [
+       "at most",
+       "exactly"
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_sample_dry",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "logits",
+      "role": "inout"
+     },
+     {
+      "name": "params",
+      "role": "in"
+     },
+     {
+      "name": "history",
+      "role": "in"
+     },
+     {
+      "name": "breakers",
+      "role": "in (optional)"
+     }
+    ],
+    "doc": "DRY: each token that would extend a suffix of the window which has occurred before is penalised ONCE, by multiplier * base^(L - allowed_length) for the longest such repeat L, repeats capped at the row's dry_rep_limit. Only lengths at or above allowed_length count, and a token the optional `breakers` plane marks is never penalised. dry_penalty_last_n windows the TAIL of the history; 0 turns the stage off for the row. Columns are ids less vocab_off.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "sample_logprobs",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "n_vocab": "19",
+    "k": "21"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_sample_logprobs",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "sample_logprobs_f32"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": true,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "sample_logprobs_f32",
+      "shape_constraint": "any vocabulary; k <= 64, the LDS the sort runs in. sample_topk's radix select at the op's k, so the set and its tie rule are the top-k's; the maximum is its first entry and the sum one more pass. A row without RAD_SP_LOGPROBS leaves before reading anything",
+      "checks": [
+       {
+        "param": "k",
+        "rule": "<= 64",
+        "value": 21,
+        "ok": true
+       }
+      ],
+      "eligible": true,
+      "dtypes": "f32 logits, f32 stats [M, 2 + 2k] with the ids as floats",
+      "verified": true,
+      "unresolved_clauses": []
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_sample_logprobs",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "logits",
+      "role": "in"
+     },
+     {
+      "name": "params",
+      "role": "in (optional)"
+     },
+     {
+      "name": "stats",
+      "role": "out"
+     }
+    ],
+    "doc": "For a row with RAD_SP_LOGPROBS: the raw logits' max, sum of exp(l - max) and k largest as (id, logit) pairs, descending, ties to the lower id. Other rows are not written.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "sample_mask",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "n_vocab": "19"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_sample_mask",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "sample_mask_f32"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": true,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "sample_mask_f32",
+      "shape_constraint": "any vocabulary; the plane is [rows, ceil(n_vocab/32)] and is shorter than M, addressed by the row's mask_row",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "f32 logits in place, u32 bitmask, per-row params",
+      "verified": true,
+      "unresolved_clauses": []
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_sample_mask",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "logits",
+      "role": "inout"
+     },
+     {
+      "name": "params",
+      "role": "in"
+     },
+     {
+      "name": "bitmask",
+      "role": "in"
+     }
+    ],
+    "doc": "A SET BIT MEANS ALLOWED. Word w bit b covers token 32w + b; a cleared bit sets -infinity. The row's mask_row selects the plane row, or -1 for an unconstrained sequence.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "sample_minp",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "n_cand": "1024"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_sample_minp",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "sample_minp_f32"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": false,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "sample_minp_f32",
+      "shape_constraint": "n_cand <= 4096; exp(v - max) >= p is the same test as prob >= p * max_prob without forming the normaliser",
+      "checks": [
+       {
+        "param": "n_cand",
+        "rule": "<= 4096",
+        "value": 1024,
+        "ok": true
+       }
+      ],
+      "eligible": true,
+      "dtypes": "i32 candidate ids and f32 candidate logits, both in place",
+      "verified": false,
+      "unresolved_clauses": [
+       ">=",
+       ">="
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_sample_minp",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "cand_idx",
+      "role": "inout"
+     },
+     {
+      "name": "cand_val",
+      "role": "inout"
+     },
+     {
+      "name": "params",
+      "role": "in"
+     }
+    ],
+    "doc": "Keeps candidates whose probability is at least min_p times the most likely one's.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "sample_ngram_ban",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "n_vocab": "19"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_sample_ngram_ban",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "sample_ngram_ban_f32"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": true,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "sample_ngram_ban_f32",
+      "shape_constraint": "any vocabulary; ONE BLOCK A ROW, the search positions dealt across its threads, the n-1-token prefix staged in LDS. Integer comparisons and one constant store, so it is bit-identical to libref; the same column written by two positions is an idempotent -infinity",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "f32 logits in place, i32 history, i32 {n, window} per-row pair",
+      "verified": true,
+      "unresolved_clauses": []
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_sample_ngram_ban",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "logits",
+      "role": "inout"
+     },
+     {
+      "name": "params",
+      "role": "in"
+     },
+     {
+      "name": "history",
+      "role": "in"
+     },
+     {
+      "name": "ngram",
+      "role": "in"
+     },
+     {
+      "name": "whitelist",
+      "role": "in (optional)"
+     }
+    ],
+    "doc": "The windowed no-repeat-ngram ban (Unlimited-OCR's SlidingWindowNoRepeatNgramProcessor): bans, by setting -infinity, every token that would complete an n-gram the last `window` tokens of the row's history already contain. `ngram` is one i32 {n, window} pair a row; the window bounds the n-gram's START index, as in the reference, window <= 0 searches the whole span and n 0 is off. The optional `whitelist` bitmask (a SET bit, word w bit b covering column 32w + b, the row's own plane row) exempts a token from the ban, as the reference's `banned.difference_update(whitelist)` does; absent, nothing is exempt. Columns are ids less vocab_off.",
+    "dtype_words_in_doc": [
+     "i32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "sample_penalties",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "n_vocab": "19"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_sample_penalties",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "sample_penalties_f32"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": true,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "sample_penalties_f32",
+      "shape_constraint": "any vocabulary; the history window is the TAIL of the row's span. Parallel over the history and race-free because only a token's FIRST occurrence writes it",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "f32 logits in place, i32 history, per-row params",
+      "verified": true,
+      "unresolved_clauses": []
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_sample_penalties",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "logits",
+      "role": "inout"
+     },
+     {
+      "name": "params",
+      "role": "in"
+     },
+     {
+      "name": "history",
+      "role": "in"
+     }
+    ],
+    "doc": "Repetition (multiplicative, sign-dependent), frequency and presence penalties over the row's history. Applied once per DISTINCT token, with the count carrying the multiplicity. penalty_last_n windows the TAIL of the history; 0 turns the stage off for the row. History ids are global and a token's column is its id less vocab_off.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "sample_pick",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "n_cand": "1024"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_sample_pick",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "sample_pick_f32"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": false,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "sample_pick_f32",
+      "shape_constraint": "n_cand <= 4096; the walk is SEQUENTIAL in f32 for the same reason top_p's is, and the last live candidate is the fallback because the probabilities do not sum to exactly 1 in f32",
+      "checks": [
+       {
+        "param": "n_cand",
+        "rule": "<= 4096",
+        "value": 1024,
+        "ok": true
+       }
+      ],
+      "eligible": true,
+      "dtypes": "i32 candidate ids, f32 candidate logits, i32 token",
+      "verified": false,
+      "unresolved_clauses": [
+       "exactly"
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_sample_pick",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "cand_idx",
+      "role": "in"
+     },
+     {
+      "name": "cand_val",
+      "role": "in"
+     },
+     {
+      "name": "params",
+      "role": "in"
+     },
+     {
+      "name": "token",
+      "role": "out"
+     }
+    ],
+    "doc": "Inverse-CDF draw over the candidate set. The uniform is splitmix64 over (seed * 0x9E3779B97F4A7C15 + pos), taking the top 24 bits as a float in [0,1) -- specified rather than left to a library, because the same stream has to come out of a host reference, a device kernel and a rerun.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "sample_temp",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "n_vocab": "1024"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_sample_temp",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "sample_temp_f32"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": false,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "sample_temp_f32",
+      "shape_constraint": "any vocabulary; a row with temp <= 0 or exactly 1 is skipped whole",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "f32 logits in place, per-row params",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "exactly"
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_sample_temp",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "logits",
+      "role": "inout"
+     },
+     {
+      "name": "params",
+      "role": "in"
+     }
+    ],
+    "doc": "logits /= temp, per row. temp <= 0 leaves the row untouched -- greedy decoding is sample_argmax, and a temperature of zero silently meaning something else is how a sampler chain becomes unreadable.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "sample_temp",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "n_vocab": "19"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_sample_temp",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "sample_temp_f32"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": false,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "sample_temp_f32",
+      "shape_constraint": "any vocabulary; a row with temp <= 0 or exactly 1 is skipped whole",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "f32 logits in place, per-row params",
+      "verified": false,
+      "unresolved_clauses": [
+       "<=",
+       "exactly"
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_sample_temp",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "logits",
+      "role": "inout"
+     },
+     {
+      "name": "params",
+      "role": "in"
+     }
+    ],
+    "doc": "logits /= temp, per row. temp <= 0 leaves the row untouched -- greedy decoding is sample_argmax, and a temperature of zero silently meaning something else is how a sampler chain becomes unreadable.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "sample_topk",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "n_vocab": "19"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_sample_topk",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "sample_topk_f32"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": false,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "sample_topk_f32",
+      "shape_constraint": "any vocabulary; n_cand <= 4096, the width the LDS bitonic sort covers. Eight radix passes over a monotone key -- four for the k-th largest logit, four over the token id to break the tie at it -- then one sort of the survivors. Exact and deterministic, without sorting the vocabulary",
+      "checks": [],
+      "eligible": true,
+      "dtypes": "f32 logits, i32 candidate ids, f32 candidate LOGITS (not probabilities)",
+      "verified": false,
+      "unresolved_clauses": [
+       "<="
+      ]
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_sample_topk",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "logits",
+      "role": "in"
+     },
+     {
+      "name": "params",
+      "role": "in"
+     },
+     {
+      "name": "cand_idx",
+      "role": "out"
+     },
+     {
+      "name": "cand_val",
+      "role": "out"
+     },
+     {
+      "name": "pairs",
+      "role": "out (optional)"
+     }
+    ],
+    "doc": "The row's top_k largest logits, descending, ties to the lower token id. cand_val carries LOGITS. top_k <= 0 or wider than the buffer means the whole candidate width; a narrower one leaves index -1 / -infinity holes, which every later stage skips.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "sample_topp",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "n_cand": "1024"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_sample_topp",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "sample_topp_f32"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": true,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "sample_topp_f32",
+      "shape_constraint": "n_cand <= 4096; the prefix sum is SEQUENTIAL in f32 in candidate order, because a parallel prefix sums in a different order and a candidate at the cut would survive in one and not the other",
+      "checks": [
+       {
+        "param": "n_cand",
+        "rule": "<= 4096",
+        "value": 1024,
+        "ok": true
+       }
+      ],
+      "eligible": true,
+      "dtypes": "i32 candidate ids and f32 candidate logits, both in place",
+      "verified": true,
+      "unresolved_clauses": []
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_sample_topp",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "cand_idx",
+      "role": "inout"
+     },
+     {
+      "name": "cand_val",
+      "role": "inout"
+     },
+     {
+      "name": "params",
+      "role": "in"
+     }
+    ],
+    "doc": "Narrows the candidate set in place to the shortest prefix whose cumulative probability reaches top_p, always keeping at least one. A dropped candidate is index -1, value -infinity. The candidates are assumed to arrive descending, as sample_topk leaves them.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "sample_typical",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "n_cand": "1024"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_sample_typical",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "sample_typical_f32"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": true,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "sample_typical_f32",
+      "shape_constraint": "n_cand <= 4096; quadratic in the candidate width, parallel over the outer index, and the reduction is a MINIMUM so it is order-independent",
+      "checks": [
+       {
+        "param": "n_cand",
+        "rule": "<= 4096",
+        "value": 1024,
+        "ok": true
+       }
+      ],
+      "eligible": true,
+      "dtypes": "i32 candidate ids and f32 candidate logits, both in place",
+      "verified": true,
+      "unresolved_clauses": []
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_sample_typical",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "cand_idx",
+      "role": "inout"
+     },
+     {
+      "name": "cand_val",
+      "role": "inout"
+     },
+     {
+      "name": "params",
+      "role": "in"
+     }
+    ],
+    "doc": "Locally typical: keeps the candidates whose surprisal is closest to the distribution's entropy until their mass reaches typical_p. NOT a prefix -- the candidate order is by probability and this order is by |surprisal - H| -- so it is a threshold on the distance, ties kept.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "sample_xtc",
+   "count": 1,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": null,
+   "dtype_source": "unresolved in the graph dump: see operand_schema (the registry's operand list and description, with the dtype words it names)",
+   "params": {
+    "n_cand": "1024"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_sample_xtc",
+    "library": "libref",
+    "max_rows": 4
+   },
+   "device": {
+    "status": "kernel",
+    "kernels": [
+     "sample_xtc_f32"
+    ],
+    "match": "op+dtype+shape",
+    "constraints_checked": "lexical",
+    "verified": true,
+    "constraints_note": "clauses that name a declared graph parameter are evaluated; other clauses (M, tiles, pitches) are carried as text per candidate",
+    "candidates": [
+     {
+      "kernel": "sample_xtc_f32",
+      "shape_constraint": "n_cand <= 4096; the draw is per row from the row's own stream, so it reproduces",
+      "checks": [
+       {
+        "param": "n_cand",
+        "rule": "<= 4096",
+        "value": 1024,
+        "ok": true
+       }
+      ],
+      "eligible": true,
+      "dtypes": "i32 candidate ids and f32 candidate logits, both in place",
+      "verified": true,
+      "unresolved_clauses": []
+     }
+    ]
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_sample_xtc",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "cand_idx",
+      "role": "inout"
+     },
+     {
+      "name": "cand_val",
+      "role": "inout"
+     },
+     {
+      "name": "params",
+      "role": "in"
+     }
+    ],
+    "doc": "Exclude top choices: with probability xtc_probability, DROP every candidate at or above xtc_threshold except the least likely of them. The opposite of every other stage, and the point. A no-op unless at least two candidates clear the threshold.",
+    "dtype_words_in_doc": [],
+    "source": "libref/ref_registry.cpp"
+   }
+  },
+  {
+   "op": "situ_mul",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n": "10",
+    "dtype": "bf16",
+    "beta": "3",
+    "linear_beta": "5"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_situ_mul",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation situ_mul"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_situ_mul",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "gate_up",
+      "role": "in"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[i] = beta * tanh(gate_up[i] / beta) * sigmoid(gate_up[i]) * linear_beta * tanh(gate_up[n + i] / linear_beta), ERNIE's SiTU gated product, on silu_mul's fused [M, 2n] plane with the GATE STILL THE FIRST HALF. The gate is soft-clipped to +-beta and the up projection to +-linear_beta; both are finite and strictly positive (ERNIE 4 and 25). f32 throughout, one rounding to y's dtype.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-situ-mul",
+    "host_parity": "device situ_mul against the libref reference ref_situ_mul within the recorded parity band",
+    "code_map": [
+     "libref/ref_elementwise.cpp",
+     "libr4d/r4d_rows.cpp (new row for situ_mul)"
+    ]
+   }
+  },
+  {
+   "op": "situ_mul",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n": "12",
+    "dtype": "bf16",
+    "beta": "3",
+    "linear_beta": "5"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_situ_mul",
+    "library": "libref",
+    "max_rows": 64
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation situ_mul"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_situ_mul",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "gate_up",
+      "role": "in"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[i] = beta * tanh(gate_up[i] / beta) * sigmoid(gate_up[i]) * linear_beta * tanh(gate_up[n + i] / linear_beta), ERNIE's SiTU gated product, on silu_mul's fused [M, 2n] plane with the GATE STILL THE FIRST HALF. The gate is soft-clipped to +-beta and the up projection to +-linear_beta; both are finite and strictly positive (ERNIE 4 and 25). f32 throughout, one rounding to y's dtype.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-situ-mul",
+    "host_parity": "device situ_mul against the libref reference ref_situ_mul within the recorded parity band",
+    "code_map": [
+     "libref/ref_elementwise.cpp",
+     "libr4d/r4d_rows.cpp (new row for situ_mul)"
+    ]
+   }
+  },
+  {
+   "op": "situ_mul",
+   "count": 2,
+   "target": "gfx1201",
+   "abi": 43,
+   "dtype": "bf16",
+   "dtype_source": "graph parameter",
+   "params": {
+    "n": "5",
+    "dtype": "bf16",
+    "beta": "3",
+    "linear_beta": "5"
+   },
+   "cache_layout": {},
+   "host": {
+    "kernel": "ref_situ_mul",
+    "library": "libref",
+    "max_rows": 192
+   },
+   "device": {
+    "status": "missing",
+    "kernels": [],
+    "match": "op+dtype+shape",
+    "missing_reason": "no libr4d row for operation situ_mul"
+   },
+   "fallback": {
+    "kind": "host",
+    "kernel": "ref_situ_mul",
+    "library": "libref"
+   },
+   "operand_schema": {
+    "operands": [
+     {
+      "name": "gate_up",
+      "role": "in"
+     },
+     {
+      "name": "y",
+      "role": "out"
+     }
+    ],
+    "doc": "y[i] = beta * tanh(gate_up[i] / beta) * sigmoid(gate_up[i]) * linear_beta * tanh(gate_up[n + i] / linear_beta), ERNIE's SiTU gated product, on silu_mul's fused [M, 2n] plane with the GATE STILL THE FIRST HALF. The gate is soft-clipped to +-beta and the up projection to +-linear_beta; both are finite and strictly positive (ERNIE 4 and 25). f32 throughout, one rounding to y's dtype.",
+    "dtype_words_in_doc": [
+     "f32"
+    ],
+    "source": "libref/ref_registry.cpp"
+   },
+   "follow_up": {
+    "kind": "no device row: a new kernel",
+    "story": "dev-situ-mul",
+    "host_parity": "device situ_mul against the libref reference ref_situ_mul within the recorded parity band",
+    "code_map": [
+     "libref/ref_elementwise.cpp",
+     "libr4d/r4d_rows.cpp (new row for situ_mul)"
+    ]
+   }
+  }
+ ],
+ "summary": {
+  "device_ready": [
+   "act_mul",
+   "add",
+   "embed_lookup",
+   "gather_rows",
+   "gemm_nt_f32",
+   "hc_enter",
+   "kv_store",
+   "logits_gemm",
+   "mhc_post",
+   "moe_gather",
+   "moe_scatter",
+   "rmsnorm",
+   "sample_argmax",
+   "sample_dry",
+   "sample_logprobs",
+   "sample_mask",
+   "sample_minp",
+   "sample_ngram_ban",
+   "sample_penalties",
+   "sample_pick",
+   "sample_temp",
+   "sample_topk",
+   "sample_topp",
+   "sample_typical",
+   "sample_xtc"
+  ],
+  "device_missing": [
+   "ernie_dsa_select",
+   "ernie_hca_compress",
+   "ernie_hca_gather_slots",
+   "ernie_hca_q_prep",
+   "ernie_hca_state_write",
+   "ernie_hca_union_attn",
+   "ernie_hca_wo_a",
+   "ernie_head_slice",
+   "ernie_idx_key",
+   "ernie_idx_logits",
+   "ernie_idx_query",
+   "ernie_mhc_head",
+   "ernie_mhc_pre_rms",
+   "ernie_mla_project",
+   "ernie_mla_sparse_attn",
+   "ernie_multimax",
+   "ernie_rope_tail",
+   "ernie_router_topk",
+   "ernie_row_req",
+   "ernie_vha_mix",
+   "gemm_nt",
+   "moe_gemm",
+   "situ_mul"
+  ],
+  "ops_distinct": 48,
+  "device_ready_verified": [
+   "embed_lookup",
+   "hc_enter",
+   "logits_gemm",
+   "moe_gather",
+   "rmsnorm",
+   "sample_argmax",
+   "sample_logprobs",
+   "sample_mask",
+   "sample_ngram_ban",
+   "sample_penalties",
+   "sample_topp",
+   "sample_typical",
+   "sample_xtc"
+  ],
+  "device_ready_unverified": [
+   "act_mul",
+   "add",
+   "gather_rows",
+   "gemm_nt_f32",
+   "kv_store",
+   "mhc_post",
+   "moe_scatter",
+   "sample_dry",
+   "sample_minp",
+   "sample_pick",
+   "sample_temp",
+   "sample_topk"
+  ]
+ },
+ "decisions": {
+  "quantiser_rule": {
+   "decision": "The CPU reference implements all three scale rules behind the optional `quant_rule` parameter of ernie_idx_query and ernie_idx_key; the default stays `nvidia` (the pinned model's per_token_group_quant_fp8) and is byte-identical to before. A device kernel must name the rule it implements and is judged against that rule's reference, never against another. For rocm_fnuz the CPU reference keeps OCP E4M3 code bytes, so parity is judged on the scale and on dequantised values (and downstream logits), not on raw cache code bytes. The rule that matches the shipped checkpoint on ROCm is decided by the first real-weights comparison (4-2 / epic 5), not by reading source.",
+   "rules": {
+    "nvidia": {
+     "amax_floor": 1e-10,
+     "code_range": 448,
+     "scale": "2^ceil(log2(max(amax, floor) / range))"
+    },
+    "rocm": {
+     "amax_floor": 0.0001,
+     "code_range": 448,
+     "scale": "2^ceil(log2(max(amax, floor) / range))"
+    },
+    "rocm_fnuz": {
+     "amax_floor": 0.0001,
+     "code_range": 224,
+     "scale": "2^ceil(log2(max(amax, floor) / range)); exactly twice the rocm scale"
+    }
+   },
+   "effect": "rows whose amax is at or below 448 * 2^-23 (about 5.3e-5) get the larger floor scale 2^-22 under rocm instead of a smaller one (so their codes lose resolution; rows between that and 1e-4 already get 2^-22 under nvidia); rocm_fnuz doubles every scale",
+   "not_emulated": "the FNUZ e4m3 byte encoding (bias 8, no negative zero) is a device storage matter: the CPU reference keeps OCP E4M3 code bytes and only moves the scale and the code range",
+   "cpu_reference": "libref/ref_ernie_attn.cpp idx_rule / idx_quant (AM-012)"
+  },
+  "near_tie_fixture": {
+   "decision": "The tie rule of the indexer top-k (higher score first, lower index first on equal scores) is pinned at whole-model level, not only at op level (m06).",
+   "fixture": "tiny whole-model ERNIE checkpoint (the 3-6 geometry: dense and routed layers, MLA-DSA and HCA) with the indexer k_norm gamma and bias zeroed, so every key row is identical, every candidate score is exactly 0 and the tie rule alone chooses the attended tokens",
+   "test": "tests/4-1-device-dispatch-inventory.acceptance.cjs, 'whole-model near-tie'",
+   "discrimination": "the same prompt scored with the highest-index-first rule differs from the served result by more than 20x the 1e-4 tolerance"
+  },
+  "parity_band": {
+   "decision": "A device kernel is judged against the exact double-precision reference with a band that includes the rope-angle term, because a device kernel forms its rope angle from a float table.",
+   "unit": "relative to |q||k| of the rope slice (the bf16 storage term is also scaled by |q||k|, not by |reference|: it does not vanish when q.k is near zero; review of 4-1)",
+   "formula": "|device - reference| <= (rope_angle_term(position) + bf16_half_ulp_relative) * |q| * |k|",
+   "bf16_half_ulp_relative": 0.00390625,
+   "rope_angle_term": {
+    "4095": 2e-05,
+    "16383": 6e-05,
+    "65535": 0.00024,
+    "131071": 0.00035,
+    "1048575": 0.002
+   },
+   "rope_angle_term_yarn_measured": {
+    "note": "the measured YaRN terms, carried explicitly: HCA p99 of |dot_f32table - dot_double| / (|q||k|) from rope-angle-precision.md",
+    "131071": 0.00023,
+    "1048575": 0.0012
+   },
+   "rope_angle_term_note": "rope_angle_term above is the band the checks enforce: the plain-theta p99 (2.8e-4 at 131k, 1.5e-3 at 1M) rounded up, which is >= the YaRN terms; the sealed test measures plain theta independently and requires the recorded term to be at or above it, so the measured YaRN values 2.3e-4 / 1.2e-3 alone would be too small for plain-theta rope layers. YaRN layers may use the tighter rope_angle_term_yarn_measured values",
+   "source": "the measured rope-angle precision (p99 of the f32 cos/sin table error; the terms are the plain-theta values rounded up, which bound the YaRN values too), re-measured by the 4-1 contract",
+   "vector_form": "for a vector-output op the band applies per element relative to the |x| of the rope slice; between the tabulated positions use the next higher tabulated term",
+   "applies_to": "device rope in ernie_rope_tail, ernie_hca_compress, ernie_hca_q_prep and the indexer ops; an angle_dtype=f32_table CPU parameter is added only if 4-2 or epic 5 shows a residual that matches this table"
+  },
+  "window_group_hazard": {
+   "commit": "f9dd69db",
+   "summary": "upstream f9dd69db derives bidi_used from the window group's first position, so window-group positions are relative to first_block_pos. No effect on ERNIE's current CPU path, but the production RAD_KV_WINDOW HCA layout (window cache plus state ring) must be built and tested against recycled windows.",
+   "owner": "6-x (production KV lifecycle) with the 4-1 device inventory entries for ernie_hca_state_write / ernie_hca_gather_slots",
+   "required_fixture": "a recycled-window fixture: a request whose window group has dropped its first blocks and whose HCA window cache is read at positions relative to the new first_block_pos",
+   "note": "upstream merge note for f9dd69db"
+  }
+ }
+}

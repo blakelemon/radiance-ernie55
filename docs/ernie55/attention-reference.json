@@ -1,0 +1,3284 @@
+{
+ "report": "ernie55-attention-reference",
+ "schema_version": 1,
+ "pins": {
+  "baidu": {
+   "repo": "https://github.com/baidu/vLLM-ERNIE",
+   "commit": "b8414da6b703579814c2009c5a63bac101916bbe"
+  },
+  "vllm": {
+   "repo": "https://github.com/vllm-project/vllm",
+   "tag": "v0.32.0",
+   "commit": "5df63a7203cdb9328d824a27b682e77c7b9928be"
+  },
+  "flashmla": {
+   "repo": "https://github.com/vllm-project/FlashMLA",
+   "commit": "0eee43b12f034b657133cf2afca6a72ebb6efccf",
+   "note": "pinned by vllm v0.32.0 cmake/external_projects/flashmla.cmake; not read by this audit"
+  },
+  "hf_config": {
+   "model": "baidu/ERNIE-5.5-Flash-Base",
+   "revision": "028544b2ffceea189b2d8768ed2b9d09b06f2343",
+   "file": "config.json"
+  },
+  "ernie_repo": {
+   "repo": "radiance (this repository)",
+   "commit": "f900e7d21f0edac9029529d536a4bd146e10ba23",
+   "note": "pinned pilot tip f900e7d; citations are file:line of that commit"
+  },
+  "hf_headers": {
+   "model_dir": "ernie55-flash-fp8",
+   "revision": "028544b2ffceea189b2d8768ed2b9d09b06f2343",
+   "note": "safetensors shard headers (names, dtypes, shapes) read from the local copy of the pinned revision; no tensor data was read"
+  }
+ },
+ "sources": [
+  {
+   "pin": "baidu",
+   "file": "src/vllm_ernie/models/ernie5_5/config.py",
+   "url": "https://raw.githubusercontent.com/baidu/vLLM-ERNIE/b8414da6b703579814c2009c5a63bac101916bbe/src/vllm_ernie/models/ernie5_5/config.py",
+   "sha256": "9e48581cb15a7c1205a7d95adb9987b5032dfa81c19ff3414931797e27054641"
+  },
+  {
+   "pin": "baidu",
+   "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py",
+   "url": "https://raw.githubusercontent.com/baidu/vLLM-ERNIE/b8414da6b703579814c2009c5a63bac101916bbe/src/vllm_ernie/models/ernie5_5/nvidia/attention.py",
+   "sha256": "0a2892b4483778b1901a21683c2c083995c23e22a2030a6f4c093ef9f4c9c962"
+  },
+  {
+   "pin": "baidu",
+   "file": "src/vllm_ernie/models/ernie5_5/nvidia/model.py",
+   "url": "https://raw.githubusercontent.com/baidu/vLLM-ERNIE/b8414da6b703579814c2009c5a63bac101916bbe/src/vllm_ernie/models/ernie5_5/nvidia/model.py",
+   "sha256": "5423fd48df72ff0c0aa4573e32b3fdbf65d37bff13eaf5663f7961605a77bb56"
+  },
+  {
+   "pin": "baidu",
+   "file": "src/vllm_ernie/models/ernie5_5/nvidia/mtp.py",
+   "url": "https://raw.githubusercontent.com/baidu/vLLM-ERNIE/b8414da6b703579814c2009c5a63bac101916bbe/src/vllm_ernie/models/ernie5_5/nvidia/mtp.py",
+   "sha256": "aa1e0649de8715c36175e1507fc08796b1b8c15e480c963e848289721c4e429a"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "abi/rad_builder.h",
+   "sha256": "341b90b964ee0f5d75fde9fd7ee771df09ea7dc6e80f29c701e2fdec47a29886"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "abi/rad_yarn.h",
+   "sha256": "4be898825ed52865ff54804d71808ddf02f7dffc4ce2e33dadc36f7515a0476c"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "arch/common/rad_block_glm_indexer.h",
+   "sha256": "b9df2e8d2b254bd253063fb8c4b79f846ed0bbba480d8048f1414337ac52e604"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "arch/common/rad_block_glm_mla.h",
+   "sha256": "a75d61574974d50e67d877180b26714a183d4f576a32fda7306fee04d008f478"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "libref/ref_attn.cpp",
+   "sha256": "230a15493c111cbbba197e2fe502f10f3235d391523094f48358dc046bbd0d8f"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "libref/ref_dsa.cpp",
+   "sha256": "f3671a12448f53425583d676c7c77d56e675673259eafe0861cab6b5c6ddfc30"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "libref/ref_elementwise.cpp",
+   "sha256": "5bc470fa4b04c64bb38f7727492c7bd313393c533d0c9e4ef69ca11b9064c957"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "libref/ref_gen.cpp",
+   "sha256": "4bf23de9a138c8e211222ac3fa523eac434bd6335eede71201159054d512d08c"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "libref/ref_ltx.cpp",
+   "sha256": "9a272d01807c6c6aba20e56dd67e9b9c1f2c90ecb991c8fc232480bc687c16f2"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "libref/ref_mla.cpp",
+   "sha256": "df6c64c01c190c1e5b91e185dd063cee76b10fe24eef569d0602f934314436e6"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "libref/ref_moe.cpp",
+   "sha256": "579978b91e23652d57b3b2729d96c5efb9a4280a83485e6d6617d28058dfd57c"
+  },
+  {
+   "pin": "hf_config",
+   "file": "config.json",
+   "sha256": "89e8fb64b12d57b9d6965c63497e14fd58c771ac2e58a3be66778e72e6c84555"
+  },
+  {
+   "pin": "vllm",
+   "file": "csrc/cpu/sgl-kernels/compressor.cpp",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/csrc/cpu/sgl-kernels/compressor.cpp",
+   "sha256": "2408047a26ad909492ba6103529605422e62fc184e772e06968eff2b3263d51e"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/model_executor/layers/attention/mla_attention.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/model_executor/layers/attention/mla_attention.py",
+   "sha256": "de56c230eb97012b4fdf4c2aaef51f9659908017dc52066395468269c414691f"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/model_executor/layers/rotary_embedding/__init__.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/model_executor/layers/rotary_embedding/__init__.py",
+   "sha256": "b0487bc2998033fe5e8007759329728342c8827b1f2d6e55e750abe826513c74"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/model_executor/layers/rotary_embedding/common.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/model_executor/layers/rotary_embedding/common.py",
+   "sha256": "af4825138c1d8ee3823bfad04dadd91f6657818f867756c676faeb9d14d64f02"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/model_executor/layers/rotary_embedding/deepseek_scaling_rope.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/model_executor/layers/rotary_embedding/deepseek_scaling_rope.py",
+   "sha256": "5c22b73a8ca290b97ee5546e38d652a4a1276ab017c7d7b5ef89e7cc9c1ab76a"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/model_executor/layers/rotary_embedding/base.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/model_executor/layers/rotary_embedding/base.py",
+   "sha256": "c81804498f08f072356a26b41967f211475df2694dabf5da9f488c074d1fdef5"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/model_executor/layers/sparse_attn_indexer.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/model_executor/layers/sparse_attn_indexer.py",
+   "sha256": "75d14da5e2b8c237f7fc0a807d2b72677660a945c70d23825da3517801d9ca10"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/model_executor/models/deepseek_v2.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/model_executor/models/deepseek_v2.py",
+   "sha256": "96f4f755f62caa85869fb884209e7f8869882ddb6efbd40c930778b27bd3e39d"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/attention.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/attention.py",
+   "sha256": "896da67731ead60c3278625173005d8e586c22290c20e7348249212124c29dba"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/common/ops/cache_utils.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/common/ops/cache_utils.py",
+   "sha256": "294a3b5bc325f896e7e8618be4522e5c6e7bc42c457047f487ded6e7af9f0b40"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/common/ops/fused_inv_rope_fp8_quant.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/common/ops/fused_inv_rope_fp8_quant.py",
+   "sha256": "d3b3738ca14752addb2f16ef8f90c7b6182613c8c6eab301a2af4f03acc19442"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/common/rope.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/common/rope.py",
+   "sha256": "3a77ebd2cbe03fb36820a307a8bc65020b4988906ddc33189b8ae517f3ecac44"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/compressor.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/compressor.py",
+   "sha256": "5a20631846031656185b50d60787750dd6080700bcc339c298ce15be39bd2303"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/cpu/cpu_compressor.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/cpu/cpu_compressor.py",
+   "sha256": "f092b31c4cfc16948e0580b6d1bfbc38be0e051c7d569e65a35be20a893f8ab3"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/nvidia/flashmla.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/nvidia/flashmla.py",
+   "sha256": "28f636943e330702ce1d02ad1a6a242237bbce2503ee55f167274afa7d1ca0fe"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/nvidia/ops/o_proj.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/nvidia/ops/o_proj.py",
+   "sha256": "f2893ee6458eef50a371aae835b03fe1296f60f604236ab56235235637836e91"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/sparse_mla.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/sparse_mla.py",
+   "sha256": "e28e8f75f27cc2e2262d63e2ff767496e070a45cc9c37c9108d0ca557ba20067"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/xpu/xpu_qnorm_rope_kv_fp8_insert.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/xpu/xpu_qnorm_rope_kv_fp8_insert.py",
+   "sha256": "77f77ddb4a489bd16f82bd43d8c50b375ea97b11fffa2c88bc6c1a1743a2a2e6"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/v1/attention/backends/mla/flashmla_sparse.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/v1/attention/backends/mla/flashmla_sparse.py",
+   "sha256": "f7831e570e6d69b890d93830b3010a1a63eabd0a92315e1590e404127edc522d"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/v1/attention/backends/mla/indexer.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/v1/attention/backends/mla/indexer.py",
+   "sha256": "aabcb7f2e78b1136072edc87223b0d6e3bbd359b91dda5e1d0c86cba22f98f0e"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/v1/attention/backends/mla/sparse_swa.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/v1/attention/backends/mla/sparse_swa.py",
+   "sha256": "2afd31360ddb08fc4aacb14aaf5e4a44ae47c2df70d22b8026b27eb3f4413ff7"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/v1/attention/ops/rocm_aiter_mla_sparse.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/v1/attention/ops/rocm_aiter_mla_sparse.py",
+   "sha256": "2f48b649380764e68a00fd12ea66ce43025ec2ae68c7ab768d16e4d07e43417c"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/v1/kv_cache_interface.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/v1/kv_cache_interface.py",
+   "sha256": "39ea5be3054f97238f81ba070ea661f1b5975a6268ced5f413d4a057ea449d4a"
+  }
+ ],
+ "config": {
+  "num_hidden_layers": 43,
+  "num_nextn_predict_layers": 1,
+  "compress_ratios": [
+   128,
+   128,
+   128,
+   128,
+   128,
+   128,
+   128,
+   -2,
+   128,
+   128,
+   128,
+   128,
+   128,
+   128,
+   -2,
+   128,
+   128,
+   128,
+   128,
+   128,
+   128,
+   -2,
+   128,
+   128,
+   128,
+   128,
+   128,
+   128,
+   -2,
+   128,
+   128,
+   128,
+   128,
+   128,
+   128,
+   -2,
+   128,
+   128,
+   128,
+   128,
+   128,
+   128,
+   -2,
+   -2
+  ],
+  "sliding_window": 128,
+  "index_topk": 2048,
+  "index_n_heads": 64,
+  "index_head_dim": 128,
+  "max_position_embeddings": 1048576,
+  "head_dim": 512,
+  "qk_rope_head_dim": 64,
+  "num_attention_heads": 64,
+  "o_groups": 8,
+  "o_lora_rank": 1024,
+  "hybrid_mla_num_attention_heads": 64,
+  "hybrid_mla_q_lora_rank": 1024,
+  "hybrid_mla_kv_lora_rank": 512,
+  "hybrid_mla_qk_nope_head_dim": 192,
+  "hybrid_mla_qk_rope_head_dim": 64,
+  "hybrid_mla_v_head_dim": 256,
+  "compress_rope_theta": 160000,
+  "rope_theta": 8000000,
+  "rope_scaling": {
+   "beta_fast": 32,
+   "beta_slow": 1,
+   "factor": 16,
+   "original_max_position_embeddings": 65536,
+   "type": "yarn"
+  },
+  "rms_norm_eps": 1e-06
+ },
+ "schedule": {
+  "main_layers": 43,
+  "draft_entries": [43],
+  "num_entries": 44,
+  "entries": [
+   {
+    "entry": 0,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 1,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 2,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 3,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 4,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 5,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 6,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 7,
+    "kind": "main",
+    "ratio": -2,
+    "family": "mla_dsa"
+   },
+   {
+    "entry": 8,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 9,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 10,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 11,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 12,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 13,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 14,
+    "kind": "main",
+    "ratio": -2,
+    "family": "mla_dsa"
+   },
+   {
+    "entry": 15,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 16,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 17,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 18,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 19,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 20,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 21,
+    "kind": "main",
+    "ratio": -2,
+    "family": "mla_dsa"
+   },
+   {
+    "entry": 22,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 23,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 24,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 25,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 26,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 27,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 28,
+    "kind": "main",
+    "ratio": -2,
+    "family": "mla_dsa"
+   },
+   {
+    "entry": 29,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 30,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 31,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 32,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 33,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 34,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 35,
+    "kind": "main",
+    "ratio": -2,
+    "family": "mla_dsa"
+   },
+   {
+    "entry": 36,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 37,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 38,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 39,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 40,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 41,
+    "kind": "main",
+    "ratio": 128,
+    "family": "hca"
+   },
+   {
+    "entry": 42,
+    "kind": "main",
+    "ratio": -2,
+    "family": "mla_dsa"
+   },
+   {
+    "entry": 43,
+    "kind": "draft",
+    "ratio": -2,
+    "family": "mla_dsa"
+   }
+  ],
+  "mla_dsa_main_layers": [7, 14, 21, 28, 35, 42],
+  "hca_main_layers": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   22,
+   23,
+   24,
+   25,
+   26,
+   27,
+   29,
+   30,
+   31,
+   32,
+   33,
+   34,
+   36,
+   37,
+   38,
+   39,
+   40,
+   41
+  ],
+  "rule": "family = mla_dsa when compress_ratios[entry] <= 0 else hca (Ernie5_5Config.is_dsa_layer); entries at or beyond num_hidden_layers are the draft (MTP) entries"
+ },
+ "mla": {
+  "layers": [7, 14, 21, 28, 35, 42],
+  "draft_entries": [43],
+  "facts": [
+   {
+    "id": "m01",
+    "topic": "schedule",
+    "status": "established",
+    "statement": "A decoder entry is DSA exactly when compress_ratios[entry] <= 0 (the pinned config uses -2) and the entry index is below len(compress_ratios); the model builder is Ernie5_5DecoderLayer, which builds Ernie5_5DSAAttention for such an entry and the HCA class for every other. The six main MLA layers are therefore 7, 14, 21, 28, 35, 42 (zero based) and the separate draft entry 43 (index num_hidden_layers + 0) is also DSA because its ratio is -2.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/config.py", "line": 154, "line_end": 154, "quote": "def is_dsa_layer(self, layer_id: int) -> bool:"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/config.py", "line": 157, "line_end": 157, "quote": "layer_id < len(self.compress_ratios) and self.compress_ratios[layer_id] <= 0"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/model.py", "line": 120, "line_end": 120, "quote": "if config.is_dsa_layer(layer_id):"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/model.py", "line": 121, "line_end": 121, "quote": "self.attn = Ernie5_5DSAAttention("},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/mtp.py", "line": 130, "line_end": 130, "quote": "self.mtp_start_layer_idx = config.num_hidden_layers"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/mtp.py", "line": 94, "line_end": 94, "quote": "self.mtp_block = Ernie5_5DecoderLayer("},
+     {"pin": "hf_config", "file": "config.json", "line": 104, "line_end": 104, "quote": "\"num_hidden_layers\": 43,"},
+     {"pin": "hf_config", "file": "config.json", "line": 106, "line_end": 106, "quote": "\"num_nextn_predict_layers\": 1,"}
+    ]
+   },
+   {
+    "id": "m02",
+    "topic": "window",
+    "status": "established",
+    "statement": "The trailing window width is config.sliding_window (pinned: 128). It is read once as self.window and handed to merge_swa_topk and to the indexer metadata builder; both DSA and HCA layers use the same value.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 788, "line_end": 788, "quote": "self.window = config.sliding_window"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 353, "line_end": 353, "quote": "self.window = self.vllm_config.model_config.hf_config.sliding_window"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 368, "line_end": 368, "quote": "self.window,"},
+     {"pin": "hf_config", "file": "config.json", "line": 131, "line_end": 131, "quote": "\"sliding_window\": 128,"}
+    ]
+   },
+   {
+    "id": "m03",
+    "topic": "window",
+    "status": "established",
+    "statement": "Exact window endpoints. For the query at position p let seq = p + 1. merge_swa_topk writes the window as token indices seq-w .. seq-1 INCLUSIVE with w = min(seq, window): for window 128 the window is positions p-127 .. p, 128 tokens, and the query's own token is its last entry (the first full window is at seq = 128: [0, 127]; at seq = 129 it is [1, 128]). Request-local absolute indices are used, not page slots.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 299, "line_end": 299, "quote": "seq_len = tl.load(positions_ptr + row).to(tl.int32) + 1"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 301, "line_end": 301, "quote": "swa_len = tl.minimum(seq_len, WINDOW)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 305, "line_end": 305, "quote": "swa_idx = seq_len - swa_len + cols - indexer_len"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 318, "line_end": 318, "quote": "``[topk[:n] | seq-w .. seq-1 | -1 ...]`` with request-local"}
+    ]
+   },
+   {
+    "id": "m04",
+    "topic": "indexer",
+    "status": "established",
+    "statement": "The indexer scores only tokens OLDER than the window: candidates are the half-open range [0, max(seq - window, 0)). Prefill clamps the per-row exclusive end cu_seqlen_ke to max(ke - window, ks); decode subtracts the window from seq_lens and clamps at 0. The unwindowed exclusive end for DSA (compress ratio 1) is pos + 1, so the windowed end is pos + 1 - window = window_start. Candidates and window are disjoint and together cover [0, seq) whenever the indexer is not truncated by top-k. The torch reference of the logits masks keys with ks <= j < ke (ke exclusive).",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 368, "line_end": 368, "quote": "chunk.cu_seqlen_ke - self.window, chunk.cu_seqlen_ks"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 378, "line_end": 378, "quote": "torch.sub(seq_lens, self.window, out=windowed)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 379, "line_end": 379, "quote": "windowed.clamp_min_(0)"},
+     {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/indexer.py", "line": 551, "line_end": 551, "quote": "global_ctx = start_pos + 1 + offset"},
+     {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/indexer.py", "line": 552, "line_end": 552, "quote": "len_per_token = global_ctx // COMPRESS_RATIO"},
+     {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/indexer.py", "line": 1012, "line_end": 1012, "quote": "self.compress_ratio = 1"},
+     {"pin": "vllm", "file": "vllm/model_executor/models/deepseek_v2.py", "line": 665, "line_end": 665, "quote": "cache_role=SparseCacheRole.INDEXER,"},
+     {"pin": "vllm", "file": "vllm/v1/kv_cache_interface.py", "line": 528, "line_end": 528, "quote": "tokens_per_state: int | Fraction = 1"},
+     {"pin": "vllm", "file": "vllm/v1/attention/ops/rocm_aiter_mla_sparse.py", "line": 843, "line_end": 843, "quote": "cu_seqlen_ke: End indices (exclusive)"},
+     {"pin": "vllm", "file": "vllm/v1/attention/ops/rocm_aiter_mla_sparse.py", "line": 860, "line_end": 860, "quote": "torch.arange(0, seq_len_kv, device=device)[None, :] < cu_seqlen_ke[:, None]"}
+    ]
+   },
+   {
+    "id": "m05",
+    "topic": "topk",
+    "status": "established",
+    "statement": "Selected-candidate count n = min(max(seq - window, 0), index_topk) (pinned index_topk 2048); the merged row is [indexer top-k ids (first n entries) | window ids ascending | -1 padding], width index_topk + sliding_window = 2176. The kernel masks every indexer slot at or beyond n, so unspecified tail contents never matter. Truncation first happens at seq = window + index_topk + 1 = 2177.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 300, "line_end": 300, "quote": "indexer_len = tl.minimum(tl.maximum(seq_len - WINDOW, 0), TOPK)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 304, "line_end": 304, "quote": "topk = tl.load(topk_ptr + row * topk_stride + cols, mask=is_topk, other=-1)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 334, "line_end": 334, "quote": "assert width >= topk + window"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/model.py", "line": 76, "line_end": 76, "quote": "num_tokens, config.index_topk + config.sliding_window, dtype=torch.int32"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 628, "line_end": 628, "quote": "self.topk_indices_buffer = swa_topk_buffer"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/sparse_attn_indexer.py", "line": 566, "line_end": 566, "quote": "topk_indices_buffer[: hidden_states.shape[0]] = -1"}
+    ]
+   },
+   {
+    "id": "m06",
+    "topic": "topk",
+    "status": "unresolved",
+    "statement": "The ORDER of the indexer's selected ids inside the first n slots and the tie-breaking between equal scores are decided by the top_k_per_row kernels (prefill and decode), which are CUDA/ROCm kernels outside the pinned Python. Attention is invariant to the order of its candidates up to floating-point summation order, so only tie handling at the k-th boundary can change the selected SET.",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/model_executor/layers/sparse_attn_indexer.py", "line": 711, "line_end": 711, "quote": "ops.top_k_per_row_prefill("},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 305, "line_end": 305, "quote": "swa_idx = seq_len - swa_len + cols - indexer_len"}
+    ],
+    "resolver": {
+     "kind": "source-read",
+     "action": "Read csrc top_k_per_row_prefill / top_k_per_row_decode at vLLM v0.32.0 (csrc/sampler.cu or its includes) for tie order and for what fills slots beyond the valid count, then pin the answer with a tied-score fixture in story 3-1."
+    },
+    "why": "The selection and tie kernels (top_k_per_row_prefill/decode) are compiled ops; their source was not part of the pinned Python read.",
+    "impact": "A CPU selection op could pick a different set than the reference when scores tie at the k-th place."
+   },
+   {
+    "id": "m07",
+    "topic": "window",
+    "status": "derived",
+    "statement": "Causality holds by construction: every window index is <= p and every indexer candidate is < seq - window <= p, so no future token and no uninitialised page can be selected; with seq <= window the indexer range is empty and the row is the window alone. The window and the candidate range never overlap, so no token is attended twice in a DSA layer (contrast the HCA overlap in h08).",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 301, "line_end": 301, "quote": "swa_len = tl.minimum(seq_len, WINDOW)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 368, "line_end": 368, "quote": "chunk.cu_seqlen_ke - self.window, chunk.cu_seqlen_ks"}
+    ]
+   },
+   {
+    "id": "m08",
+    "topic": "positional",
+    "status": "established",
+    "statement": "Main-path positional split: q is [qk_nope_head_dim | qk_rope_head_dim] per head (192 | 64) and RoPE is applied to the TRAILING slice q[..., nope:]; k_pe is the trailing 64 of the fused qkv_a projection (a single head shared by all heads) rotated separately and cached after the normed latent. The rotary is GPT-J interleaved (is_neox_style=False), plain default RoPE at rope_theta (pinned 8,000,000), with NO YaRN scaling: YaRN applies to HCA layers only. Table precision (corrected in story 3-2b): the DSA layers use the DEFAULT RotaryEmbedding, which builds its cos/sin table from f32 angles and then casts the whole table to the model dtype (bf16 here: get_rope takes torch.get_default_dtype() and base.py casts `cache.to(dtype)`), so the served model rotates with BF16 cos and sin; the f32 cos/sin cache of deepseek_scaling_rope.py belongs to the HCA YaRN class only.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 891, "line_end": 891, "quote": "q[..., self.qk_nope_head_dim :], k_pe = self.rotary_emb("},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 889, "line_end": 889, "quote": "kv_c, k_pe = kv_lora.split([self.kv_lora_rank, self.qk_rope_head_dim], -1)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 835, "line_end": 835, "quote": "is_neox_style=False,"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 836, "line_end": 836, "quote": "rope_parameters=config.mla_rope_parameters,"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/config.py", "line": 189, "line_end": 189, "quote": "return {\"rope_type\": \"default\", \"rope_theta\": self.rope_theta}"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/config.py", "line": 187, "line_end": 187, "quote": "# YaRN is HCA-only (at compress_rope_theta); DSA, its indexer"},
+     {"pin": "hf_config", "file": "config.json", "line": 124, "line_end": 124, "quote": "\"rope_theta\": 8000000,"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/__init__.py", "line": 42, "line_end": 42, "quote": "dtype = torch.get_default_dtype()"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/base.py", "line": 61, "line_end": 61, "quote": "cache = cache.to(dtype)"}
+    ]
+   },
+   {
+    "id": "m09",
+    "topic": "indexer",
+    "status": "established",
+    "statement": "Indexer positional order differs from the main path: its q (64 heads x 128) is split ROPE FIRST, [rope 64 | nope 64], rotated NeoX split-half (is_neox_style=True) with the same plain rope_theta RoPE, concatenated back as [rotated | nope] and only then Hadamard-transformed over the whole 128. k comes from wk_weights_proj, passes LayerNorm(128, eps 1e-6) (weight and bias) BEFORE the rope split, gets the same transforms, and the per-head weights are the tail n_head columns of the same projection.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 665, "line_end": 665, "quote": "q_pe, q_nope = q.split([self.rope_dim, nope_dim], dim=-1)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 620, "line_end": 620, "quote": "is_neox_style=True,"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 668, "line_end": 668, "quote": "q = torch.cat([q_pe.reshape(-1, self.n_head, self.rope_dim), q_nope], -1)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 670, "line_end": 670, "quote": "q = hadamard_rows(q.view(-1, self.head_dim))"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 661, "line_end": 661, "quote": "k, weights = kw.split([self.head_dim, self.n_head], dim=-1)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 616, "line_end": 616, "quote": "self.k_norm = LayerNorm(self.head_dim, eps=1e-6)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 662, "line_end": 662, "quote": "k = self.k_norm(k)"},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.core_attention.indexer.k_norm.bias", "dtype": "BF16", "shape": [128]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.core_attention.indexer.k_norm.weight", "dtype": "BF16", "shape": [128]}
+    ]
+   },
+   {
+    "id": "m10",
+    "topic": "indexer",
+    "status": "established",
+    "statement": "Indexer scoring: q is quantised per token-group of 128 to FP8 E4M3 with a power-of-two (UE8M0) scale; the head weights are multiplied by that scale and by weights_scale = head_dim^-0.5 * n_head^-0.5 (the Hadamard is orthonormal, so only this scaling is folded); the logit of key j is sum over heads of relu(q_h . k_j * k_scale_j) * weight_h, with k stored as FP8 plus an fp32 scale. The ROCm torch fallback pinned in v0.32.0 is the readable statement of the arithmetic.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 625, "line_end": 625, "quote": "self.weights_scale = self.head_dim**-0.5 * self.n_head**-0.5"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 684, "line_end": 684, "quote": "weights = weights * q_scale.view(-1, self.n_head) * self.weights_scale"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 681, "line_end": 681, "quote": "q, INDEXER_QUANT_BLOCK, column_major_scales=False, use_ue8m0=True"},
+     {"pin": "vllm", "file": "vllm/v1/attention/ops/rocm_aiter_mla_sparse.py", "line": 870, "line_end": 870, "quote": "score = torch.einsum(\"mhd,nd->hmn\", q, k).float() * scale.reshape(-1)"},
+     {"pin": "vllm", "file": "vllm/v1/attention/ops/rocm_aiter_mla_sparse.py", "line": 871, "line_end": 871, "quote": "logits = (score.relu() * weights.unsqueeze(-1).transpose(0, 1)).sum(dim=0)"}
+    ]
+   },
+   {
+    "id": "m11",
+    "topic": "scale",
+    "status": "established",
+    "statement": "Softmax scale is qk_head_dim^-0.5 with qk_head_dim = qk_nope + qk_rope = 192 + 64 = 256 (0.0625 for the pinned config), passed to the sparse MLA layer; there is no YaRN magnitude or mscale factor on the DSA path.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 859, "line_end": 859, "quote": "scale=self.qk_head_dim**-0.5,"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 786, "line_end": 786, "quote": "self.qk_head_dim = self.qk_nope_head_dim + self.qk_rope_head_dim"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/config.py", "line": 187, "line_end": 187, "quote": "# YaRN is HCA-only (at compress_rope_theta); DSA, its indexer"}
+    ]
+   },
+   {
+    "id": "m12",
+    "topic": "projections",
+    "status": "established",
+    "statement": "Attention is absorbed latent MQA for decode AND prefill (sparse_mla_force_mqa is forced on): q_nope is absorbed by W_UK, scores are taken against the 576-wide latent row, the value is the latent and the result is expanded by W_UV. kv_b_proj is [W_UK ; W_UV] concatenated per head, i.e. per head 192 key rows then 256 value rows (28672 rows for 64 heads), so key and value head widths are NOT equal.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 846, "line_end": 846, "quote": "get_current_vllm_config().attention_config.sparse_mla_force_mqa = True"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/attention/mla_attention.py", "line": 1217, "line_end": 1217, "quote": "self._vllm_config.attention_config.sparse_mla_force_mqa"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/attention/mla_attention.py", "line": 88, "line_end": 88, "quote": "`kv_b_proj` is [W_UK; W_UV] concatenated per head"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/attention/mla_attention.py", "line": 98, "line_end": 98, "quote": "ql_nope  = einsum(\"snh,lnh->snl\", q_nope, W_UK)"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/attention/mla_attention.py", "line": 116, "line_end": 116, "quote": "o = einsum(\"snl,lnv->snv\", sdpa_o.reshape(-1, N, Lkv), W_UV)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 809, "line_end": 809, "quote": "self.num_heads * (self.qk_nope_head_dim + self.v_head_dim),"},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.kv_b_proj.weight", "dtype": "F8_E4M3", "shape": [28672, 512]}
+    ]
+   },
+   {
+    "id": "m13",
+    "topic": "kv_layout",
+    "status": "established",
+    "statement": "KV layout: one latent row per token = RMS-normed kv_c (512) followed by the rotated k_pe (64), 576 elements, a single KV head, in 64-token pages (DSA_BLOCK_SIZE). A bf16 row is 1152 bytes; the fp8_ds_mla row is 656 bytes: 512 FP8 values, 4 fp32 scales (one per 128), then 64 bf16 rope values. The indexer has its own key cache, one row per TOKEN (compress ratio 1): 128 FP8 values plus one fp32 scale = 132 bytes (MXFP4: 64 packed bytes + 4 UE8M0 scales = 68), also 64-token pages.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 87, "line_end": 87, "quote": "DSA_BLOCK_SIZE = 64"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 274, "line_end": 274, "quote": "dsa_row = (hf_config.mla_kv_lora_rank + hf_config.mla_qk_rope_head_dim) * 2"},
+     {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/flashmla_sparse.py", "line": 191, "line_end": 191, "quote": "# DeepSeek V3.2: 512 NoPE + 64 RoPE = 576; GLM5Next NoPE: 512."},
+     {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/flashmla_sparse.py", "line": 80, "line_end": 80, "quote": "For DeepSeek V3.2, in the \"FP8 with scale\" format, each token's KV cache is 656"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 634, "line_end": 634, "quote": "# head_dim bytes = 128 fp8 + 4 fp32 scale = 132."},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 631, "line_end": 631, "quote": "# head_dim bytes = 64 packed values + 4 UE8M0 scales = 68."},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 806, "line_end": 806, "quote": "self.kv_a_layernorm = RMSNorm(self.kv_lora_rank, eps=config.rms_norm_eps)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 890, "line_end": 890, "quote": "kv_c_normed = self.kv_a_layernorm(kv_c)"}
+    ]
+   },
+   {
+    "id": "m14",
+    "topic": "cache_dtype",
+    "status": "established",
+    "statement": "The cache dtype is a serving choice, not a model property: the DSA layer needs the sink-capable FLASHMLA_SPARSE backend and validates the configured kv_cache_dtype against it; that backend's table accepts auto, bfloat16, fp8_ds_mla (fp8 is an alias) and nvfp4_ds_mla (SM100 only); the indexer cache is always uint8 (FP8 or MXFP4 pages). Radiance must pick its own cache dtype; neither the config nor the checkpoint fixes it.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 743, "line_end": 743, "quote": "invalid_reasons = Ernie5_5FlashMLASparseBackend.validate_configuration("},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 749, "line_end": 749, "quote": "has_sink=True,"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 638, "line_end": 638, "quote": "dtype=torch.uint8,"},
+     {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/flashmla_sparse.py", "line": 154, "line_end": 154, "quote": "\"nvfp4_ds_mla\",  # NVFP4 NoPE + FP8 RoPE (SM100 only)"},
+     {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/flashmla_sparse.py", "line": 149, "line_end": 149, "quote": "supported_kv_cache_dtypes: ClassVar[list[CacheDType]] = ["},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 507, "line_end": 507, "quote": "def supports_sink(cls) -> bool:"}
+    ]
+   },
+   {
+    "id": "m15",
+    "topic": "sink",
+    "status": "established",
+    "statement": "Attention sink: a learned per-head fp32 logit (attn_sink, one value per local head; checkpoint tensor core_attention.softmax_offset, BF16 [64], renamed by the weight mapper) that joins each head's softmax as ONE extra logit with NO value: the running max includes it and exp(sink - max) is added to the denominator only; the numerator is still the keys' weighted values. Heads padded for the kernel get -inf (a no-op). The sink therefore enters each (query token, head) softmax exactly once.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 838, "line_end": 838, "quote": "self.attn_sink = nn.Parameter("},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 408, "line_end": 408, "quote": "The kernels fold the sink into the softmax denominator."},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 424, "line_end": 424, "quote": "padded[:num_heads] = self.sinks"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/model.py", "line": 606, "line_end": 606, "quote": "\".self_attn.core_attention.softmax_offset\": \".attn.attn_sink\","},
+     {"pin": "vllm", "file": "vllm/v1/attention/ops/rocm_aiter_mla_sparse.py", "line": 2198, "line_end": 2198, "quote": "l_final = l_i * alpha + tl.exp(sink - m_final)"},
+     {"pin": "vllm", "file": "vllm/v1/attention/ops/rocm_aiter_mla_sparse.py", "line": 2196, "line_end": 2196, "quote": "m_final = tl.maximum(m_i, sink)"},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.core_attention.softmax_offset", "dtype": "BF16", "shape": [64]}
+    ]
+   },
+   {
+    "id": "m16",
+    "topic": "gate_order",
+    "status": "established",
+    "statement": "Output order for a DSA layer: attention output o [tokens, heads, v_head_dim 256] -> VHA head mix -> times sigmoid(gate) element by element (gate = o_gate(q_c) with q_c the q_a_layernorm OUTPUT, width heads x v_head_dim = 16384) -> wo_b (16384 -> 4096). The gate multiplies AFTER the VHA mix and BEFORE the output projection.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 903, "line_end": 903, "quote": "o = self.vha(attn_out.view(num_tokens, self.num_local_heads, self.v_head_dim))"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 904, "line_end": 904, "quote": "return self.wo_b(o.flatten(1) * torch.sigmoid(gate))"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 887, "line_end": 887, "quote": "gate = self.o_gate(q_c)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 886, "line_end": 886, "quote": "q_c = self.q_a_layernorm(q_c)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 825, "line_end": 825, "quote": "self.num_heads * self.v_head_dim,"},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.gate_proj.weight", "dtype": "F8_E4M3", "shape": [16384, 1024]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.o_proj.weight", "dtype": "F8_E4M3", "shape": [4096, 16384]}
+    ]
+   },
+   {
+    "id": "m17",
+    "topic": "vha",
+    "status": "established",
+    "statement": "VHA (value-head mixing): o[h] <- sum_g m[h,g] o[g] with m = I + V U^T, U and V [heads, 16] (rank 16), acting on the HEAD axis independently for each token and each of the v_head_dim columns. With tp = 1 the heads x heads matrix m is folded once from U and V and applied as one matmul on the [tokens, heads, dim] attention output. The checkpoint carries vha_postmix_U and vha_postmix_V as BF16 [64, 16].",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 111, "line_end": 111, "quote": "``o[h] <- sum_g m[h, g] * o[g]`` with ``m = I + V @ U^T``."},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 85, "line_end": 85, "quote": "VHA_RANK = 16"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 135, "line_end": 135, "quote": "self.m.copy_(torch.addmm(eye, self.V, self.U.t()))"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 140, "line_end": 140, "quote": "return torch.matmul(self.m, o)"},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.vha_postmix_U", "dtype": "BF16", "shape": [64, 16]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.vha_postmix_V", "dtype": "BF16", "shape": [64, 16]}
+    ]
+   },
+   {
+    "id": "m18",
+    "topic": "vha",
+    "status": "unresolved",
+    "statement": "The dtype and rounding of the folded VHA matrix m: it is built with addmm in the parameter dtype and copied into a buffer created with torch.eye(num_heads) under whatever default dtype is active when the layer is constructed; whether m is bf16-rounded (as the loader's dtype context suggests) or kept in fp32 cannot be proven from the pinned Python alone.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 123, "line_end": 123, "quote": "self.register_buffer(\"m\", torch.eye(num_heads), persistent=False)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 134, "line_end": 134, "quote": "eye = torch.eye(self.U.shape[0], dtype=self.U.dtype, device=self.U.device)"}
+    ],
+    "resolver": {
+     "kind": "real-weight-probe",
+     "action": "Read vha_postmix_U/V (BF16 [64,16], a few KiB) for layers 7 and 42 from the real checkpoint, form m = I + V U^T in fp32 and in bf16 and report the largest entrywise difference; then construct Ernie5_5DSAAttention under vLLM v0.32.0's dtype context (or read the loader) to learn which one the reference uses."
+    },
+    "why": "The buffer dtype depends on torch's default dtype at construction, which vLLM's model loader sets outside the pinned files.",
+    "impact": "Measured on the real layers 7 and 42: bf16 rounding moves entries of m by up to about 7e-3 absolute (about 0.4 percent relative, one bf16 ulp) while off-diagonal entries reach 0.47 to 0.62, so VHA is a large mix and the engine must match one of the two choices to stay within tolerance.",
+    "probe": {
+     "method": "m = I + V U^T from the real BF16 vha_postmix_U/V (64 x 16 each, 4 KiB tensors), fp32 accumulation; compared with the same m rounded once to bf16 (what addmm in the parameter dtype produces)",
+     "layers": {
+      "7": {
+       "max_abs_diff_bf16_vs_fp32": 0.007169,
+       "max_rel_diff": 0.003824,
+       "max_abs_offdiagonal_entry": 0.4746
+      },
+      "42": {
+       "max_abs_diff_bf16_vs_fp32": 0.006898,
+       "max_rel_diff": 0.003867,
+       "max_abs_offdiagonal_entry": 0.6206
+      }
+     }
+    }
+   },
+   {
+    "id": "m19",
+    "topic": "positional",
+    "status": "established",
+    "statement": "There is no per-head q/k RMS norm on the DSA path (the config flags use_qk_norm and qk_norm_type are not referenced by the pinned code, and layers 7 and 43 carry no per-head norm tensors): the only norms are q_a_layernorm (RMSNorm 1024), kv_a_layernorm (RMSNorm 512) and the indexer's LayerNorm, all with eps = rms_norm_eps except the indexer's fixed 1e-6. Many config flags (use_gated_attn, use_vha_attention, add_full_attention_sink_bias, gated_attn_act, use_fast_hadamard, rope_interleave, qk_pos_emb_head_dim, hca_rope_type, ...) are not referenced anywhere in the 14 non-parser files of the pinned src/vllm_ernie (grep, zero hits): gate, VHA and sink are unconditional in the pinned code, so Radiance must not branch on them.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 798, "line_end": 798, "quote": "self.q_a_layernorm = RMSNorm(self.q_lora_rank, eps=config.rms_norm_eps)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 806, "line_end": 806, "quote": "self.kv_a_layernorm = RMSNorm(self.kv_lora_rank, eps=config.rms_norm_eps)"},
+     {"pin": "hf_config", "file": "config.json", "line": 144, "line_end": 144, "quote": "\"use_qk_norm\": true,"},
+     {"pin": "hf_config", "file": "config.json", "line": 142, "line_end": 142, "quote": "\"use_gated_attn\": true,"},
+     {"pin": "hf_config", "file": "config.json", "line": 145, "line_end": 145, "quote": "\"use_vha_attention\": true,"},
+     {"pin": "hf_config", "file": "config.json", "line": 4, "line_end": 4, "quote": "\"add_full_attention_sink_bias\": true,"},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.kv_a_layernorm.weight", "dtype": "BF16", "shape": [512]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.q_a_layernorm.weight", "dtype": "BF16", "shape": [1024]}
+    ]
+   },
+   {
+    "id": "m20",
+    "topic": "projections",
+    "status": "established",
+    "statement": "Tensor geometry of a DSA entry (identical for layers 7, 14, 21, 28, 35, 42 and the draft entry 43, checked for all seven entries against the real shard headers): q_a_proj [1024,4096] and kv_a_proj_with_mqa [576,4096] feed one fused projection; q_b_proj [16384,1024] (64 heads x 256); kv_b_proj [28672,512]; o_gate (gate_proj) [16384,1024]; o_proj [4096,16384]; indexer wq_b [8192,1024] FP8, wk [128,4096] and weights_proj [64,4096] BF16 (not quantised), k_norm weight and bias [128]; softmax_offset [64]; vha U and V [64,16]. Block-FP8 weights carry weight_scale_inv [ceil(rows/128), ceil(cols/128)].",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 792, "line_end": 792, "quote": "[self.q_lora_rank, self.kv_lora_rank + self.qk_rope_head_dim],"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 801, "line_end": 801, "quote": "self.num_heads * self.qk_head_dim,"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 610, "line_end": 610, "quote": "[self.head_dim, self.n_head],"},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.core_attention.indexer.k_norm.bias", "dtype": "BF16", "shape": [128]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.core_attention.indexer.k_norm.weight", "dtype": "BF16", "shape": [128]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.core_attention.indexer.weights_proj.weight", "dtype": "BF16", "shape": [64, 4096]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.core_attention.indexer.wk.weight", "dtype": "BF16", "shape": [128, 4096]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.core_attention.indexer.wq_b.weight", "dtype": "F8_E4M3", "shape": [8192, 1024]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.core_attention.softmax_offset", "dtype": "BF16", "shape": [64]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.gate_proj.weight", "dtype": "F8_E4M3", "shape": [16384, 1024]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.kv_a_layernorm.weight", "dtype": "BF16", "shape": [512]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.kv_a_proj_with_mqa.weight", "dtype": "F8_E4M3", "shape": [576, 4096]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.kv_b_proj.weight", "dtype": "F8_E4M3", "shape": [28672, 512]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.o_proj.weight", "dtype": "F8_E4M3", "shape": [4096, 16384]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.q_a_layernorm.weight", "dtype": "BF16", "shape": [1024]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.q_a_proj.weight", "dtype": "F8_E4M3", "shape": [1024, 4096]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.q_b_proj.weight", "dtype": "F8_E4M3", "shape": [16384, 1024]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.vha_postmix_U", "dtype": "BF16", "shape": [64, 16]},
+     {"pin": "hf_headers", "file": "model-00022-of-00128.safetensors", "tensor": "model.layers.7.self_attn.vha_postmix_V", "dtype": "BF16", "shape": [64, 16]}
+    ]
+   },
+   {
+    "id": "m21",
+    "topic": "precision",
+    "status": "established",
+    "statement": "Precision boundaries on the DSA path: activations and attention output are model dtype (bf16); the sigmoid gate is taken in model dtype; sink is fp32; indexer q is FP8 E4M3 with a power-of-two scale, its weights fp32 after scaling, its keys FP8 plus fp32 scale, logits fp32; the Hadamard runs on bf16 rows (the pinned comment calls it orthonormal); the latent cache is bf16 or fp8_ds_mla by serving choice. QKV and output projections are block-FP8 (128x128) weights with dynamic activation quantisation in the reference runtime.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 208, "line_end": 208, "quote": "dtype=hidden_states.dtype,"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 839, "line_end": 839, "quote": "torch.empty(self.num_local_heads, dtype=torch.float32), requires_grad=False"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 623, "line_end": 623, "quote": "# The hadacore transform is orthonormal, so only the usual softmax and"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 97, "line_end": 97, "quote": "return ops.hadacore_transform(x, inplace=False)[:num_rows]"},
+     {"pin": "hf_config", "file": "config.json", "line": 149, "line_end": 149, "quote": "\"activation_scheme\": \"dynamic\","},
+     {"pin": "hf_config", "file": "config.json", "line": 153, "line_end": 153, "quote": "\"weight_block_size\": ["}
+    ]
+   },
+   {
+    "id": "m22",
+    "topic": "precision",
+    "status": "unresolved",
+    "statement": "Numerics of the compiled kernels the DSA path calls: the exact accumulation order and bf16 roundings inside FlashMLA's sparse forward (CUDA) and inside DeepGEMM's fp8 MQA logits, and hadacore's exact scaling constant. The softmax-with-sink SEMANTICS are established by the in-tree ROCm Triton kernel (m15); bit-level agreement of the CUDA kernels was not read.",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/v1/attention/ops/rocm_aiter_mla_sparse.py", "line": 2199, "line_end": 2199, "quote": "denom = tl.maximum(l_final, 1.0e-30)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 97, "line_end": 97, "quote": "return ops.hadacore_transform(x, inplace=False)[:num_rows]"}
+    ],
+    "resolver": {
+     "kind": "source-read",
+     "action": "Read vllm-project/FlashMLA at 0eee43b12f034b657133cf2afca6a72ebb6efccf (csrc sparse prefill/decode attn_sink handling) and the hadacore_transform source in vLLM v0.32.0 csrc, then record tolerances from a measured CPU-versus-reference comparison."
+    },
+    "why": "The CUDA kernels live in the FlashMLA fork (vllm-project/FlashMLA 0eee43b) and DeepGEMM, which are separate pins not read for this audit.",
+    "impact": "CPU parity tolerances for story 3-1/3-2 must be measured against a reference run, not derived from the kernel source."
+   },
+   {
+    "id": "m23",
+    "topic": "draft",
+    "status": "established",
+    "statement": "The draft entry 43 is a complete DSA layer of the same geometry (24 attention tensors, identical shapes to layers 7..42, checked in the real headers) with its OWN indexer-top-k and window-merge buffers (not shared with the target) and its own caches; it is built as Ernie5_5MTPLayer.mtp_block through the same Ernie5_5DecoderLayer. Draft weights belong to a separate artifact stage, not to target-only conversion.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/mtp.py", "line": 132, "line_end": 132, "quote": "# Own buffers, not shared with the target (see `Ernie5_5Model`)."},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/mtp.py", "line": 133, "line_end": 133, "quote": "self.indexer_topk_buffer, self.swa_topk_buffer = topk_buffers("},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/mtp.py", "line": 94, "line_end": 94, "quote": "self.mtp_block = Ernie5_5DecoderLayer("},
+     {"pin": "hf_headers", "file": "model-00128-of-00128.safetensors", "tensor": "model.layers.43.self_attn.core_attention.indexer.wq_b.weight", "dtype": "F8_E4M3", "shape": [8192, 1024]},
+     {"pin": "hf_headers", "file": "model-00128-of-00128.safetensors", "tensor": "model.layers.43.self_attn.core_attention.softmax_offset", "dtype": "BF16", "shape": [64]},
+     {"pin": "hf_headers", "file": "model-00128-of-00128.safetensors", "tensor": "model.layers.43.self_attn.kv_b_proj.weight", "dtype": "F8_E4M3", "shape": [28672, 512]}
+    ]
+   },
+   {
+    "id": "m24",
+    "topic": "positional",
+    "status": "established",
+    "statement": "Chunked prefill and decode use ABSOLUTE request-local positions: the window merge reads positions[row] directly (seq = position + 1), and the indexer's ks/ke are built from uncompressed_seq_len - query_len + offset, so a chunk's rows see the same candidate and window sets as a one-shot prefill.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 923, "line_end": 923, "quote": "positions[:num_tokens],"},
+     {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/indexer.py", "line": 534, "line_end": 534, "quote": "start_pos = uncompressed_seq_len - query_len"},
+     {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/indexer.py", "line": 551, "line_end": 551, "quote": "global_ctx = start_pos + 1 + offset"}
+    ]
+   },
+   {
+    "id": "m25",
+    "topic": "cache_dtype",
+    "status": "unresolved",
+    "statement": "Which KV cache dtype Radiance should use for the DSA latent rows (bf16, FP8 e4m3 or the 656-byte fp8_ds_mla layout) is a design decision: the sources define all of them but the accuracy cost on this model has not been measured.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 274, "line_end": 274, "quote": "dsa_row = (hf_config.mla_kv_lora_rank + hf_config.mla_qk_rope_head_dim) * 2"}
+    ],
+    "resolver": {
+     "kind": "design-decision",
+     "action": "Decide in story 3-2/3-5 after measuring logit and top-k agreement of bf16 versus fp8 latent rows on a CPU fixture and on a bounded real-weight sample; record the choice and tolerances next to this audit."
+    },
+    "why": "Not a property of the pinned sources; it depends on measured accuracy and the cache-dtype options the Radiance cache blocks accept.",
+    "impact": "Fixes the page geometry story 3-5 must declare."
+   },
+   {
+    "id": "m26",
+    "topic": "cache_dtype",
+    "status": "established",
+    "statement": "MXFP4 indexer eligibility: the indexer uses an MXFP4 key cache when dsa_indexer_uses_fp4(vllm_config) holds (a serving option), and its constructor then refuses any prefill or decode context parallelism (PCP and DCP must both be 1). The FP8 indexer cache (132 bytes a token) has no such restriction; initial parity should use it.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 584, "line_end": 584, "quote": "self.use_fp4_kv = dsa_indexer_uses_fp4(vllm_config)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 590, "line_end": 590, "quote": "if pcp_size != 1 or dcp_size != 1:"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 592, "line_end": 592, "quote": "\"ERNIE 5.5 MXFP4 indexer currently requires PCP=DCP=1 \""},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 591, "line_end": 591, "quote": "raise NotImplementedError("}
+    ]
+   }
+  ],
+  "derived": {
+   "window": 128,
+   "index_topk": 2048,
+   "merged_row_width": 2176,
+   "num_heads": 64,
+   "q_lora_rank": 1024,
+   "kv_lora_rank": 512,
+   "qk_nope_head_dim": 192,
+   "qk_rope_head_dim": 64,
+   "qk_head_dim": 256,
+   "v_head_dim": 256,
+   "scale": 0.0625,
+   "kv_row_elements": 576,
+   "kv_row_bytes_bf16": 1152,
+   "kv_row_bytes_fp8_ds_mla": 656,
+   "kv_b_proj_rows": 28672,
+   "page_tokens": 64,
+   "o_gate_width": 16384,
+   "vha_rank": 16,
+   "rope": {
+    "type": "default",
+    "theta": 8000000,
+    "pairing": "gptj_interleaved",
+    "slice": "trailing",
+    "yarn": false
+   },
+   "indexer": {
+    "n_heads": 64,
+    "head_dim": 128,
+    "rope_dim": 64,
+    "weights_scale": 0.011048543456039806,
+    "split_order": "rope_first",
+    "rope_pairing": "neox_split_half",
+    "rope_slice": "leading",
+    "k_norm": "layernorm_eps_1e-6_with_bias",
+    "q_quant": "fp8_e4m3_ue8m0_group128",
+    "k_row_bytes_fp8": 132,
+    "compress_ratio": 1
+   },
+   "indexer_weights_scale": 0.011048543456039806
+  },
+  "window_table": [
+   {
+    "seq_len": 1,
+    "position": 0,
+    "window_start": 0,
+    "window_end_inclusive": 0,
+    "window_count": 1,
+    "indexer_lo": 0,
+    "indexer_hi_exclusive": 0,
+    "indexer_candidates": 0,
+    "selected_count": 0,
+    "merged_count": 1
+   },
+   {
+    "seq_len": 2,
+    "position": 1,
+    "window_start": 0,
+    "window_end_inclusive": 1,
+    "window_count": 2,
+    "indexer_lo": 0,
+    "indexer_hi_exclusive": 0,
+    "indexer_candidates": 0,
+    "selected_count": 0,
+    "merged_count": 2
+   },
+   {
+    "seq_len": 127,
+    "position": 126,
+    "window_start": 0,
+    "window_end_inclusive": 126,
+    "window_count": 127,
+    "indexer_lo": 0,
+    "indexer_hi_exclusive": 0,
+    "indexer_candidates": 0,
+    "selected_count": 0,
+    "merged_count": 127
+   },
+   {
+    "seq_len": 128,
+    "position": 127,
+    "window_start": 0,
+    "window_end_inclusive": 127,
+    "window_count": 128,
+    "indexer_lo": 0,
+    "indexer_hi_exclusive": 0,
+    "indexer_candidates": 0,
+    "selected_count": 0,
+    "merged_count": 128
+   },
+   {
+    "seq_len": 129,
+    "position": 128,
+    "window_start": 1,
+    "window_end_inclusive": 128,
+    "window_count": 128,
+    "indexer_lo": 0,
+    "indexer_hi_exclusive": 1,
+    "indexer_candidates": 1,
+    "selected_count": 1,
+    "merged_count": 129
+   },
+   {
+    "seq_len": 130,
+    "position": 129,
+    "window_start": 2,
+    "window_end_inclusive": 129,
+    "window_count": 128,
+    "indexer_lo": 0,
+    "indexer_hi_exclusive": 2,
+    "indexer_candidates": 2,
+    "selected_count": 2,
+    "merged_count": 130
+   },
+   {
+    "seq_len": 255,
+    "position": 254,
+    "window_start": 127,
+    "window_end_inclusive": 254,
+    "window_count": 128,
+    "indexer_lo": 0,
+    "indexer_hi_exclusive": 127,
+    "indexer_candidates": 127,
+    "selected_count": 127,
+    "merged_count": 255
+   },
+   {
+    "seq_len": 256,
+    "position": 255,
+    "window_start": 128,
+    "window_end_inclusive": 255,
+    "window_count": 128,
+    "indexer_lo": 0,
+    "indexer_hi_exclusive": 128,
+    "indexer_candidates": 128,
+    "selected_count": 128,
+    "merged_count": 256
+   },
+   {
+    "seq_len": 257,
+    "position": 256,
+    "window_start": 129,
+    "window_end_inclusive": 256,
+    "window_count": 128,
+    "indexer_lo": 0,
+    "indexer_hi_exclusive": 129,
+    "indexer_candidates": 129,
+    "selected_count": 129,
+    "merged_count": 257
+   },
+   {
+    "seq_len": 384,
+    "position": 383,
+    "window_start": 256,
+    "window_end_inclusive": 383,
+    "window_count": 128,
+    "indexer_lo": 0,
+    "indexer_hi_exclusive": 256,
+    "indexer_candidates": 256,
+    "selected_count": 256,
+    "merged_count": 384
+   },
+   {
+    "seq_len": 2175,
+    "position": 2174,
+    "window_start": 2047,
+    "window_end_inclusive": 2174,
+    "window_count": 128,
+    "indexer_lo": 0,
+    "indexer_hi_exclusive": 2047,
+    "indexer_candidates": 2047,
+    "selected_count": 2047,
+    "merged_count": 2175
+   },
+   {
+    "seq_len": 2176,
+    "position": 2175,
+    "window_start": 2048,
+    "window_end_inclusive": 2175,
+    "window_count": 128,
+    "indexer_lo": 0,
+    "indexer_hi_exclusive": 2048,
+    "indexer_candidates": 2048,
+    "selected_count": 2048,
+    "merged_count": 2176
+   },
+   {
+    "seq_len": 2177,
+    "position": 2176,
+    "window_start": 2049,
+    "window_end_inclusive": 2176,
+    "window_count": 128,
+    "indexer_lo": 0,
+    "indexer_hi_exclusive": 2049,
+    "indexer_candidates": 2049,
+    "selected_count": 2048,
+    "merged_count": 2176
+   },
+   {
+    "seq_len": 1048575,
+    "position": 1048574,
+    "window_start": 1048447,
+    "window_end_inclusive": 1048574,
+    "window_count": 128,
+    "indexer_lo": 0,
+    "indexer_hi_exclusive": 1048447,
+    "indexer_candidates": 1048447,
+    "selected_count": 2048,
+    "merged_count": 2176
+   },
+   {
+    "seq_len": 1048576,
+    "position": 1048575,
+    "window_start": 1048448,
+    "window_end_inclusive": 1048575,
+    "window_count": 128,
+    "indexer_lo": 0,
+    "indexer_hi_exclusive": 1048448,
+    "indexer_candidates": 1048448,
+    "selected_count": 2048,
+    "merged_count": 2176
+   }
+  ],
+  "production": {
+   "max_position_embeddings": 1048576,
+   "first_indexer_seq_len": 129,
+   "first_topk_saturation_seq_len": 2177,
+   "merged_row_width": 2176,
+   "indexer_candidates_at_max": 1048448,
+   "selected_at_max": 2048,
+   "arithmetic": "candidates = max(seq - window, 0); selected = min(candidates, index_topk); row = selected + min(seq, window)"
+  }
+ },
+ "hca": {
+  "layers": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   22,
+   23,
+   24,
+   25,
+   26,
+   27,
+   29,
+   30,
+   31,
+   32,
+   33,
+   34,
+   36,
+   37,
+   38,
+   39,
+   40,
+   41
+  ],
+  "draft_entries": [],
+  "facts": [
+   {
+    "id": "h01",
+    "topic": "schedule",
+    "status": "established",
+    "statement": "Every non-DSA entry is an HCA layer: its compression ratio is max(1, compress_ratios[layer]) = 128 for the 37 main layers (all entries below num_hidden_layers except the six DSA ones). The ratio-4 'C4A' variant (with overlap and a lightning indexer) exists in the DeepSeek-V4 code but is never selected by this checkpoint: only ratios 128 and -2 occur, and compress_ratio == 128 builds no indexer. A draft entry whose ratio were 128 would get compress_ratio 1 (SWA only) because the index is not below num_hidden_layers; the pinned checkpoint's draft entry is -2 so this does not arise.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/model.py", "line": 128, "line_end": 128, "quote": "self.attn = select_ernie5_5_hca_cls("},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 233, "line_end": 233, "quote": "self.compress_ratio = max(1, config.compress_ratios[layer_id])"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 235, "line_end": 235, "quote": "self.compress_ratio = 1"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 298, "line_end": 298, "quote": "if self.compress_ratio == 4:"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 365, "line_end": 365, "quote": "if self.compress_ratio > 1:"},
+     {"pin": "hf_config", "file": "config.json", "line": 10, "line_end": 10, "quote": "\"compress_ratios\": ["}
+    ]
+   },
+   {
+    "id": "h02",
+    "topic": "window",
+    "status": "established",
+    "statement": "HCA window endpoints equal the DSA ones: the SWA kernel starts at max(pos - (window - 1), 0) and ends at pos + 1 EXCLUSIVE (right visibility is 0 for text), i.e. positions p-127 .. p inclusive for window 128, the query token included; the prefill combine kernel uses the same swa_start and swa_len = pos - swa_start + 1. The cached window is a separate 64-token-page SWA cache.",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/sparse_swa.py", "line": 1097, "line_end": 1097, "quote": "start_pos = tl.maximum(pos - (window_size - 1) - left_add, 0)"},
+     {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/sparse_swa.py", "line": 1100, "line_end": 1100, "quote": "end_pos = pos + right + 1"},
+     {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/sparse_swa.py", "line": 1102, "line_end": 1102, "quote": "swa_len = end_pos - start_pos"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/cache_utils.py", "line": 896, "line_end": 896, "quote": "swa_start = tl.maximum(pos - (WINDOW_SIZE - 1) - left_add, 0)"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/cache_utils.py", "line": 897, "line_end": 897, "quote": "swa_len = pos + right - swa_start + 1"},
+     {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/sparse_swa.py", "line": 1086, "line_end": 1086, "quote": "pos = prefix_len + token_idx - query_start"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 368, "line_end": 368, "quote": "self.window,"}
+    ]
+   },
+   {
+    "id": "h03",
+    "topic": "candidate_set",
+    "status": "established",
+    "statement": "Compressed candidates of a query at position p are entries 0 .. (p+1)//128 - 1, i.e. only COMPLETE groups (group j covers tokens 128j .. 128j+127 and is visible once p >= 128j + 127); the count is min((p+1)//ratio, width) and the list is [0..n-1] followed by -1 padding. The sparse list is NOT limited by index_topk 2048 (no indexer at ratio 128): its width is the next power of two (at least 128) above max_seq_len // 128, bounded by cdiv(max_model_len,128) rounded up to 128.",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/sparse_mla.py", "line": 405, "line_end": 405, "quote": "num_compressed = (position + 1) // compress_ratio"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/sparse_mla.py", "line": 446, "line_end": 446, "quote": "tl.where(offset < num_compressed, offset, -1),"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/cache_utils.py", "line": 884, "line_end": 884, "quote": "topk_len = tl.minimum((pos + 1) // COMPRESS_RATIO, TOP_K)"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/sparse_mla.py", "line": 260, "line_end": 260, "quote": "assert active_topk_width >= cm.max_seq_len // self.compress_ratio"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/sparse_mla.py", "line": 158, "line_end": 158, "quote": "c128a_max_compressed = cdiv("},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/sparse_mla.py", "line": 39, "line_end": 39, "quote": "_C128A_TOPK_ALIGNMENT = 128"}
+    ]
+   },
+   {
+    "id": "h04",
+    "topic": "candidate_set",
+    "status": "established",
+    "statement": "One softmax runs over the UNION of the window keys and the compressed keys (plus the sink): prefill builds a combined index list [compressed 0..n-1 | window] and calls one sparse forward with topk_length = n + window length; decode passes the window as the main cache and the compressed rows as the extra cache of one call. The union is not de-duplicated: combined_len = topk_len + swa_len. The bf16 FlashInfer path builds the same union as one index matrix, the SWA slot ids first and the compressed slot ids after them, with one active length per token; its kernel was not read.",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/cache_utils.py", "line": 924, "line_end": 924, "quote": "combined_len = topk_len + swa_len"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/cache_utils.py", "line": 1104, "line_end": 1104, "quote": "Build the FlashInfer DSV4 sparse-index matrix for decode-first batches."},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/flashmla.py", "line": 393, "line_end": 393, "quote": "indices=combined_indices.unsqueeze(1),"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/flashmla.py", "line": 396, "line_end": 396, "quote": "topk_length=combined_lens,"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/flashmla.py", "line": 260, "line_end": 260, "quote": "extra_k_cache=kv_cache if not swa_only else None,"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/flashmla.py", "line": 261, "line_end": 261, "quote": "extra_indices_in_kvcache=topk_indices,"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/flashmla.py", "line": 259, "line_end": 259, "quote": "attn_sink=self.attn_sink,"}
+    ]
+   },
+   {
+    "id": "h05",
+    "topic": "group_completion",
+    "status": "established",
+    "statement": "A compressed entry is produced at the LAST token of its group: the compress step is skipped unless (position + 1) % ratio == 0. At that token the window of the previous ratio states (position - 127 .. position, no overlap lane because overlap is only for ratio 4: coff = 1 + overlap = 1) is pooled. Every token, complete group or not, first stores its raw kv (fp32) and score + APE[position % ratio] (fp32) in the state cache.",
+    "provenance": [
+     {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 289, "line_end": 289, "quote": "if ((position + 1) % compress_ratio != 0) continue;"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 239, "line_end": 239, "quote": "self.overlap = compress_ratio == 4"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 240, "line_end": 240, "quote": "self.coff = 1 + self.overlap"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/cpu/cpu_compressor.py", "line": 85, "line_end": 85, "quote": "window = (1 + self.overlap) * self.compress_ratio"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/cpu/cpu_compressor.py", "line": 87, "line_end": 87, "quote": "win_local = positions.unsqueeze(-1) - window + 1 + win_offsets"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 399, "line_end": 399, "quote": "_SAVE_PARTIAL_STATES_KERNEL("},
+     {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 250, "line_end": 250, "quote": "const float* const ape_row = ape + (position % compress_ratio) * state_width;"},
+     {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 254, "line_end": 254, "quote": "(fVec::loadu(score_t + i) + fVec::loadu(ape_row + i)).store(score_out + i);"}
+    ]
+   },
+   {
+    "id": "h06",
+    "topic": "compression",
+    "status": "established",
+    "statement": "Compression arithmetic of one group: per CHANNEL (not per row) softmax over the 128 rows of (score + APE) in fp32, the softmax-weighted sum of the 128 fp32 kv rows, then an fp32 RMSNorm over all 512 dims with the compressor's own weight (eps rms_norm_eps), then the split: the first 448 (nope) dims are rounded to bf16 and quantised to FP8 E4M3 in blocks of 64 with UE8M0 scales, the trailing 64 (rope) dims are GPT-J rotated from the un-rounded fp32 value and stored as bf16. With a non-uint8 (bf16 / per-tensor fp8) cache the compressor is told to store the full row (store_full_kv) instead of the packed fp8_ds_mla layout; the exact arithmetic of that CUDA path is part of the open item h21.",
+    "provenance": [
+     {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 297, "line_end": 297, "quote": "// Per-channel (not per-position) softmax over the window: each of the"},
+     {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 339, "line_end": 339, "quote": "const float inv_rms = 1.0f / std::sqrt(sq_sum / static_cast<float>(kHeadDim) + rms_norm_eps);"},
+     {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 347, "line_end": 347, "quote": "// bf16 round-trip feeds only the NoPE FP8 quantization (RoPE rotates"},
+     {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 373, "line_end": 373, "quote": "token_scale_ptr[kNumQuantBlocks] = 0;"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 436, "line_end": 436, "quote": "store_full_kv = self.head_dim == 512 and kv_cache.dtype != torch.uint8"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 264, "line_end": 264, "quote": "(compress_ratio, self.coff * self.head_dim),"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 280, "line_end": 280, "quote": "self.norm = RMSNorm(self.head_dim, self.rms_norm_eps)"},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.core_attention.compressor.ape", "dtype": "F32", "shape": [128, 512]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.core_attention.compressor.linear_wgate.weight", "dtype": "BF16", "shape": [512, 4096]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.core_attention.compressor.linear_wkv.weight", "dtype": "BF16", "shape": [512, 4096]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.core_attention.compressor.norm.weight", "dtype": "BF16", "shape": [512]}
+    ]
+   },
+   {
+    "id": "h07",
+    "topic": "incomplete_group",
+    "status": "established",
+    "statement": "The incomplete trailing group (tokens after the last multiple of 128, at most 127 of them) exists only in the fp32 partial-state cache and is INVISIBLE as a compressed entry; it is covered by the window alone, which is always at least as long as the incomplete group (window 128 >= ratio - 1 = 127), so every token is attended either raw (window) or through a complete compressed entry. The state persists across chunked-prefill steps; _get_c128_boundary reports a chunk as completing a group when start % 128 + chunk_len >= 128.",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/sparse_mla.py", "line": 405, "line_end": 405, "quote": "num_compressed = (position + 1) // compress_ratio"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 55, "line_end": 55, "quote": "start % 128 + query_start_loc[i + 1] - query_start_loc[i] >= 128"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 399, "line_end": 399, "quote": "_SAVE_PARTIAL_STATES_KERNEL("},
+     {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 237, "line_end": 237, "quote": "if (slot_id < 0) continue;"}
+    ]
+   },
+   {
+    "id": "h08",
+    "topic": "window",
+    "status": "established",
+    "statement": "The window and the most recent complete group OVERLAP: tokens in both are attended raw (window) and again inside the compressed entry. The pinned source performs no exclusion or de-duplication (the combined length is the plain sum), so a faithful implementation must keep the duplicate; the overlap is max(0, 128 * complete_groups - window_start) tokens: 128 (the whole window) at the token that completes a group, then one fewer per further token (127 at the next token) until the next group completes.",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/cache_utils.py", "line": 924, "line_end": 924, "quote": "combined_len = topk_len + swa_len"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/cache_utils.py", "line": 884, "line_end": 884, "quote": "topk_len = tl.minimum((pos + 1) // COMPRESS_RATIO, TOP_K)"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/cache_utils.py", "line": 897, "line_end": 897, "quote": "swa_len = pos + right - swa_start + 1"}
+    ]
+   },
+   {
+    "id": "h09",
+    "topic": "scale",
+    "status": "established",
+    "statement": "HCA softmax scale is head_dim^-0.5 = 512^-0.5 (not the DSA 256^-0.5), passed to the sparse forward as softmax_scale / sm_scale; keys and values are the SAME single 512-wide row (multi-query, K = V), so the attention output per head is 512 wide.",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 237, "line_end": 237, "quote": "self.scale = self.head_dim**-0.5"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/flashmla.py", "line": 258, "line_end": 258, "quote": "softmax_scale=self.scale,"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/flashmla.py", "line": 394, "line_end": 394, "quote": "sm_scale=self.scale,"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/flashmla.py", "line": 252, "line_end": 252, "quote": "head_dim_v=512,"}
+    ]
+   },
+   {
+    "id": "h10",
+    "topic": "positional",
+    "status": "established",
+    "statement": "HCA positional transforms: q (64 heads x 512) gets a weightless per-head RMSNorm over all 512 dims (eps rms_norm_eps) and then GPT-J interleaved RoPE on the TRAILING 64 dims (pairs (448+2i, 448+2i+1): even' = e cos - o sin, odd' = e sin + o cos); kv is first RMS-normed with kv_norm, then rotated the same way on its trailing 64 dims at its own position before it enters the SWA cache. Because V is the rotated K row, the attention output carries position dependence in its trailing 64 dims, and the output projection applies the INVERSE rotation (sin negated) at the query position before wo_a.",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/xpu/xpu_qnorm_rope_kv_fp8_insert.py", "line": 63, "line_end": 63, "quote": "# RMSNorm (no weight)"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/xpu/xpu_qnorm_rope_kv_fp8_insert.py", "line": 73, "line_end": 73, "quote": "even_offs = NOPE_DIM + rope_pair_idx * 2"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/xpu/xpu_qnorm_rope_kv_fp8_insert.py", "line": 80, "line_end": 80, "quote": "new_even = q_even * cos_val - q_odd * sin_val"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/xpu/xpu_qnorm_rope_kv_fp8_insert.py", "line": 81, "line_end": 81, "quote": "new_odd = q_even * sin_val + q_odd * cos_val"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 529, "line_end": 529, "quote": "qr, kv = fused_q_kv_rmsnorm("},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 266, "line_end": 266, "quote": "self.kv_norm = RMSNorm(self.head_dim, self.eps)"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/o_proj.py", "line": 50, "line_end": 50, "quote": "O projection: inverse RoPE + grouped wo_a + wo_b."},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/deepseek_scaling_rope.py", "line": 230, "line_end": 230, "quote": "- Applies RoPE to the last rotary_dim"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/deepseek_scaling_rope.py", "line": 285, "line_end": 285, "quote": "sin = -sin"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_inv_rope_fp8_quant.py", "line": 135, "line_end": 135, "quote": "x_sub = x * cos_v - x_partner * sin_v"}
+    ]
+   },
+   {
+    "id": "h11",
+    "topic": "rope_scaling",
+    "status": "established",
+    "statement": "HCA RoPE scaling: at compress ratio > 1 the layer's rotary uses theta = compress_rope_theta (pinned 160,000) and, because the config's rope parameters are not 'default', rope_type deepseek_yarn (deepseek_llama_scaling only if attention_factor == 1.0) with factor 16, beta_fast 32, beta_slow 1, original_max_position_embeddings 65536; mscale and mscale_all_dim are forced to 0 so the magnitude factor yarn_get_mscale(f,0)/yarn_get_mscale(f,0) is exactly 1 (cos and sin are not rescaled). The frequency blend is inv = interp (1 - mask) + extrap mask with mask = 1 - ramp over the correction range [floor(dim(beta_fast)), ceil(dim(beta_slow))] clamped to [0, dim-1], computed from the ORIGINAL max position; the cos/sin cache is fp32 with original_max x factor rows.",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/rope.py", "line": 29, "line_end": 29, "quote": "config.compress_rope_theta if compress_ratio > 1 else config.rope_theta"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/rope.py", "line": 34, "line_end": 34, "quote": "\"deepseek_llama_scaling\""},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/rope.py", "line": 43, "line_end": 43, "quote": "rope_parameters[\"mscale\"] = 0  # Disable mscale"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/__init__.py", "line": 168, "line_end": 168, "quote": "scaling_factor = rope_parameters[\"factor\"]"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/__init__.py", "line": 171, "line_end": 171, "quote": "original_max_position = rope_parameters[\"original_max_position_embeddings\"]"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/deepseek_scaling_rope.py", "line": 23, "line_end": 23, "quote": "return 0.1 * mscale * math.log(scale) + 1.0"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/deepseek_scaling_rope.py", "line": 54, "line_end": 54, "quote": "yarn_get_mscale(self.scaling_factor, float(mscale_all_dim))"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/deepseek_scaling_rope.py", "line": 94, "line_end": 94, "quote": "inv_freq_mask = 1 - yarn_linear_ramp_mask("},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/deepseek_scaling_rope.py", "line": 98, "line_end": 98, "quote": "inv_freq_interpolation * (1 - inv_freq_mask)"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/common.py", "line": 59, "line_end": 59, "quote": "return max(low, 0), min(high, dim - 1)  # Clamp values just in case"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/deepseek_scaling_rope.py", "line": 106, "line_end": 106, "quote": "self.max_position_embeddings * self.scaling_factor,"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/deepseek_scaling_rope.py", "line": 234, "line_end": 234, "quote": "cos_sin_cache stored as fp32 for higher precision RoPE"},
+     {"pin": "hf_config", "file": "config.json", "line": 56, "line_end": 56, "quote": "\"compress_rope_theta\": 160000.0,"},
+     {"pin": "hf_config", "file": "config.json", "line": 120, "line_end": 120, "quote": "\"factor\": 16,"},
+     {"pin": "hf_config", "file": "config.json", "line": 121, "line_end": 121, "quote": "\"original_max_position_embeddings\": 65536,"}
+    ]
+   },
+   {
+    "id": "h12",
+    "topic": "rope_scaling",
+    "status": "unresolved",
+    "statement": "Whether the YaRN branch is actually taken for the pinned config.json: its rope_scaling object uses the key 'type' ('yarn'), while build_deepseek_v4_rope reads rope_parameters['rope_type'] and Ernie5_5Config stores rope_scaling verbatim. If the transformers version used with vLLM v0.32.0 does not rename type to rope_type, the lookup would fail rather than silently pick another mode; that is not provable from the pinned files (hca_rope_type is never read by the pinned code).",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/rope.py", "line": 31, "line_end": 31, "quote": "if compress_ratio > 1 and rope_parameters[\"rope_type\"] != \"default\":"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/config.py", "line": 41, "line_end": 41, "quote": "rope_scaling"},
+     {"pin": "hf_config", "file": "config.json", "line": 122, "line_end": 122, "quote": "\"type\": \"yarn\""}
+    ],
+    "resolver": {
+     "kind": "runtime-probe",
+     "action": "On CPU with the transformers version vLLM v0.32.0 pins, instantiate vllm_ernie Ernie5_5Config from the pinned config.json and print config.rope_parameters, then call build_deepseek_v4_rope for compress_ratio 128 and print the resulting class and parameters; no weights and no GPU are needed."
+    },
+    "why": "The key normalisation happens inside transformers' config handling, a dependency version not pinned in the sources read.",
+    "impact": "If YaRN were not applied the HCA RoPE would be plain at theta 160000; Radiance must apply YaRN because the checkpoint was trained with it, so a real-model run decides."
+   },
+   {
+    "id": "h13",
+    "topic": "kv_layout",
+    "status": "established",
+    "statement": "KV layout and pages: the compressed cache holds one row per group (tokens_per_state = 128) in the cache's page structure with block_size // 128 compressed rows per page; the fp8_ds_mla row is 584 bytes (448 FP8 nope | 64 bf16 rope = 128 bytes | 8 scale bytes = 7 UE8M0 + 1 pad, all data rows of a page first and its scale rows after), alignment 576; the bf16 FlashInfer row is 512 bf16 = 1024 bytes. The window lives in a separate sliding-window cache with 64-token pages and the same 584-byte packing (bf16 512-wide rows on the FlashInfer path). The backend is chosen from the cache dtype: fp8* -> FlashMLA fp8_ds_mla, otherwise FlashInfer bf16.",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 871, "line_end": 871, "quote": "tokens_per_state=self.compress_ratio,"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 878, "line_end": 878, "quote": "state_content_bytes=584 if uses_fp8_ds_mla_layout else None,"},
+     {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/flashmla_sparse.py", "line": 90, "line_end": 90, "quote": "For DeepSeek V4, in the \"FP8 with scale\" format, each token's KV cache is 584"},
+     {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/sparse_swa.py", "line": 83, "line_end": 83, "quote": "block_size: int = 64,"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/sparse_mla.py", "line": 262, "line_end": 262, "quote": "block_size = self.kv_cache_spec.block_size // self.compress_ratio"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 260, "line_end": 260, "quote": "if kv_cache_dtype.startswith(\"fp8\"):"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 262, "line_end": 262, "quote": "return Ernie5_5HCAFlashInferAttention"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 873, "line_end": 873, "quote": "alignment=576 if uses_fp8_ds_mla_layout else 512,"}
+    ]
+   },
+   {
+    "id": "h14",
+    "topic": "cache_dtype",
+    "status": "established",
+    "statement": "HCA cache dtype is selected by the serving kv_cache_dtype exactly as for DSA: bf16/auto -> plain bf16 rows (FlashInfer TRTLLM-gen sparse MLA), fp8 -> fp8_ds_mla with UE8M0 block scales (FlashMLA); per-tensor FP8 plain rows also exist in the DeepSeek code. The compressor STATE is always fp32 regardless of the cache dtype.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 258, "line_end": 258, "quote": "def select_ernie5_5_hca_cls(kv_cache_dtype: str) -> type[DeepseekV4Attention]:"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 126, "line_end": 126, "quote": "return kv_cache_dtype, torch.float8_e4m3fn"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 128, "line_end": 128, "quote": "return kv_cache_dtype, torch.bfloat16"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 157, "line_end": 157, "quote": "assert self.dtype == torch.float32"}
+    ]
+   },
+   {
+    "id": "h15",
+    "topic": "state",
+    "status": "established",
+    "statement": "Compressor state per request and HCA layer: one row per recent token holding kv (512 fp32) and score (512 fp32) = 1024 floats = 4096 bytes, kept for a sliding window of coff * ratio = 128 rows in 8-row state blocks that share physical pages with the KV blocks; the APE parameter is fp32 [128, 512]. The state rows of the current incomplete group (and, until the group completes, all of its 128 rows) must survive across steps and chunks; rows older than 128 tokens are never read.",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 283, "line_end": 283, "quote": "state_dim=2 * self.coff * self.head_dim,  # kv_state + score_state"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 160, "line_end": 160, "quote": "self.sliding_window = coff * compress_ratio"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 171, "line_end": 171, "quote": "self.block_size = 8"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 273, "line_end": 273, "quote": "[self.coff * self.head_dim, self.coff * self.head_dim],"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 262, "line_end": 262, "quote": "self.ape = nn.Parameter("}
+    ]
+   },
+   {
+    "id": "h16",
+    "topic": "gate_order",
+    "status": "established",
+    "statement": "Output order for an HCA layer: attention output (512-wide heads, padded to 64 heads) -> VHA head mix (acting on the head axis, hence it commutes with the dim-axis inverse RoPE and runs before it) -> inverse RoPE on the trailing 64 dims at the query position and the GROUPED wo_a (8 groups of 8 heads: 4096 -> o_lora_rank 1024 each) -> times sigmoid(gate) element by element (gate = o_gate(q_norm output), width n_groups x o_lora_rank = 8192) -> wo_b (8192 -> 4096). So the HCA gate multiplies the wo_a output, not the attention output.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 215, "line_end": 215, "quote": "gate = self.o_gate(qr)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 229, "line_end": 229, "quote": "o = self.vha(o_padded[:, : self.n_local_heads, :])"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 227, "line_end": 227, "quote": "# VHA acts on the head axis and inverse RoPE on the dim axis, so"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 235, "line_end": 235, "quote": "lambda z: self.wo_b(z * torch.sigmoid(gate)),"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 237, "line_end": 237, "quote": "heads_per_group=self.n_local_heads // self.n_local_groups,"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 189, "line_end": 189, "quote": "self.n_groups * self.o_lora_rank,"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 219, "line_end": 219, "quote": "self.n_groups = config.o_groups"},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.gate_proj.weight", "dtype": "F8_E4M3", "shape": [8192, 1024]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.linear_o_group_proj", "dtype": "F8_E4M3", "shape": [8192, 4096]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.o_proj.weight", "dtype": "F8_E4M3", "shape": [4096, 8192]}
+    ]
+   },
+   {
+    "id": "h17",
+    "topic": "sink",
+    "status": "established",
+    "statement": "HCA attention sink: a per-head fp32 parameter initialised to -inf (padded to 64 heads) and filled from the checkpoint tensor core_attention.attn_sink (F32 [64]); semantics are identical to the DSA sink (extra logit, no value, denominator only) and it joins the same single softmax over window plus compressed keys.",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 243, "line_end": 243, "quote": "self.attn_sink = nn.Parameter("},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 244, "line_end": 244, "quote": "torch.full((self.padded_heads,), -float(\"inf\"), dtype=torch.float32),"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/model.py", "line": 544, "line_end": 544, "quote": "param.data[:n].copy_(loaded_weight[tp_rank * n : (tp_rank + 1) * n])"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/flashmla.py", "line": 395, "line_end": 395, "quote": "attn_sink=self.attn_sink,"},
+     {"pin": "vllm", "file": "vllm/v1/attention/ops/rocm_aiter_mla_sparse.py", "line": 2198, "line_end": 2198, "quote": "l_final = l_i * alpha + tl.exp(sink - m_final)"},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.core_attention.attn_sink", "dtype": "F32", "shape": [64]}
+    ]
+   },
+   {
+    "id": "h18",
+    "topic": "vha",
+    "status": "established",
+    "statement": "VHA on HCA layers is the same module as on DSA (m = I + V U^T, rank 16, U and V BF16 [64,16]) but acts on 512-wide heads; with tp = 1 it is one matmul with the folded 64 x 64 matrix.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 195, "line_end": 195, "quote": "self.vha = VHAPostMix(self.n_heads)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 140, "line_end": 140, "quote": "return torch.matmul(self.m, o)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 85, "line_end": 85, "quote": "VHA_RANK = 16"},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.vha_postmix_U", "dtype": "BF16", "shape": [64, 16]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.vha_postmix_V", "dtype": "BF16", "shape": [64, 16]}
+    ]
+   },
+   {
+    "id": "h19",
+    "topic": "projections",
+    "status": "established",
+    "statement": "Tensor geometry of an HCA layer (identical for all 37 layers, checked against the real shard headers): q_down [1024,4096] and kv [512,4096] feed one fused projection; q_up [32768,1024] (64 x 512); o_group (wo_a) [8192,4096] FP8 with weight_scale_inv [64,32]; o_proj [4096,8192]; gate_proj [8192,1024]; compressor linear_wkv and linear_wgate [512,4096] BF16 (plain, unquantised), ape [128,512] F32, norm [512]; q_layernorm [1024], kv_layernorm [512]; attn_sink [64] F32. There is NO indexer tensor in an HCA layer.",
+    "provenance": [
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 214, "line_end": 214, "quote": "qr, qr_scale, kv = self._split_qkv_and_norm(qr_kv)"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 250, "line_end": 250, "quote": "[self.q_lora_rank, self.head_dim],"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 259, "line_end": 259, "quote": "self.n_heads * self.head_dim,"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 268, "line_end": 268, "quote": "self.n_heads * self.head_dim // self.n_groups,"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 276, "line_end": 276, "quote": "quant_config=None,"},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.core_attention.attn_sink", "dtype": "F32", "shape": [64]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.core_attention.compressor.ape", "dtype": "F32", "shape": [128, 512]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.core_attention.compressor.linear_wgate.weight", "dtype": "BF16", "shape": [512, 4096]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.core_attention.compressor.linear_wkv.weight", "dtype": "BF16", "shape": [512, 4096]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.core_attention.compressor.norm.weight", "dtype": "BF16", "shape": [512]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.gate_proj.weight", "dtype": "F8_E4M3", "shape": [8192, 1024]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.kv_layernorm.weight", "dtype": "BF16", "shape": [512]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.linear_kv_proj.weight", "dtype": "F8_E4M3", "shape": [512, 4096]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.linear_o_group_proj", "dtype": "F8_E4M3", "shape": [8192, 4096]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.linear_q_down_proj.weight", "dtype": "F8_E4M3", "shape": [1024, 4096]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.linear_q_up_proj.weight", "dtype": "F8_E4M3", "shape": [32768, 1024]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.o_proj.weight", "dtype": "F8_E4M3", "shape": [4096, 8192]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.q_layernorm.weight", "dtype": "BF16", "shape": [1024]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.vha_postmix_U", "dtype": "BF16", "shape": [64, 16]},
+     {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.vha_postmix_V", "dtype": "BF16", "shape": [64, 16]}
+    ]
+   },
+   {
+    "id": "h20",
+    "topic": "precision",
+    "status": "established",
+    "statement": "Precision boundaries of the HCA path: the compressor's kv and score projections run in bf16 inputs with an fp32 OUTPUT (out_dtype float32); state, APE, softmax, pooling and the compressor RMSNorm are fp32; the nope part goes through a bf16 round trip before FP8 quantisation while the rope part is rotated in fp32 and rounded once; the RoPE cos/sin cache is fp32; q and kv rotations are computed in fp32 and rounded to the model dtype (per the XPU Triton reference of the fused CUDA kernel); the sink is fp32; the output of attention is model dtype and the inverse-rotated output is block-FP8 quantised only when wo_a stays FP8 (128x128 block-FP8 checkpoints).",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 698, "line_end": 698, "quote": "out_dtype=torch.float32,"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 157, "line_end": 157, "quote": "assert self.dtype == torch.float32"},
+     {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 347, "line_end": 347, "quote": "// bf16 round-trip feeds only the NoPE FP8 quantization (RoPE rotates"},
+     {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/deepseek_scaling_rope.py", "line": 234, "line_end": 234, "quote": "cos_sin_cache stored as fp32 for higher precision RoPE"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/xpu/xpu_qnorm_rope_kv_fp8_insert.py", "line": 61, "line_end": 61, "quote": "q_vals = tl.load(q_base + offs).to(tl.float32)"},
+     {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 175, "line_end": 175, "quote": "if not keeps_fp8_wo_a(vllm_config.quant_config):"}
+    ]
+   },
+   {
+    "id": "h21",
+    "topic": "precision",
+    "status": "unresolved",
+    "statement": "Bit-level agreement between the CPU reference kernel used here as the statement of the compressor (csrc/cpu/sgl-kernels/compressor.cpp) and the CUDA CuTeDSL compressor that the CUDA path really runs for head_dim 512 is not established: the CPU file declares itself a port of the same Triton reference, but their rounding of the nope blocks and of the normalised row was not compared.",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 448, "line_end": 448, "quote": "from .nvidia.ops.sparse_attn_compress_cutedsl import ("},
+     {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 15, "line_end": 15, "quote": "decode/prefill/extend, one program per token, matching vLLM's own"}
+    ],
+    "resolver": {
+     "kind": "source-read",
+     "action": "Read vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py at v0.32.0 for the nope-block quantisation and normalisation rounding order and compare with the CPU kernel quoted in h06, or compare both on one real group using the real checkpoint's layer-0 compressor tensors."
+    },
+    "why": "The CuTeDSL kernel (vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py, 100 KiB) was not read.",
+    "impact": "Tolerances for the HCA compressor parity story (3-3) must come from measurement, not from this audit."
+   },
+   {
+    "id": "h22",
+    "topic": "compression",
+    "status": "established",
+    "statement": "Compressed rope position: the rotation of a compressed entry uses the position of its group START, (position // ratio) * ratio (0, 128, 256, ...), not the position of the token that completed the group and not the next group's start; the rope rotates the trailing 64 dims GPT-J interleaved with the same YaRN cache as the HCA layer's queries.",
+    "provenance": [
+     {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 353, "line_end": 353, "quote": "const int64_t compressed_pos = (position / compress_ratio) * compress_ratio;"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 428, "line_end": 428, "quote": "# - position used: (positions // compress_ratio) * compress_ratio"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 427, "line_end": 427, "quote": "# - applied to LAST rope_head_dim elements of head_dim"},
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 424, "line_end": 424, "quote": "# - is_neox_style=False (interleaved pairs, NOT split-half)"}
+    ]
+   },
+   {
+    "id": "h23",
+    "topic": "cache_dtype",
+    "status": "unresolved",
+    "statement": "Which cache dtype Radiance should use for the HCA window and compressed rows (bf16 512-wide rows, 584-byte fp8_ds_mla or another packing) is a design decision; the compressed rows' accuracy under FP8 on this model is unmeasured.",
+    "provenance": [
+     {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 878, "line_end": 878, "quote": "state_content_bytes=584 if uses_fp8_ds_mla_layout else None,"}
+    ],
+    "resolver": {
+     "kind": "design-decision",
+     "action": "Decide in stories 3-3/3-4 after comparing bf16 and fp8_ds_mla window and compressed rows against the fp32 compressor reference on small legal periods and on a bounded real-weight group; record the choice next to this audit."
+    },
+    "why": "Not a property of the pinned sources; it depends on measured accuracy and the cache kinds the Radiance ABI offers (RAD_KV_WINDOW, RAD_KV_LINEAR).",
+    "impact": "Fixes the page geometry of the window cache and the compressed-row cache that stories 3-3 to 3-5 declare."
+   }
+  ],
+  "derived": {
+   "ratio": 128,
+   "window": 128,
+   "head_dim": 512,
+   "nope_dim": 448,
+   "rope_dim": 64,
+   "num_heads": 64,
+   "scale": 0.04419417382415922,
+   "q_lora_rank": 1024,
+   "rope": {
+    "type": "deepseek_yarn",
+    "theta": 160000,
+    "factor": 16,
+    "beta_fast": 32,
+    "beta_slow": 1,
+    "original_max_position_embeddings": 65536,
+    "yarn_low": 15,
+    "yarn_high": 25,
+    "magnitude": 1,
+    "cos_sin_cache_rows": 1048576,
+    "pairing": "gptj_interleaved",
+    "slice": "trailing",
+    "inverse_on_output": true
+   },
+   "compressed_entry_bytes_fp8_ds_mla": 584,
+   "compressed_entry_bytes_bf16": 1024,
+   "state_row_floats": 1024,
+   "state_row_bytes": 4096,
+   "state_rows_per_request_layer": 128,
+   "ape_shape": [128, 512],
+   "o_groups": 8,
+   "heads_per_group": 8,
+   "o_lora_rank": 1024,
+   "o_gate_width": 8192,
+   "window_page_tokens": 64,
+   "vha_rank": 16
+  },
+  "window_table": [
+   {
+    "seq_len": 1,
+    "position": 0,
+    "window_start": 0,
+    "window_end_inclusive": 0,
+    "window_count": 1,
+    "compressed_count": 0,
+    "last_complete_group_end": null,
+    "incomplete_start": 0,
+    "incomplete_tokens": 1,
+    "candidates": 1,
+    "overlap_tokens": 0,
+    "group_completes_here": false
+   },
+   {
+    "seq_len": 2,
+    "position": 1,
+    "window_start": 0,
+    "window_end_inclusive": 1,
+    "window_count": 2,
+    "compressed_count": 0,
+    "last_complete_group_end": null,
+    "incomplete_start": 0,
+    "incomplete_tokens": 2,
+    "candidates": 2,
+    "overlap_tokens": 0,
+    "group_completes_here": false
+   },
+   {
+    "seq_len": 127,
+    "position": 126,
+    "window_start": 0,
+    "window_end_inclusive": 126,
+    "window_count": 127,
+    "compressed_count": 0,
+    "last_complete_group_end": null,
+    "incomplete_start": 0,
+    "incomplete_tokens": 127,
+    "candidates": 127,
+    "overlap_tokens": 0,
+    "group_completes_here": false
+   },
+   {
+    "seq_len": 128,
+    "position": 127,
+    "window_start": 0,
+    "window_end_inclusive": 127,
+    "window_count": 128,
+    "compressed_count": 1,
+    "last_complete_group_end": 127,
+    "incomplete_start": 128,
+    "incomplete_tokens": 0,
+    "candidates": 129,
+    "overlap_tokens": 128,
+    "group_completes_here": true
+   },
+   {
+    "seq_len": 129,
+    "position": 128,
+    "window_start": 1,
+    "window_end_inclusive": 128,
+    "window_count": 128,
+    "compressed_count": 1,
+    "last_complete_group_end": 127,
+    "incomplete_start": 128,
+    "incomplete_tokens": 1,
+    "candidates": 129,
+    "overlap_tokens": 127,
+    "group_completes_here": false
+   },
+   {
+    "seq_len": 130,
+    "position": 129,
+    "window_start": 2,
+    "window_end_inclusive": 129,
+    "window_count": 128,
+    "compressed_count": 1,
+    "last_complete_group_end": 127,
+    "incomplete_start": 128,
+    "incomplete_tokens": 2,
+    "candidates": 129,
+    "overlap_tokens": 126,
+    "group_completes_here": false
+   },
+   {
+    "seq_len": 255,
+    "position": 254,
+    "window_start": 127,
+    "window_end_inclusive": 254,
+    "window_count": 128,
+    "compressed_count": 1,
+    "last_complete_group_end": 127,
+    "incomplete_start": 128,
+    "incomplete_tokens": 127,
+    "candidates": 129,
+    "overlap_tokens": 1,
+    "group_completes_here": false
+   },
+   {
+    "seq_len": 256,
+    "position": 255,
+    "window_start": 128,
+    "window_end_inclusive": 255,
+    "window_count": 128,
+    "compressed_count": 2,
+    "last_complete_group_end": 255,
+    "incomplete_start": 256,
+    "incomplete_tokens": 0,
+    "candidates": 130,
+    "overlap_tokens": 128,
+    "group_completes_here": true
+   },
+   {
+    "seq_len": 257,
+    "position": 256,
+    "window_start": 129,
+    "window_end_inclusive": 256,
+    "window_count": 128,
+    "compressed_count": 2,
+    "last_complete_group_end": 255,
+    "incomplete_start": 256,
+    "incomplete_tokens": 1,
+    "candidates": 130,
+    "overlap_tokens": 127,
+    "group_completes_here": false
+   },
+   {
+    "seq_len": 384,
+    "position": 383,
+    "window_start": 256,
+    "window_end_inclusive": 383,
+    "window_count": 128,
+    "compressed_count": 3,
+    "last_complete_group_end": 383,
+    "incomplete_start": 384,
+    "incomplete_tokens": 0,
+    "candidates": 131,
+    "overlap_tokens": 128,
+    "group_completes_here": true
+   },
+   {
+    "seq_len": 2175,
+    "position": 2174,
+    "window_start": 2047,
+    "window_end_inclusive": 2174,
+    "window_count": 128,
+    "compressed_count": 16,
+    "last_complete_group_end": 2047,
+    "incomplete_start": 2048,
+    "incomplete_tokens": 127,
+    "candidates": 144,
+    "overlap_tokens": 1,
+    "group_completes_here": false
+   },
+   {
+    "seq_len": 2176,
+    "position": 2175,
+    "window_start": 2048,
+    "window_end_inclusive": 2175,
+    "window_count": 128,
+    "compressed_count": 17,
+    "last_complete_group_end": 2175,
+    "incomplete_start": 2176,
+    "incomplete_tokens": 0,
+    "candidates": 145,
+    "overlap_tokens": 128,
+    "group_completes_here": true
+   },
+   {
+    "seq_len": 2177,
+    "position": 2176,
+    "window_start": 2049,
+    "window_end_inclusive": 2176,
+    "window_count": 128,
+    "compressed_count": 17,
+    "last_complete_group_end": 2175,
+    "incomplete_start": 2176,
+    "incomplete_tokens": 1,
+    "candidates": 145,
+    "overlap_tokens": 127,
+    "group_completes_here": false
+   },
+   {
+    "seq_len": 1048575,
+    "position": 1048574,
+    "window_start": 1048447,
+    "window_end_inclusive": 1048574,
+    "window_count": 128,
+    "compressed_count": 8191,
+    "last_complete_group_end": 1048447,
+    "incomplete_start": 1048448,
+    "incomplete_tokens": 127,
+    "candidates": 8319,
+    "overlap_tokens": 1,
+    "group_completes_here": false
+   },
+   {
+    "seq_len": 1048576,
+    "position": 1048575,
+    "window_start": 1048448,
+    "window_end_inclusive": 1048575,
+    "window_count": 128,
+    "compressed_count": 8192,
+    "last_complete_group_end": 1048575,
+    "incomplete_start": 1048576,
+    "incomplete_tokens": 0,
+    "candidates": 8320,
+    "overlap_tokens": 128,
+    "group_completes_here": true
+   }
+  ],
+  "group_table": [
+   {
+    "group": 0,
+    "first_token": 0,
+    "last_token": 127,
+    "completes_at_seq_len": 128,
+    "completes_at_position": 127,
+    "rope_position": 0
+   },
+   {
+    "group": 1,
+    "first_token": 128,
+    "last_token": 255,
+    "completes_at_seq_len": 256,
+    "completes_at_position": 255,
+    "rope_position": 128
+   },
+   {
+    "group": 2,
+    "first_token": 256,
+    "last_token": 383,
+    "completes_at_seq_len": 384,
+    "completes_at_position": 383,
+    "rope_position": 256
+   },
+   {
+    "group": 3,
+    "first_token": 384,
+    "last_token": 511,
+    "completes_at_seq_len": 512,
+    "completes_at_position": 511,
+    "rope_position": 384
+   },
+   {
+    "group": 8190,
+    "first_token": 1048320,
+    "last_token": 1048447,
+    "completes_at_seq_len": 1048448,
+    "completes_at_position": 1048447,
+    "rope_position": 1048320
+   },
+   {
+    "group": 8191,
+    "first_token": 1048448,
+    "last_token": 1048575,
+    "completes_at_seq_len": 1048576,
+    "completes_at_position": 1048575,
+    "rope_position": 1048448
+   }
+  ],
+  "chunk_table": [
+   {
+    "start": 0,
+    "qlen": 1,
+    "end": 1,
+    "groups_before": 0,
+    "groups_after": 0,
+    "groups_completed": 0,
+    "boundary_flag": false,
+    "tail_state_tokens_after": 1
+   },
+   {
+    "start": 0,
+    "qlen": 127,
+    "end": 127,
+    "groups_before": 0,
+    "groups_after": 0,
+    "groups_completed": 0,
+    "boundary_flag": false,
+    "tail_state_tokens_after": 127
+   },
+   {
+    "start": 0,
+    "qlen": 128,
+    "end": 128,
+    "groups_before": 0,
+    "groups_after": 1,
+    "groups_completed": 1,
+    "boundary_flag": true,
+    "tail_state_tokens_after": 0
+   },
+   {
+    "start": 127,
+    "qlen": 1,
+    "end": 128,
+    "groups_before": 0,
+    "groups_after": 1,
+    "groups_completed": 1,
+    "boundary_flag": true,
+    "tail_state_tokens_after": 0
+   },
+   {
+    "start": 100,
+    "qlen": 60,
+    "end": 160,
+    "groups_before": 0,
+    "groups_after": 1,
+    "groups_completed": 1,
+    "boundary_flag": true,
+    "tail_state_tokens_after": 32
+   },
+   {
+    "start": 128,
+    "qlen": 128,
+    "end": 256,
+    "groups_before": 1,
+    "groups_after": 2,
+    "groups_completed": 1,
+    "boundary_flag": true,
+    "tail_state_tokens_after": 0
+   },
+   {
+    "start": 255,
+    "qlen": 2,
+    "end": 257,
+    "groups_before": 1,
+    "groups_after": 2,
+    "groups_completed": 1,
+    "boundary_flag": true,
+    "tail_state_tokens_after": 1
+   },
+   {
+    "start": 256,
+    "qlen": 1024,
+    "end": 1280,
+    "groups_before": 2,
+    "groups_after": 10,
+    "groups_completed": 8,
+    "boundary_flag": true,
+    "tail_state_tokens_after": 0
+   }
+  ],
+  "production": {
+   "max_position_embeddings": 1048576,
+   "max_compressed_entries": 8192,
+   "c128a_topk_width": 8192,
+   "first_compressed_seq_len": 128,
+   "first_full_window_seq_len": 128,
+   "active_topk_width_at_max": 8192,
+   "max_overlap_tokens": 128,
+   "arithmetic": "compressed = seq // ratio; candidates = compressed + min(seq, window); max compressed = cdiv(max_position_embeddings, ratio)"
+  }
+ },
+ "reuse": [
+  {
+   "id": "ref_mla_project",
+   "targets": ["mla_dsa"],
+   "verdict": "mismatch",
+   "comparison": "ref_mla_project absorbs q @ Wk and expands attention_latent @ Wv^T from ONE matrix of shape [heads * 2 * d, latent] holding [head,(K|V),latent] with the same width d for the key and the value. The pinned DSA kv_b_proj is [heads * (192 + 256), 512] per head [W_UK 192 ; W_UV 256]: key and value widths differ, so no legal d exists (28672 rows would need d = 224, but x and y must have widths 192 and 256).",
+   "upstream": [
+    {"pin": "vllm", "file": "vllm/model_executor/layers/attention/mla_attention.py", "line": 88, "line_end": 88, "quote": "`kv_b_proj` is [W_UK; W_UV] concatenated per head"},
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 809, "line_end": 809, "quote": "self.num_heads * (self.qk_nope_head_dim + self.v_head_dim),"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "libref/ref_mla.cpp", "line": 33, "line_end": 33, "quote": "w.shape[0] != h * 2 * d"},
+   "radiance_evidence": [
+    {"pin": "ernie_repo", "file": "libref/ref_mla.cpp", "line": 10, "line_end": 10, "quote": "Both projections share the checkpoint's [head,(K|V),latent] matrix."}
+   ],
+   "mismatches": [
+    {
+     "id": "project-kv-b-widths",
+     "radiance_symbol": "ref_mla_project (libref/ref_mla.cpp:12)",
+     "upstream_symbol": "kv_b_proj / MLAAttention.W_UK, W_UV (mla_attention.py)",
+     "legal_shapes": "x [rows, heads*d] (absorb) or [rows, heads*latent] (expand); w [heads*2*d, latent]; y [rows, heads*latent] or [rows, heads*d]; d must equal both key and value width",
+     "order": "per head: K rows first, then V rows (matches); both widths must be d",
+     "fixture": "kv-b-unequal-widths"
+    }
+   ]
+  },
+  {
+   "id": "ref_mla_attn",
+   "targets": ["mla_dsa"],
+   "verdict": "mismatch",
+   "comparison": "ref_mla_attn is dense decode attention over a per-row page table clamped by a length: every live key is attended, there is no window, no candidate list, no sink and no rope part (the cache slot width must equal latent_dim exactly). DSA attends a merged candidate list [top-k | window] over 576-wide rows with the sink.",
+   "upstream": [
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 301, "line_end": 301, "quote": "swa_len = tl.minimum(seq_len, WINDOW)"},
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 408, "line_end": 408, "quote": "The kernels fold the sink into the softmax denominator."}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "libref/ref_mla.cpp", "line": 152, "line_end": 152, "quote": "kv.shape[3] != d"},
+   "mismatches": [
+    {
+     "id": "mla-attn-dense-no-rope-no-sink",
+     "radiance_symbol": "ref_mla_attn (libref/ref_mla.cpp:144)",
+     "upstream_symbol": "Ernie5_5FlashMLASparseImpl / merge_swa_topk",
+     "legal_shapes": "q [rows, heads, d]; kv [pages, 1, bs, d] with d == latent_dim (no rope columns); bt [rows, blocks]; len [rows]; out [rows, heads, d]",
+     "order": "keys visited by page order 0..len-1 (all live keys), softmax over all of them",
+     "fixture": "sink-denominator"
+    }
+   ]
+  },
+  {
+   "id": "ref_mla_attn_paged",
+   "targets": ["mla_dsa"],
+   "verdict": "reuse_with_adapter",
+   "comparison": "Closest existing match for the DSA main attention: causal dense latent attention with the cache row [normed latent | rotated rope] (kv.shape[3] >= L + R), score = scale * (q . latent + q_rope . rope), value = latent, per-sequence positions from seqused and cu. Gaps: it attends ALL keys 0..pos instead of a selected-id list with the trailing window, has no sink, and its optional gate is one sigmoid per HEAD, whereas the pinned gate is per element after the VHA mix.",
+   "upstream": [
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 838, "line_end": 838, "quote": "self.attn_sink = nn.Parameter("},
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 904, "line_end": 904, "quote": "return self.wo_b(o.flatten(1) * torch.sigmoid(gate))"},
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 859, "line_end": 859, "quote": "scale=self.qk_head_dim**-0.5,"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "libref/ref_mla.cpp", "line": 54, "line_end": 54, "quote": "A score is scale * (q . latent + q_rope . rope); the"},
+   "radiance_evidence": [
+    {"pin": "ernie_repo", "file": "libref/ref_mla.cpp", "line": 132, "line_end": 132, "quote": "const float g = gate ? round_dt(RAD_BF16, act_sigmoid(ldt(gate, r * gate->stride[0] +"},
+    {"pin": "ernie_repo", "file": "libref/ref_mla.cpp", "line": 88, "line_end": 88, "quote": "gate->shape[1] < h"},
+    {"pin": "ernie_repo", "file": "libref/ref_mla.cpp", "line": 101, "line_end": 101, "quote": "const int64_t live = std::min(pos + 1, bt.shape[1] * bs);"}
+   ],
+   "mismatches": [
+    {
+     "id": "mla-paged-all-keys",
+     "radiance_symbol": "ref_mla_attn_paged (libref/ref_mla.cpp:59)",
+     "upstream_symbol": "merge_swa_topk row + sparse FlashMLA forward",
+     "legal_shapes": "q [rows, heads, 512]; qr [rows, heads, 64]; kv [pages, 1, bs, >=576]; bt [seqs, blocks]; seqused [seqs]; cu [seqs+1]; o [rows, heads, 512]",
+     "order": "keys 0..pos in ascending order; candidates are not an id list",
+     "fixture": "dsa-window-merge"
+    },
+    {
+     "id": "mla-paged-scalar-gate",
+     "radiance_symbol": "ref_mla_attn_paged gate operand (libref/ref_mla.cpp:132)",
+     "upstream_symbol": "o_gate * sigmoid after VHA (attention.py Ernie5_5DSAAttention.forward)",
+     "legal_shapes": "gate [rows, >= heads] one logit per head; pinned gate [rows, heads * 256] one logit per element",
+     "order": "ref: round(sigmoid(g_h)) applied to the rounded head output; pinned: VHA mix first, then per-element sigmoid",
+     "fixture": "gate-vha-order"
+    }
+   ]
+  },
+  {
+   "id": "ref_dsa_query",
+   "targets": ["mla_dsa"],
+   "verdict": "reuse",
+   "comparison": "Same structure as the pinned indexer's query quantisation: a normalised power-of-two-radix Hadamard over n = 128 (n <= 256, power of two), rounding to bf16, then E4M3 quantisation with a power-of-two scale whose exponent is ceil(log2(amax / 448)) and a one-row-one-scale layout. The caller must apply the pinned rope-first NeoX rotation BEFORE this op (it has no rope). Open numerics: the amax floor (1e-4 here) versus vLLM's per_token_group_quant_fp8 epsilon, and hadacore's rounding (unresolved m22).",
+   "upstream": [
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 670, "line_end": 670, "quote": "q = hadamard_rows(q.view(-1, self.head_dim))"},
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 681, "line_end": 681, "quote": "q, INDEXER_QUANT_BLOCK, column_major_scales=False, use_ue8m0=True"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "libref/ref_dsa.cpp", "line": 39, "line_end": 39, "quote": "const float sc = std::ldexp(1.0f, exponent - (fraction == 0.5f));"},
+   "radiance_evidence": [
+    {"pin": "ernie_repo", "file": "libref/ref_dsa.cpp", "line": 31, "line_end": 31, "quote": "float am = 1e-4f;"}
+   ]
+  },
+  {
+   "id": "ref_dsa_score",
+   "targets": ["mla_dsa"],
+   "verdict": "mismatch",
+   "comparison": "The weighted scoring arithmetic matches the pinned indexer: sum over heads of relu(q.k) * weight * q_scale, times the key scale and 1/sqrt(heads * n) (= head_dim^-0.5 * n_head^-0.5), fp32. The scoring UNIT differs: ref_dsa_score scores one pooled index row per block-table page (GLM compresses 4 tokens into one 136-byte page row) and writes one score per page, with liveness from a per-sequence count; the pinned indexer scores every TOKEN (compress ratio 1, 132-byte rows in 64-token pages) with a per-row [ks, ke) range that excludes the trailing window.",
+   "upstream": [
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 625, "line_end": 625, "quote": "self.weights_scale = self.head_dim**-0.5 * self.n_head**-0.5"},
+    {"pin": "vllm", "file": "vllm/v1/attention/ops/rocm_aiter_mla_sparse.py", "line": 871, "line_end": 871, "quote": "logits = (score.relu() * weights.unsqueeze(-1).transpose(0, 1)).sum(dim=0)"},
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 368, "line_end": 368, "quote": "chunk.cu_seqlen_ke - self.window, chunk.cu_seqlen_ks"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "libref/ref_dsa.cpp", "line": 106, "line_end": 106, "quote": "const float norm = 1.0f / std::sqrt((float)(h * n));"},
+   "radiance_evidence": [
+    {"pin": "ernie_repo", "file": "libref/ref_dsa.cpp", "line": 95, "line_end": 95, "quote": "out.shape[1] > bt.shape[1]"},
+    {"pin": "ernie_repo", "file": "libref/ref_dsa.cpp", "line": 54, "line_end": 54, "quote": "k.shape[3] != 34"}
+   ],
+   "mismatches": [
+    {
+     "id": "score-unit-page-vs-token",
+     "radiance_symbol": "ref_dsa_score (libref/ref_dsa.cpp:47)",
+     "upstream_symbol": "SparseAttnIndexer fp8_mqa_logits / fp8_paged_mqa_logits",
+     "legal_shapes": "q [rows, heads, 128] E4M3 + qs [rows, heads] + gate [rows, heads]; k [pages,1,4,34] U8 (one 136-byte page = 128 E4M3 + fp32 scale + pad: ONE pooled key per page) or [pages,128] + ks [pages]; out [rows, blocks]; bt [seqs, blocks]; nc [seqs]",
+     "order": "one score per page in block-table order; no per-row ks/ke and no window exclusion",
+     "fixture": "dsa-window-merge"
+    },
+    {
+     "id": "score-geometry-glm",
+     "radiance_symbol": "DsaCache topk 512 / ratio 4 (rad_block_glm_indexer.h)",
+     "upstream_symbol": "index_topk 2048 / ratio 1",
+     "legal_shapes": "topk fixed 512; pooled ratio 4; block 4",
+     "order": "page ids, not token ids",
+     "fixture": "glm-geometry-vs-ernie"
+    }
+   ]
+  },
+  {
+   "id": "ref_dsa_pool",
+   "targets": ["mla_dsa", "hca"],
+   "verdict": "mismatch",
+   "comparison": "Structurally the nearest thing to the HCA compressor (kv|gate halves of a [rows*ratio, 2n] input, APE [ratio, n], softmax over the ratio rows per channel, weighted sum) but its limits and tail differ: ratio <= 16 and n <= 256 (ERNIE needs ratio 128 and n = 512), the gate half is added with APE in fp32 only for those sizes, and the pooled row is Hadamard-transformed and FP8-quantised as an INDEX key, whereas the HCA compressor applies RMSNorm, splits nope (FP8 blocks of 64) from rope (GPT-J rotated at the group start, bf16). The DSA indexer of this model does not pool at all.",
+   "upstream": [
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 297, "line_end": 297, "quote": "// Per-channel (not per-position) softmax over the window: each of the"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 353, "line_end": 353, "quote": "const int64_t compressed_pos = (position / compress_ratio) * compress_ratio;"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "libref/ref_dsa.cpp", "line": 163, "line_end": 163, "quote": "ratio < 2 || ratio > 16"},
+   "radiance_evidence": [
+    {"pin": "ernie_repo", "file": "libref/ref_dsa.cpp", "line": 167, "line_end": 167, "quote": "kg.shape[1] != 2 * n"}
+   ],
+   "mismatches": [
+    {
+     "id": "pool-limits",
+     "radiance_symbol": "ref_dsa_pool (libref/ref_dsa.cpp:149)",
+     "upstream_symbol": "DeepseekCompressor ratio 128, head_dim 512",
+     "legal_shapes": "kg [rows*ratio, 2n]; ape [ratio, n] f32; ratio in [2,16]; n power of two <= 256",
+     "order": "per channel softmax over ratio rows of (gate + ape), then Hadamard + fp8 index quant",
+     "fixture": "compressor-geometry-limits"
+    },
+    {
+     "id": "pool-tail",
+     "radiance_symbol": "ref_dsa_pool Hadamard + E4M3 quantisation",
+     "upstream_symbol": "compress_norm_rope_store (RMSNorm, nope fp8 x 7 blocks, rope bf16)",
+     "legal_shapes": "output q [rows, n] E4M3 + scale [rows,1]",
+     "order": "pool -> hadamard -> quant (ref) versus pool -> rmsnorm -> split -> quant nope / rotate rope (pinned)",
+     "fixture": "hca-group-pool"
+    }
+   ]
+  },
+  {
+   "id": "ref_attn_paged_sink",
+   "targets": ["mla_dsa", "hca"],
+   "verdict": "reuse_with_adapter",
+   "comparison": "The window and sink semantics match exactly: a key is hidden when pos - j >= window (visible j in [pos-window+1, pos], query token included), the sink is one extra logit per query head added to the softmax denominator only, and the default scale is head_dim^-0.5 (= the HCA 512^-0.5). It cannot express the union of two pools (window + compressed rows) or an id list, and its cache slot holds K then V (2 * head_dim) whereas HCA and DSA use one shared latent row as key and value.",
+   "upstream": [
+    {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/sparse_swa.py", "line": 1097, "line_end": 1097, "quote": "start_pos = tl.maximum(pos - (window_size - 1) - left_add, 0)"},
+    {"pin": "vllm", "file": "vllm/v1/attention/ops/rocm_aiter_mla_sparse.py", "line": 2198, "line_end": 2198, "quote": "l_final = l_i * alpha + tl.exp(sink - m_final)"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 237, "line_end": 237, "quote": "self.scale = self.head_dim**-0.5"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "libref/ref_attn.cpp", "line": 251, "line_end": 251, "quote": "causal ? (d >= window)"},
+   "radiance_evidence": [
+    {"pin": "ernie_repo", "file": "libref/ref_attn.cpp", "line": 303, "line_end": 303, "quote": "A sink is one more logit in the softmax with no value"},
+    {"pin": "ernie_repo", "file": "libref/ref_attn.cpp", "line": 322, "line_end": 322, "quote": "if (sinks) sum += ref_exp(sk - mx);"},
+    {"pin": "ernie_repo", "file": "libref/ref_attn.cpp", "line": 154, "line_end": 154, "quote": "kv->shape[3] < 2 * head_dim"},
+    {"pin": "ernie_repo", "file": "libref/ref_attn.cpp", "line": 141, "line_end": 141, "quote": "if (sinks && numel(sinks) != q_heads) return RAD_E_SHAPE;"}
+   ],
+   "mismatches": [
+    {
+     "id": "sink-op-window-only",
+     "radiance_symbol": "ref_attn_paged_sink (libref/ref_attn.cpp:345)",
+     "upstream_symbol": "FlashMLA sparse forward with attn_sink",
+     "legal_shapes": "q [rows, q_heads, head_dim]; kv [pages, kv_heads, bs, >= 2*head_dim]; bt; seqused; sinks [q_heads]; window scalar",
+     "order": "keys of one pool in ascending position; V after K inside the slot",
+     "fixture": "hca-union-softmax"
+    },
+    {
+     "id": "sink-kv-slot-layout",
+     "radiance_symbol": "kv->shape[3] >= 2 * head_dim (libref/ref_attn.cpp:154)",
+     "upstream_symbol": "single 512-wide MQA row, K = V",
+     "legal_shapes": "kv [pages, 1, bs, >= 1024] for head_dim 512",
+     "order": "K half then V half; HCA would duplicate the row",
+     "fixture": "sink-denominator"
+    }
+   ]
+  },
+  {
+   "id": "ref_attn_paged_anchor_window",
+   "targets": ["mla_dsa", "hca"],
+   "verdict": "mismatch",
+   "comparison": "The anchored window measures every row of a query block from the block's base position (a drafter-block mask), not from each token's own position; the pinned window is per token (positions p-127..p). Not usable for the trailing window.",
+   "upstream": [
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 299, "line_end": 299, "quote": "seq_len = tl.load(positions_ptr + row).to(tl.int32) + 1"},
+    {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/sparse_swa.py", "line": 1086, "line_end": 1086, "quote": "pos = prefix_len + token_idx - query_start"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "libref/ref_attn.cpp", "line": 248, "line_end": 248, "quote": "const int64_t d = (shared_anchor_window ? base : wpos) - j;"},
+   "radiance_evidence": [
+    {"pin": "ernie_repo", "file": "libref/ref_attn.cpp", "line": 250, "line_end": 250, "quote": "if (d >= window) return -1;"}
+   ],
+   "mismatches": [
+    {
+     "id": "anchor-vs-trailing",
+     "radiance_symbol": "ref_attn_paged_anchor_window (libref/ref_attn.cpp:339)",
+     "upstream_symbol": "merge_swa_topk per-row window",
+     "legal_shapes": "window > 0 required; same operands as ref_attn_paged",
+     "order": "all rows of a block see the block-start window",
+     "fixture": "dsa-window-merge"
+    }
+   ]
+  },
+  {
+   "id": "ref_seg_softmax_pool",
+   "targets": ["hca"],
+   "verdict": "mismatch",
+   "comparison": "Pools rows of V with a softmax over ONE scalar score per row of a cu_seqlens segment; the HCA compressor needs a softmax per channel (score and kv are both [128, 512]). With a scalar score per row every channel gets the same weights.",
+   "upstream": [
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 297, "line_end": 297, "quote": "// Per-channel (not per-position) softmax over the window: each of the"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "libref/ref_elementwise.cpp", "line": 682, "line_end": 682, "quote": "y[s, :] = sum over the segment's rows r of softmax(score)[r] * v[r, :]: one row a cu_seqlens"},
+   "radiance_evidence": [
+    {"pin": "ernie_repo", "file": "libref/ref_elementwise.cpp", "line": 700, "line_end": 700, "quote": "float m = -INFINITY, z = 0.0f;"}
+   ],
+   "mismatches": [
+    {
+     "id": "seg-pool-scalar-score",
+     "radiance_symbol": "ref_seg_softmax_pool (libref/ref_elementwise.cpp:686)",
+     "upstream_symbol": "compress_norm_rope_store_impl softmax",
+     "legal_shapes": "score [rows, 1]; v [rows, n]; cu [segments+1]",
+     "order": "segment rows in order; one softmax per segment",
+     "fixture": "hca-group-pool"
+    }
+   ]
+  },
+  {
+   "id": "ref_rope",
+   "targets": ["mla_dsa", "hca"],
+   "verdict": "reuse_with_adapter",
+   "comparison": "Leading-slice rotary with neox or gptj pairing and a YaRN frequency blend: reusable as is for the indexer (rotate the LEADING 64 of 128, split-half) and for the DSA main q_pe/k_pe when they are standalone 64-wide tensors (interleaved). It rotates the first rotary_dim dims of a head and has no inverse, so the HCA trailing-slice rotation of 512-wide rows and the inverse rotation of the output need an offset/inverse variant. The YaRN blend itself matches the pinned formula (abi/rad_yarn.h) once low/high are supplied from the ORIGINAL max position.",
+   "upstream": [
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 665, "line_end": 665, "quote": "q_pe, q_nope = q.split([self.rope_dim, nope_dim], dim=-1)"},
+    {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/deepseek_scaling_rope.py", "line": 267, "line_end": 267, "quote": "query_rot = query[..., -self.rotary_dim :]"},
+    {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/deepseek_scaling_rope.py", "line": 285, "line_end": 285, "quote": "sin = -sin"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "libref/ref_attn.cpp", "line": 852, "line_end": 852, "quote": "const int64_t i0 = (mode == ROPE_GPTJ) ? 2 * i : i;"},
+   "radiance_evidence": [
+    {"pin": "ernie_repo", "file": "libref/ref_attn.cpp", "line": 941, "line_end": 941, "quote": "int64_t rot = p_int(a, \"rotary_dim\", head_dim);"},
+    {"pin": "ernie_repo", "file": "abi/rad_yarn.h", "line": 33, "line_end": 33, "quote": "const float mask = 1.0f - ramp;"},
+    {"pin": "ernie_repo", "file": "abi/rad_yarn.h", "line": 34, "line_end": 34, "quote": "return (inv / factor) * (1.0f - mask) + inv * mask;"},
+    {"pin": "ernie_repo", "file": "abi/rad_yarn.h", "line": 4, "line_end": 4, "quote": "The architecture resolves the correction bounds from the original"}
+   ],
+   "mismatches": [
+    {
+     "id": "rope-leading-vs-trailing",
+     "radiance_symbol": "rope_head (libref/ref_attn.cpp:846) rotates dims [0, rot)",
+     "upstream_symbol": "DeepseekV4ScalingRotaryEmbedding rotates dims [head - rot, head)",
+     "legal_shapes": "qkv [rows, heads*head_dim]; rotary_dim <= head_dim even; mode neox|gptj|...",
+     "order": "pairs (i, i+half) or (2i, 2i+1) from dim 0",
+     "fixture": "rope-pairing"
+    },
+    {
+     "id": "rope-compressed-position",
+     "radiance_symbol": "ref_rope positions are the token positions",
+     "upstream_symbol": "compressed entry rotated at (position // ratio) * ratio",
+     "legal_shapes": "positions [rows] i32",
+     "order": "position = group start, not the completing token",
+     "fixture": "hca-compressed-rope-position"
+    }
+   ]
+  },
+  {
+   "id": "ref_qk_norm_rope",
+   "targets": ["hca"],
+   "verdict": "mismatch",
+   "comparison": "A weightless per-head RMSNorm followed by RoPE exists (an absent gain is a unit gain), but the op rounds the norm output to the tensor dtype BEFORE the rotation and rotates the leading rotary_dim dims; the pinned HCA q path keeps the normalised value in fp32 into the rotation (and rounds once) and rotates the TRAILING 64 of 512 dims.",
+   "upstream": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/xpu/xpu_qnorm_rope_kv_fp8_insert.py", "line": 66, "line_end": 66, "quote": "q_vals = q_vals * rms"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/xpu/xpu_qnorm_rope_kv_fp8_insert.py", "line": 80, "line_end": 80, "quote": "new_even = q_even * cos_val - q_odd * sin_val"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "libref/ref_attn.cpp", "line": 1010, "line_end": 1010, "quote": "The norm output is rounded to the tensor's dtype before the rotation, as the unfused pair does;"},
+   "radiance_evidence": [
+    {"pin": "ernie_repo", "file": "libref/ref_attn.cpp", "line": 1006, "line_end": 1006, "quote": "An absent gain is a unit"}
+   ],
+   "mismatches": [
+    {
+     "id": "qknorm-rounding-and-slice",
+     "radiance_symbol": "ref_qk_norm_rope (libref/ref_attn.cpp:1013)",
+     "upstream_symbol": "xpu_qnorm_rope kernel / fused_deepseek_v4_qnorm_rope_kv_rope_quant_insert",
+     "legal_shapes": "qkv [rows, (heads + kv_heads (+v)) * head_dim]; q/k gains optional",
+     "order": "round(norm) then rotate leading dims versus fp32 norm then rotate trailing dims then round",
+     "fixture": "rope-pairing"
+    }
+   ]
+  },
+  {
+   "id": "ref_layernorm",
+   "targets": ["mla_dsa"],
+   "verdict": "reuse",
+   "comparison": "y = (x - mean) * rsqrt(var + eps) * w + b with the biased variance and an optional bias: exactly the pinned indexer k_norm (LayerNorm over 128 with eps 1e-6, weight and bias both in the checkpoint). Pass eps = 1e-6 explicitly: the default here is 1e-5.",
+   "upstream": [
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 616, "line_end": 616, "quote": "self.k_norm = LayerNorm(self.head_dim, eps=1e-6)"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "libref/ref_elementwise.cpp", "line": 104, "line_end": 104, "quote": "y = (x - mean) * rsqrt(var + eps) * w + b, with the biased variance"},
+   "radiance_evidence": [
+    {"pin": "ernie_repo", "file": "libref/ref_elementwise.cpp", "line": 111, "line_end": 111, "quote": "const float eps = p_f32(a, \"eps\", 1e-5f);"}
+   ]
+  },
+  {
+   "id": "ref_rmsnorm",
+   "targets": ["mla_dsa", "hca"],
+   "verdict": "reuse",
+   "comparison": "RMSNorm with a gain vector covers q_a_layernorm (1024), kv_a_layernorm (512) on DSA, q_layernorm and kv_layernorm on HCA, and the compressor's RMSNorm over 512 (fp32 input); eps comes from rms_norm_eps 1e-6.",
+   "upstream": [
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 798, "line_end": 798, "quote": "self.q_a_layernorm = RMSNorm(self.q_lora_rank, eps=config.rms_norm_eps)"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 280, "line_end": 280, "quote": "self.norm = RMSNorm(self.head_dim, self.rms_norm_eps)"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "libref/ref_elementwise.cpp", "line": 43, "line_end": 43, "quote": "int ref_rmsnorm(const RadArgs* a, RadStream) {"}
+  },
+  {
+   "id": "ref_head_gate",
+   "targets": ["mla_dsa", "hca"],
+   "verdict": "mismatch",
+   "comparison": "LTX's head gate multiplies each head's whole output by 2 * sigmoid of ONE logit per head; the pinned gate is a plain sigmoid per ELEMENT (heads x v_head_dim on DSA, n_groups x o_lora_rank on HCA) and, on HCA, acts on the wo_a output rather than the head outputs. Compose sigmoid and elementwise multiply instead.",
+   "upstream": [
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 904, "line_end": 904, "quote": "return self.wo_b(o.flatten(1) * torch.sigmoid(gate))"},
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 235, "line_end": 235, "quote": "lambda z: self.wo_b(z * torch.sigmoid(gate)),"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "libref/ref_ltx.cpp", "line": 103, "line_end": 103, "quote": "each head's output times 2 sigmoid of its logit,"},
+   "radiance_evidence": [
+    {"pin": "ernie_repo", "file": "libref/ref_ltx.cpp", "line": 120, "line_end": 120, "quote": "const float gate = round_dt(X->dtype, 2.0f * sg);"}
+   ],
+   "mismatches": [
+    {
+     "id": "head-gate-factor-granularity",
+     "radiance_symbol": "ref_head_gate (libref/ref_ltx.cpp:106)",
+     "upstream_symbol": "o_gate * sigmoid(gate) in Ernie5_5DSAAttention / HCA mixin",
+     "legal_shapes": "g [rows, >= n_head]; x [rows, >= n_head*head_dim]",
+     "order": "x *= 2*sigmoid(g_h) per head; pinned x *= sigmoid(g_{h,d}) per element",
+     "fixture": "gate-vha-order"
+    }
+   ]
+  },
+  {
+   "id": "ref_mix_rows",
+   "targets": ["mla_dsa", "hca"],
+   "verdict": "mismatch",
+   "comparison": "mix_rows is a Linear(k, 1) over k consecutive ROWS with one weight vector; VHA mixes the HEAD axis of each token with a heads x heads matrix m = I + V U^T that is the same for every token and column. The shapes and the contraction axis differ.",
+   "upstream": [
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 111, "line_end": 111, "quote": "``o[h] <- sum_g m[h, g] * o[g]`` with ``m = I + V @ U^T``."},
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 140, "line_end": 140, "quote": "return torch.matmul(self.m, o)"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "libref/ref_gen.cpp", "line": 1222, "line_end": 1222, "quote": "y[r, c] = sum_i w[i] x[r k + i, c], i < k: a Linear(k, 1) across k consecutive rows"},
+   "mismatches": [
+    {
+     "id": "mix-rows-vs-vha",
+     "radiance_symbol": "ref_mix_rows (libref/ref_gen.cpp:1225)",
+     "upstream_symbol": "VHAPostMix.forward",
+     "legal_shapes": "x [rows*k, n]; w [k]; y [rows, n]",
+     "order": "contracts k consecutive rows; VHA contracts the head axis with m [heads, heads] shared across columns",
+     "fixture": "gate-vha-order"
+    }
+   ]
+  },
+  {
+   "id": "ref_row_topk",
+   "targets": ["mla_dsa"],
+   "verdict": "reuse_with_adapter",
+   "comparison": "Exact per-row top-R, descending, ties to the lower column: a valid selection for the indexer's candidate SET given score rows, but the pinned kernel's tie order is unresolved (m06) and the candidate range [0, seq - window) must be enforced by the scorer's masking (-inf outside ks..ke), which ref_dsa_score does not do per token.",
+   "upstream": [
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 300, "line_end": 300, "quote": "indexer_len = tl.minimum(tl.maximum(seq_len - WINDOW, 0), TOPK)"},
+    {"pin": "vllm", "file": "vllm/model_executor/layers/sparse_attn_indexer.py", "line": 711, "line_end": 711, "quote": "ops.top_k_per_row_prefill("}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "libref/ref_moe.cpp", "line": 1136, "line_end": 1136, "quote": "Exact per-row top-R, descending, ties to the lower column:"},
+   "mismatches": [
+    {
+     "id": "topk-order-and-masking",
+     "radiance_symbol": "ref_row_topk (libref/ref_moe.cpp:1138)",
+     "upstream_symbol": "top_k_per_row_prefill/decode + merge_swa_topk",
+     "legal_shapes": "x [rows, cols]; idx [rows, R]; val [rows, R]",
+     "order": "descending score, ties to lower column; pinned kernel order unresolved",
+     "fixture": "dsa-window-merge"
+    }
+   ]
+  },
+  {
+   "id": "MlaLatent",
+   "targets": ["mla_dsa"],
+   "verdict": "mismatch",
+   "comparison": "GLM's latent block (arch/common/rad_block_glm_mla.h) hard-requires latent_dim 512 and head_dim 256 (which equal ERNIE's latent and v_head_dim) but is a RoPE-free MLA over 4-token pooled pages with kv_b rows heads * 2 * head_dim (256 + 256), no sink, no VHA and no gate; ERNIE's DSA needs a 64-wide rotated rope part (576-wide rows), key and value widths 192 versus 256, 64-token pages, the sink, VHA and the element gate.",
+   "upstream": [
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 807, "line_end": 807, "quote": "self.kv_b_proj = ColumnParallelLinear("},
+    {"pin": "vllm", "file": "vllm/model_executor/layers/attention/mla_attention.py", "line": 88, "line_end": 88, "quote": "`kv_b_proj` is [W_UK; W_UV] concatenated per head"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "arch/common/rad_block_glm_mla.h", "line": 73, "line_end": 73, "quote": "c.latent_dim != 512 ||"},
+   "radiance_evidence": [
+    {"pin": "ernie_repo", "file": "arch/common/rad_block_glm_mla.h", "line": 1, "line_end": 1, "quote": "GLM-5.3's sparse latent attention (MLA, no RoPE)"},
+    {"pin": "ernie_repo", "file": "arch/common/rad_block_glm_mla.h", "line": 74, "line_end": 74, "quote": "c.head_dim != 256)"},
+    {"pin": "ernie_repo", "file": "arch/common/rad_block_glm_mla.h", "line": 40, "line_end": 40, "quote": "RAD_INT(\"block_size\", 4)"}
+   ],
+   "mismatches": [
+    {
+     "id": "glm-mla-no-rope-equal-widths",
+     "radiance_symbol": "MlaLatent::declare (rad_block_glm_mla.h)",
+     "upstream_symbol": "Ernie5_5DSAAttention",
+     "legal_shapes": "q [rows, heads*256]; latent cache row 512; kv_b [heads*2*256, 512]",
+     "order": "absorb with equal K/V widths, no rope columns",
+     "fixture": "kv-b-unequal-widths"
+    }
+   ]
+  },
+  {
+   "id": "DsaCache",
+   "targets": ["mla_dsa"],
+   "verdict": "mismatch",
+   "comparison": "GLM's indexer block fixes topk at 512 and pools 4 tokens per index page with learned gates (dsa_pool, ratio 4, block size 4) and no RoPE; ERNIE's indexer selects 2048 TOKENS from per-token keys (ratio 1) after a rope-first NeoX rotation and a window exclusion.",
+   "upstream": [
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/model.py", "line": 76, "line_end": 76, "quote": "num_tokens, config.index_topk + config.sliding_window, dtype=torch.int32"},
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 665, "line_end": 665, "quote": "q_pe, q_nope = q.split([self.rope_dim, nope_dim], dim=-1)"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "arch/common/rad_block_glm_indexer.h", "line": 63, "line_end": 63, "quote": "c.topk != 512"},
+   "radiance_evidence": [
+    {"pin": "ernie_repo", "file": "arch/common/rad_block_glm_indexer.h", "line": 5, "line_end": 5, "quote": "No RoPE; the only rotation is the Hadamard inside dsa_query."},
+    {"pin": "ernie_repo", "file": "arch/common/rad_block_glm_indexer.h", "line": 110, "line_end": 110, "quote": "if (!op_pool || rad_kv_block_size(b, index) != 4) return RAD_E_INVAL;"}
+   ],
+   "mismatches": [
+    {
+     "id": "glm-indexer-topk-ratio-rope",
+     "radiance_symbol": "DsaCache::declare (rad_block_glm_indexer.h)",
+     "upstream_symbol": "Ernie5_5Indexer",
+     "legal_shapes": "topk == 512; ratio 4; block 4; no rope",
+     "order": "selects page ids from pooled blocks",
+     "fixture": "glm-geometry-vs-ernie"
+    }
+   ]
+  },
+  {
+   "id": "RadYarn",
+   "targets": ["hca"],
+   "verdict": "reuse",
+   "comparison": "abi/rad_yarn.h computes the same blend as the pinned formula: inv = (inv / factor) * (1 - mask) + inv * mask with mask = 1 - clamp((i - low) / (high - low)) and a 0.001 guard when low == high; low/high must be resolved by the architecture from the ORIGINAL training length (65536 -> low 15, high 25 for dim 64, base 160000, beta 32/1), magnitude 1. Only fp32 association order differs from the Python (inv / factor versus 1 / (factor * pos_freq)).",
+   "upstream": [
+    {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/deepseek_scaling_rope.py", "line": 98, "line_end": 98, "quote": "inv_freq_interpolation * (1 - inv_freq_mask)"},
+    {"pin": "vllm", "file": "vllm/model_executor/layers/rotary_embedding/common.py", "line": 59, "line_end": 59, "quote": "return max(low, 0), min(high, dim - 1)  # Clamp values just in case"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "abi/rad_yarn.h", "line": 34, "line_end": 34, "quote": "return (inv / factor) * (1.0f - mask) + inv * mask;"},
+   "radiance_evidence": [
+    {"pin": "ernie_repo", "file": "abi/rad_yarn.h", "line": 30, "line_end": 30, "quote": "const float width = high == low ? 0.001f : high - low;"}
+   ]
+  },
+  {
+   "id": "RAD_KV_GROUPS",
+   "targets": ["mla_dsa", "hca"],
+   "verdict": "reuse_with_adapter",
+   "comparison": "The KV-group kinds in abi/rad_builder.h cover the shapes needed without ABI change: RAD_KV_FULL for the DSA latent rows and the indexer key rows, RAD_KV_WINDOW for the 128-token trailing windows, RAD_KV_LINEAR for fixed per-sequence state. The HCA compressed rows are per-128-token (a FULL group with a coarser step) and the compressor state is a fixed 128 x 1024 fp32 per layer and request (LINEAR candidates); block size is taken from the consuming kernel, so each new op must state its block geometry. Whether the cache manager accepts a per-token-group (ratio) growth rate is not in the ABI text.",
+   "upstream": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 871, "line_end": 871, "quote": "tokens_per_state=self.compress_ratio,"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 160, "line_end": 160, "quote": "self.sliding_window = coff * compress_ratio"},
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 87, "line_end": 87, "quote": "DSA_BLOCK_SIZE = 64"}
+   ],
+   "candidate": {"pin": "ernie_repo", "file": "abi/rad_builder.h", "line": 459, "line_end": 459, "quote": "RAD_KV_WINDOW  = 1,   /* paged, per-token, bounded by the window */"},
+   "radiance_evidence": [
+    {"pin": "ernie_repo", "file": "abi/rad_builder.h", "line": 458, "line_end": 458, "quote": "RAD_KV_FULL    = 0,   /* paged, per-token, growing -- full attention */"},
+    {"pin": "ernie_repo", "file": "abi/rad_builder.h", "line": 460, "line_end": 460, "quote": "RAD_KV_LINEAR  = 2,   /* per-sequence, fixed size -- GDN recurrent state */"}
+   ],
+   "mismatches": [
+    {
+     "id": "kv-group-ratio-growth",
+     "radiance_symbol": "RadKVGroupDecl (abi/rad_builder.h:471)",
+     "upstream_symbol": "MLAAttentionSpec tokens_per_state=128",
+     "legal_shapes": "kind FULL/WINDOW/LINEAR; n_head_kv, head_dim, window; block size derived",
+     "order": "per-token rows (FULL) versus one row per 128 tokens",
+     "fixture": "compressor-geometry-limits"
+    }
+   ]
+  },
+  {
+   "id": "hca_compressor",
+   "targets": ["hca"],
+   "verdict": "new_op_required",
+   "comparison": "No Radiance op pools 128 fp32 kv/score rows with APE per channel, RMS-normalises 512 dims, then quantises 448 nope dims in 64-blocks and rotates 64 rope dims at the group start. It also needs the per-request fp32 partial-state cache and a chunk-boundary rule (a group completes when start % 128 + chunk_len >= 128).",
+   "upstream": [
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 297, "line_end": 297, "quote": "// Per-channel (not per-position) softmax over the window: each of the"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 55, "line_end": 55, "quote": "start % 128 + query_start_loc[i + 1] - query_start_loc[i] >= 128"}
+   ],
+   "mismatches": [
+    {
+     "id": "new-hca-compressor",
+     "radiance_symbol": "(none)",
+     "upstream_symbol": "DeepseekCompressor.forward / compress_norm_rope_store",
+     "legal_shapes": "kv, score [tokens, 512] f32; ape [128, 512]; state [rows, 1024] f32; cos_sin [max_pos, 64]",
+     "order": "state save at every token; compress only when (position + 1) % 128 == 0",
+     "fixture": "hca-group-pool"
+    }
+   ]
+  },
+  {
+   "id": "hca_union_attention",
+   "targets": ["hca"],
+   "verdict": "new_op_required",
+   "comparison": "One softmax over the window keys and the complete compressed keys (the union is not de-duplicated) with the per-head sink and scale 512^-0.5, K = V rows from two pools, 64 heads of width 512, followed by the inverse rotation. Running ref_attn_paged_sink twice and adding the results is not equivalent.",
+   "upstream": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/flashmla.py", "line": 260, "line_end": 260, "quote": "extra_k_cache=kv_cache if not swa_only else None,"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/cache_utils.py", "line": 924, "line_end": 924, "quote": "combined_len = topk_len + swa_len"}
+   ],
+   "mismatches": [
+    {
+     "id": "new-hca-union",
+     "radiance_symbol": "(none)",
+     "upstream_symbol": "flash_mla_with_kvcache extra_k_cache / flash_mla_sparse_fwd",
+     "legal_shapes": "q [rows, 64, 512]; window rows [<=128, 512]; compressed rows [(pos+1)//128, 512]; sink [64]",
+     "order": "single normalisation across both pools",
+     "fixture": "hca-union-softmax"
+    }
+   ]
+  },
+  {
+   "id": "swa_topk_merge",
+   "targets": ["mla_dsa"],
+   "verdict": "new_op_required",
+   "comparison": "The merge [top-k ids | window ids | -1] with n = min(max(seq - window, 0), topk) and the window seq-w..seq-1 has no Radiance op; legal shapes topk_indices [tokens, 2048] int32, positions [tokens], out [tokens, 2176] int32.",
+   "upstream": [
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 300, "line_end": 300, "quote": "indexer_len = tl.minimum(tl.maximum(seq_len - WINDOW, 0), TOPK)"},
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 305, "line_end": 305, "quote": "swa_idx = seq_len - swa_len + cols - indexer_len"}
+   ],
+   "mismatches": [
+    {
+     "id": "new-swa-topk-merge",
+     "radiance_symbol": "(none)",
+     "upstream_symbol": "merge_swa_topk (attention.py:310)",
+     "legal_shapes": "topk [tokens, topk] i32; out [tokens, >= topk + window] i32; positions [tokens]",
+     "order": "selected ids first, then window ascending, then -1",
+     "fixture": "dsa-window-merge"
+    }
+   ]
+  },
+  {
+   "id": "vha_mix",
+   "targets": ["mla_dsa", "hca"],
+   "verdict": "new_op_required",
+   "comparison": "Head-axis mixing o[h] <- sum_g m[h,g] o[g] with m = I + V U^T folded once per layer (rank 16, heads 64) applied to a [tokens, heads, dim] tensor (dim 256 on DSA, 512 on HCA); no existing op contracts the head axis.",
+   "upstream": [
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 140, "line_end": 140, "quote": "return torch.matmul(self.m, o)"},
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 135, "line_end": 135, "quote": "self.m.copy_(torch.addmm(eye, self.V, self.U.t()))"}
+   ],
+   "mismatches": [
+    {
+     "id": "new-vha-mix",
+     "radiance_symbol": "(none)",
+     "upstream_symbol": "VHAPostMix",
+     "legal_shapes": "o [tokens, heads, dim]; U, V [heads, 16]; m [heads, heads]",
+     "order": "mix first, then the element gate",
+     "fixture": "gate-vha-order"
+    }
+   ]
+  },
+  {
+   "id": "inverse_rope_grouped_oproj",
+   "targets": ["hca"],
+   "verdict": "new_op_required",
+   "comparison": "Inverse rotation (sin negated) of the trailing 64 dims at the query position, then the grouped wo_a (8 groups x 8 heads x 512 -> 8 x 1024), then the element sigmoid gate and wo_b; the grouped batched projection and the inverse rotation are not provided by ref_rope or ref_gemm_nt.",
+   "upstream": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/o_proj.py", "line": 50, "line_end": 50, "quote": "O projection: inverse RoPE + grouped wo_a + wo_b."},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_inv_rope_fp8_quant.py", "line": 135, "line_end": 135, "quote": "x_sub = x * cos_v - x_partner * sin_v"}
+   ],
+   "mismatches": [
+    {
+     "id": "new-inv-rope-oproj",
+     "radiance_symbol": "(none)",
+     "upstream_symbol": "deep_gemm_fp8_o_proj",
+     "legal_shapes": "o [tokens, 64, 512]; wo_a [8, 1024, 4096]; z [tokens, 8192]; gate [tokens, 8192]; wo_b [4096, 8192]",
+     "order": "inverse rope -> grouped wo_a -> * sigmoid(gate) -> wo_b",
+     "fixture": "gate-vha-order"
+    }
+   ]
+  }
+ ],
+ "fixtures": [
+  {
+   "id": "dsa-window-merge",
+   "family": "mla_dsa",
+   "kind": "window-merge",
+   "purpose": "merge_swa_topk row: indexer ids from [0, seq - window) by score, then the inclusive trailing window seq-window .. seq-1 (reduced window 4, top-k 3, same equations as production)",
+   "inputs": {
+    "window": 4,
+    "topk": 3,
+    "seq_lens": [3, 4, 5, 7, 8, 11],
+    "scores": [0.9, 0.1, 0.8, 0.2, 0.7, 0.3, 0.6, 0.95, 0.5, 0.4, 0.99],
+    "tie_rule": "fixture only: descending score, ties to the lower id (the pinned kernel's tie order is unresolved, m06)"
+   },
+   "expected": [
+    {
+     "seq_len": 3,
+     "selected": [],
+     "window": [0, 1, 2],
+     "row": [0, 1, 2]
+    },
+    {
+     "seq_len": 4,
+     "selected": [],
+     "window": [0, 1, 2, 3],
+     "row": [0, 1, 2, 3]
+    },
+    {
+     "seq_len": 5,
+     "selected": [0],
+     "window": [1, 2, 3, 4],
+     "row": [0, 1, 2, 3, 4]
+    },
+    {
+     "seq_len": 7,
+     "selected": [0, 2, 1],
+     "window": [3, 4, 5, 6],
+     "row": [0, 2, 1, 3, 4, 5, 6]
+    },
+    {
+     "seq_len": 8,
+     "selected": [0, 2, 3],
+     "window": [4, 5, 6, 7],
+     "row": [0, 2, 3, 4, 5, 6, 7]
+    },
+    {
+     "seq_len": 11,
+     "selected": [0, 2, 4],
+     "window": [7, 8, 9, 10],
+     "row": [0, 2, 4, 7, 8, 9, 10]
+    }
+   ],
+   "contrasts": [
+    {
+     "name": "window_excludes_current",
+     "description": "window shifted one back: positions p-W .. p-1 (query token left out)",
+     "result": [
+      {
+       "seq_len": 3,
+       "window": [0, 1]
+      },
+      {
+       "seq_len": 4,
+       "window": [0, 1, 2]
+      },
+      {
+       "seq_len": 5,
+       "window": [0, 1, 2, 3]
+      },
+      {
+       "seq_len": 7,
+       "window": [2, 3, 4, 5]
+      },
+      {
+       "seq_len": 8,
+       "window": [3, 4, 5, 6]
+      },
+      {
+       "seq_len": 11,
+       "window": [6, 7, 8, 9]
+      }
+     ],
+     "differs_at": [3, 4, 5, 7, 8, 11],
+     "differs": true
+    },
+    {
+     "name": "indexer_overlaps_window",
+     "description": "indexer range [0, seq - window + 1): one token too many, duplicating the first window token",
+     "result": [
+      {
+       "seq_len": 3,
+       "selected": []
+      },
+      {
+       "seq_len": 4,
+       "selected": [0]
+      },
+      {
+       "seq_len": 5,
+       "selected": [0, 1]
+      },
+      {
+       "seq_len": 7,
+       "selected": [0, 2, 3]
+      },
+      {
+       "seq_len": 8,
+       "selected": [0, 2, 4]
+      },
+      {
+       "seq_len": 11,
+       "selected": [7, 0, 2]
+      }
+     ],
+     "differs_at": [4, 5, 7, 8, 11],
+     "differs": true
+    },
+    {
+     "name": "window_one_wider",
+     "description": "window of window + 1 tokens (an exclusive-endpoint slip)",
+     "result": [
+      {
+       "seq_len": 3,
+       "window": [0, 1, 2]
+      },
+      {
+       "seq_len": 4,
+       "window": [0, 1, 2, 3]
+      },
+      {
+       "seq_len": 5,
+       "window": [0, 1, 2, 3, 4]
+      },
+      {
+       "seq_len": 7,
+       "window": [2, 3, 4, 5, 6]
+      },
+      {
+       "seq_len": 8,
+       "window": [3, 4, 5, 6, 7]
+      },
+      {
+       "seq_len": 11,
+       "window": [6, 7, 8, 9, 10]
+      }
+     ],
+     "differs_at": [5, 7, 8, 11],
+     "differs": true
+    }
+   ],
+   "facts": ["m03", "m04", "m05"]
+  },
+  {
+   "id": "hca-group-pool",
+   "family": "hca",
+   "kind": "group-pool",
+   "purpose": "compressed entry of each COMPLETE group: per-channel softmax over (score + APE[position % ratio]) of the group's rows, softmax-weighted sum of kv; the incomplete trailing group yields no entry",
+   "inputs": {
+    "ratio": 4,
+    "channels": 2,
+    "kv": [
+     [1.0, -0.5],
+     [0.2, 0.7],
+     [-0.3, 1.1],
+     [0.9, 0.4],
+     [0.5, -1.2],
+     [1.4, 0.3],
+     [-0.8, 0.6],
+     [0.1, 0.9],
+     [2.0, -2.0],
+     [-1.0, 1.5]
+    ],
+    "score": [
+     [0.3, -0.2],
+     [0.1, 0.6],
+     [-0.4, 0.2],
+     [0.5, -0.1],
+     [0.2, 0.4],
+     [-0.3, 0.8],
+     [0.6, -0.5],
+     [0.0, 0.3],
+     [0.7, 0.1],
+     [-0.2, 0.9]
+    ],
+    "ape": [[0.1, -0.1], [0.0, 0.2], [-0.2, 0.1], [0.3, 0.0]],
+    "reduction": "ratio 4 stands for the production ratio 128; seq_len 10 = two complete groups + an incomplete group of 2"
+   },
+   "expected": {
+    "complete_groups": 2,
+    "visible_entries": 2,
+    "entries": [[0.66113796888, 0.581156294531], [0.132512826455, 0.133488220398]],
+    "incomplete_tokens": [8, 9]
+   },
+   "contrasts": [
+    {
+     "name": "ceil_count_includes_partial",
+     "description": "counts the incomplete group as an entry",
+     "result": {
+      "count": 3
+     },
+     "differs": true
+    },
+    {
+     "name": "mean_pool",
+     "description": "plain mean of the group's kv rows",
+     "result": [[0.45, 0.425], [0.3, 0.15]],
+     "max_abs_diff": 0.21113796888,
+     "differs": true
+    },
+    {
+     "name": "row_scalar_softmax",
+     "description": "one scalar score per row (ref_seg_softmax_pool style) instead of one per channel",
+     "result": [[0.486570187701, 0.425890174083], [0.390055411334, 0.12127147408]],
+     "max_abs_diff": 0.257542584879,
+     "differs": true
+    },
+    {
+     "name": "no_ape",
+     "description": "score without the position-dependent APE",
+     "result": [[0.59773851199, 0.539447740814], [0.060646162503, 0.080416577119]],
+     "max_abs_diff": 0.071866663952,
+     "differs": true
+    }
+   ],
+   "facts": ["h05", "h06", "h07"]
+  },
+  {
+   "id": "sink-denominator",
+   "family": "both",
+   "kind": "sink",
+   "purpose": "the per-head sink is one extra logit with no value: it can raise the running max and adds exp(sink - max) to the denominator only",
+   "inputs": {
+    "logits": [1.0, 0.5, -0.3],
+    "values": [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]],
+    "sink": 0.7
+   },
+   "expected": [0.485721279576, 0.335535301918],
+   "contrasts": [
+    {
+     "name": "no_sink",
+     "description": "softmax without the sink",
+     "result": [0.677216337953, 0.467819710549],
+     "max_abs_diff": 0.191495058377,
+     "differs": true
+    },
+    {
+     "name": "sink_carries_first_value",
+     "description": "sink treated as an extra key whose value is the first key's value",
+     "result": [0.768489204159, 0.335535301918],
+     "max_abs_diff": 0.282767924583,
+     "differs": true
+    },
+    {
+     "name": "sink_in_max_only",
+     "description": "sink raises the max but is left out of the denominator",
+     "result": [0.677216337953, 0.467819710549],
+     "max_abs_diff": 0.191495058377,
+     "differs": true
+    }
+   ],
+   "facts": ["m15", "h17"]
+  },
+  {
+   "id": "gate-vha-order",
+   "family": "both",
+   "kind": "gate-vha",
+   "purpose": "attention output -> VHA head mix m = I + V U^T -> element sigmoid gate (the gate multiplies after the mix); on HCA the same order applies with the gate on the wo_a output",
+   "inputs": {
+    "heads": 2,
+    "dim": 2,
+    "o": [[1.0, 2.0], [3.0, 4.0]],
+    "m": [[1.1, 0.2], [-0.1, 0.9]],
+    "gate_logits": [[0.5, -0.5], [1.0, -1.0]]
+   },
+   "expected": [[1.058180863043, 1.132622006394], [1.900752304438, 0.914400832658]],
+   "contrasts": [
+    {
+     "name": "gate_before_vha",
+     "description": "gate applied to the heads first, then mixed",
+     "result": [[1.1233404115, 1.045742608452], [1.911612229181, 0.892680983172]],
+     "max_abs_diff": 0.086879397943,
+     "differs": true
+    },
+    {
+     "name": "per_head_scalar_gate",
+     "description": "one gate logit per head (first element reused) as ref_mla_attn_paged / ref_head_gate do",
+     "result": [[1.058180863043, 1.867377993606], [1.900752304438, 2.485599167342]],
+     "max_abs_diff": 1.571198334684,
+     "differs": true
+    }
+   ],
+   "facts": ["m16", "m17", "h16", "h18"]
+  },
+  {
+   "id": "hca-union-softmax",
+   "family": "hca",
+   "kind": "union-softmax",
+   "purpose": "one softmax (with the sink) over the window keys and the complete compressed keys together; two separate attentions added or averaged are not the same function",
+   "inputs": {
+    "window_logits": [0.4, 1.1, -0.2],
+    "window_values": [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]],
+    "comp_logits": [0.9, -0.6],
+    "comp_values": [[2.0, 0.0], [0.0, 2.0]],
+    "sink": 0.3
+   },
+   "expected": [0.747417077233, 0.508686299767],
+   "contrasts": [
+    {
+     "name": "separate_then_sum",
+     "description": "window attention and compressed attention each normalised, outputs added",
+     "result": [1.47539706289, 0.825462215633],
+     "max_abs_diff": 0.727979985657,
+     "differs": true
+    },
+    {
+     "name": "separate_then_mean",
+     "description": "the same two outputs averaged",
+     "result": [0.737698531445, 0.412731107816],
+     "max_abs_diff": 0.09595519195,
+     "differs": true
+    }
+   ],
+   "facts": ["h04", "h08"]
+  },
+  {
+   "id": "rope-pairing",
+   "family": "both",
+   "kind": "rope-split",
+   "purpose": "the indexer rotates the LEADING rope dims split-half (NeoX); the DSA main path and HCA rotate the TRAILING rope dims interleaved (GPT-J); rotating everything or mixing the pairings gives different vectors",
+   "inputs": {
+    "vector": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
+    "rope_dim": 4,
+    "position": 5,
+    "theta": 10000.0
+   },
+   "expected": {
+    "indexer_lead_neox": [3.160435009453, 1.797583843707, -0.107937718273, 4.094959380121, 5.0, 6.0, 7.0, 8.0],
+    "main_tail_gptj": [1.0, 2.0, 3.0, 4.0, 7.171856575295, -3.092648260536, 6.591418468599, 8.339856268054]
+   },
+   "contrasts": [
+    {
+     "name": "tail_neox_pairing",
+     "description": "trailing slice with split-half pairing",
+     "result": [1.0, 2.0, 3.0, 4.0, 8.130780849958, 5.592668208204, -2.808986075073, 8.289877098784],
+     "max_abs_diff": 9.400404543672,
+     "differs": true
+    },
+    {
+     "name": "lead_gptj_pairing",
+     "description": "leading slice with interleaved pairing",
+     "result": [2.20151073479, -0.391599903737, 2.796334104102, 4.144938549392, 5.0, 6.0, 7.0, 8.0],
+     "max_abs_diff": 2.904271822376,
+     "differs": true
+    },
+    {
+     "name": "rope_everywhere_gptj",
+     "description": "all dims rotated interleaved (no partial rope)",
+     "result": [
+      2.20151073479,
+      -0.391599903737,
+      0.715045531254,
+      4.948606863374,
+      4.693876286351,
+      6.242397408723,
+      6.959912666849,
+      8.034899854375
+     ],
+     "max_abs_diff": 9.33504566926,
+     "differs": true
+    }
+   ],
+   "facts": ["m08", "m09", "h10"]
+  },
+  {
+   "id": "hca-compressed-rope-position",
+   "family": "hca",
+   "kind": "rope-position",
+   "purpose": "a compressed entry completed at position 7 (group 1, ratio 4) is rotated at its group START (4), not at the completing token (7) nor the next group's start (8)",
+   "inputs": {
+    "vector": [0.5, -1.0, 2.0, 0.25, 1.5, -0.75, 1.0, 2.0],
+    "rope_dim": 4,
+    "ratio": 4,
+    "last_position": 7,
+    "theta": 160000.0
+   },
+   "expected": {
+    "rope_position": 4,
+    "rotated": [0.5, -1.0, 2.0, 0.25, -1.548067302776, -0.644971027314, 0.979950333748, 2.009899834167]
+   },
+   "contrasts": [
+    {
+     "name": "group_end_position",
+     "description": "rotated at the position of the completing token",
+     "result": [0.5, -1.0, 2.0, 0.25, 1.623593330554, 0.420053207321, 0.964848665339, 2.0171928646],
+     "max_abs_diff": 3.17166063333,
+     "differs": true
+    },
+    {
+     "name": "next_group_start_position",
+     "description": "rotated at the next group's start",
+     "result": [0.5, -1.0, 2.0, 0.25, 0.523768634255, 1.593162395292, 0.95980267328, 2.019598680026],
+     "max_abs_diff": 2.238133422606,
+     "differs": true
+    }
+   ],
+   "facts": ["h22", "h05"]
+  },
+  {
+   "id": "kv-b-unequal-widths",
+   "family": "mla_dsa",
+   "kind": "shape",
+   "purpose": "ref_mla_project needs w.shape[0] == heads * 2 * d with one width d for keys and values; the pinned kv_b_proj has heads * (k_dim + v_dim) rows with k_dim != v_dim",
+   "inputs": {
+    "heads": 64,
+    "k_dim": 192,
+    "v_dim": 256,
+    "kv_lora": 512
+   },
+   "expected": {
+    "baidu_kv_b_rows": 28672,
+    "ref_mla_project_rows_if_d_is_k": 24576,
+    "ref_mla_project_rows_if_d_is_v": 32768,
+    "legal_d": null
+   },
+   "contrasts": [
+    {
+     "name": "d_is_k",
+     "description": "d set to the key width",
+     "result": {
+      "rows": 24576
+     },
+     "differs": true
+    },
+    {
+     "name": "d_is_v",
+     "description": "d set to the value width",
+     "result": {
+      "rows": 32768
+     },
+     "differs": true
+    }
+   ],
+   "facts": ["m12"]
+  },
+  {
+   "id": "glm-geometry-vs-ernie",
+   "family": "mla_dsa",
+   "kind": "shape",
+   "purpose": "GLM's indexer block fixes top-k 512 over pooled ratio-4 pages without rope or window; ERNIE selects index_topk tokens (ratio 1) after rope-first NeoX rotation, excluding the trailing window",
+   "inputs": {
+    "index_topk": 2048,
+    "sliding_window": 128
+   },
+   "expected": {
+    "ernie_topk": 2048,
+    "glm_topk": 512,
+    "ernie_index_ratio": 1,
+    "glm_index_ratio": 4,
+    "ernie_window_exclusion": 128,
+    "glm_window_exclusion": 0
+   },
+   "contrasts": [
+    {
+     "name": "glm_values",
+     "description": "GLM block constants",
+     "result": {
+      "topk": 512,
+      "ratio": 4,
+      "window_exclusion": 0
+     },
+     "differs": true
+    }
+   ],
+   "facts": ["m04", "m05", "m09"]
+  },
+  {
+   "id": "compressor-geometry-limits",
+   "family": "hca",
+   "kind": "shape",
+   "purpose": "ref_dsa_pool refuses ratio > 16 and n that is not a power of two <= 256; the HCA compressor has ratio 128 and head_dim 512",
+   "inputs": {
+    "ratio": 128,
+    "n": 512
+   },
+   "expected": {
+    "ref_dsa_pool_max_ratio": 16,
+    "ref_dsa_pool_max_n": 256,
+    "ref_dsa_pool_accepts_ratio": false,
+    "ref_dsa_pool_accepts_n": false
+   },
+   "contrasts": [
+    {
+     "name": "ref_limits",
+     "description": "limits of ref_dsa_pool",
+     "result": {
+      "ratio_max": 16,
+      "n_max": 256
+     },
+     "differs": true
+    }
+   ],
+   "facts": ["h05", "h06"]
+  }
+ ],
+ "unresolved": [
+  {
+   "id": "m06",
+   "statement": "The ORDER of the indexer's selected ids inside the first n slots and the tie-breaking between equal scores are decided by the top_k_per_row kernels (prefill and decode), which are CUDA/ROCm kernels outside the pinned Python. Attention is invariant to the order of its candidates up to floating-point summation order, so only tie handling at the k-th boundary can change the selected SET.",
+   "why": "The selection and tie kernels (top_k_per_row_prefill/decode) are compiled ops; their source was not part of the pinned Python read.",
+   "impact": "A CPU selection op could pick a different set than the reference when scores tie at the k-th place.",
+   "resolver": {
+    "kind": "source-read",
+    "action": "Read csrc top_k_per_row_prefill / top_k_per_row_decode at vLLM v0.32.0 (csrc/sampler.cu or its includes) for tie order and for what fills slots beyond the valid count, then pin the answer with a tied-score fixture in story 3-1."
+   }
+  },
+  {
+   "id": "m18",
+   "statement": "The dtype and rounding of the folded VHA matrix m: it is built with addmm in the parameter dtype and copied into a buffer created with torch.eye(num_heads) under whatever default dtype is active when the layer is constructed; whether m is bf16-rounded (as the loader's dtype context suggests) or kept in fp32 cannot be proven from the pinned Python alone.",
+   "why": "The buffer dtype depends on torch's default dtype at construction, which vLLM's model loader sets outside the pinned files.",
+   "impact": "Measured on the real layers 7 and 42: bf16 rounding moves entries of m by up to about 7e-3 absolute (about 0.4 percent relative, one bf16 ulp) while off-diagonal entries reach 0.47 to 0.62, so VHA is a large mix and the engine must match one of the two choices to stay within tolerance.",
+   "resolver": {
+    "kind": "real-weight-probe",
+    "action": "Read vha_postmix_U/V (BF16 [64,16], a few KiB) for layers 7 and 42 from the real checkpoint, form m = I + V U^T in fp32 and in bf16 and report the largest entrywise difference; then construct Ernie5_5DSAAttention under vLLM v0.32.0's dtype context (or read the loader) to learn which one the reference uses."
+   }
+  },
+  {
+   "id": "m22",
+   "statement": "Numerics of the compiled kernels the DSA path calls: the exact accumulation order and bf16 roundings inside FlashMLA's sparse forward (CUDA) and inside DeepGEMM's fp8 MQA logits, and hadacore's exact scaling constant. The softmax-with-sink SEMANTICS are established by the in-tree ROCm Triton kernel (m15); bit-level agreement of the CUDA kernels was not read.",
+   "why": "The CUDA kernels live in the FlashMLA fork (vllm-project/FlashMLA 0eee43b) and DeepGEMM, which are separate pins not read for this audit.",
+   "impact": "CPU parity tolerances for story 3-1/3-2 must be measured against a reference run, not derived from the kernel source.",
+   "resolver": {
+    "kind": "source-read",
+    "action": "Read vllm-project/FlashMLA at 0eee43b12f034b657133cf2afca6a72ebb6efccf (csrc sparse prefill/decode attn_sink handling) and the hadacore_transform source in vLLM v0.32.0 csrc, then record tolerances from a measured CPU-versus-reference comparison."
+   }
+  },
+  {
+   "id": "m25",
+   "statement": "Which KV cache dtype Radiance should use for the DSA latent rows (bf16, FP8 e4m3 or the 656-byte fp8_ds_mla layout) is a design decision: the sources define all of them but the accuracy cost on this model has not been measured.",
+   "why": "Not a property of the pinned sources; it depends on measured accuracy and the cache-dtype options the Radiance cache blocks accept.",
+   "impact": "Fixes the page geometry story 3-5 must declare.",
+   "resolver": {
+    "kind": "design-decision",
+    "action": "Decide in story 3-2/3-5 after measuring logit and top-k agreement of bf16 versus fp8 latent rows on a CPU fixture and on a bounded real-weight sample; record the choice and tolerances next to this audit."
+   }
+  },
+  {
+   "id": "h12",
+   "statement": "Whether the YaRN branch is actually taken for the pinned config.json: its rope_scaling object uses the key 'type' ('yarn'), while build_deepseek_v4_rope reads rope_parameters['rope_type'] and Ernie5_5Config stores rope_scaling verbatim. If the transformers version used with vLLM v0.32.0 does not rename type to rope_type, the lookup would fail rather than silently pick another mode; that is not provable from the pinned files (hca_rope_type is never read by the pinned code).",
+   "why": "The key normalisation happens inside transformers' config handling, a dependency version not pinned in the sources read.",
+   "impact": "If YaRN were not applied the HCA RoPE would be plain at theta 160000; Radiance must apply YaRN because the checkpoint was trained with it, so a real-model run decides.",
+   "resolver": {
+    "kind": "runtime-probe",
+    "action": "On CPU with the transformers version vLLM v0.32.0 pins, instantiate vllm_ernie Ernie5_5Config from the pinned config.json and print config.rope_parameters, then call build_deepseek_v4_rope for compress_ratio 128 and print the resulting class and parameters; no weights and no GPU are needed."
+   }
+  },
+  {
+   "id": "h21",
+   "statement": "Bit-level agreement between the CPU reference kernel used here as the statement of the compressor (csrc/cpu/sgl-kernels/compressor.cpp) and the CUDA CuTeDSL compressor that the CUDA path really runs for head_dim 512 is not established: the CPU file declares itself a port of the same Triton reference, but their rounding of the nope blocks and of the normalised row was not compared.",
+   "why": "The CuTeDSL kernel (vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py, 100 KiB) was not read.",
+   "impact": "Tolerances for the HCA compressor parity story (3-3) must come from measurement, not from this audit.",
+   "resolver": {
+    "kind": "source-read",
+    "action": "Read vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py at v0.32.0 for the nope-block quantisation and normalisation rounding order and compare with the CPU kernel quoted in h06, or compare both on one real group using the real checkpoint's layer-0 compressor tensors."
+   }
+  },
+  {
+   "id": "h23",
+   "statement": "Which cache dtype Radiance should use for the HCA window and compressed rows (bf16 512-wide rows, 584-byte fp8_ds_mla or another packing) is a design decision; the compressed rows' accuracy under FP8 on this model is unmeasured.",
+   "why": "Not a property of the pinned sources; it depends on measured accuracy and the cache kinds the Radiance ABI offers (RAD_KV_WINDOW, RAD_KV_LINEAR).",
+   "impact": "Fixes the page geometry of the window cache and the compressed-row cache that stories 3-3 to 3-5 declare.",
+   "resolver": {
+    "kind": "design-decision",
+    "action": "Decide in stories 3-3/3-4 after comparing bf16 and fp8_ds_mla window and compressed rows against the fp32 compressor reference on small legal periods and on a bounded real-weight group; record the choice next to this audit."
+   }
+  }
+ ],
+ "header_uniformity": {
+  "hca_entries_checked": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   22,
+   23,
+   24,
+   25,
+   26,
+   27,
+   29,
+   30,
+   31,
+   32,
+   33,
+   34,
+   36,
+   37,
+   38,
+   39,
+   40,
+   41
+  ],
+  "mla_dsa_entries_checked": [7, 14, 21, 28, 35, 42, 43],
+  "attention_tensors_per_hca_entry": 22,
+  "attention_tensors_per_mla_entry": 24,
+  "uniform_within_family": true
+ }
+}

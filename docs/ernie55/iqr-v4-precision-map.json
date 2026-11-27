@@ -1,0 +1,2550 @@
+{
+ "schema": "ernie55-iqr-v4-precision-map/1",
+ "target_format": "iqr_v4",
+ "source_format": "block fp8 e4m3, 128x128 ue8m0 scales (conversion source only; not a Radiance 2.x serving format)",
+ "decision": "operator decision 2026-11-23",
+ "recipe": "data/recipes/ernie55-iqr-v4.recipe",
+ "entries": [
+  {
+   "class_name": "model.layers.L.mlp.down_proj.weight_scale_inv",
+   "shape": [
+    32,
+    112
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.mlp.gate_proj.weight_scale_inv",
+   "shape": [
+    112,
+    32
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.mlp.up_proj.weight_scale_inv",
+   "shape": [
+    112,
+    32
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.mlp_hyper_connection.alpha_post",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.mlp_hyper_connection.alpha_pre",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.mlp_hyper_connection.alpha_res",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.mlp_hyper_connection.bias",
+   "shape": [
+    24
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.mlp_hyper_connection.mapping_proj.weight",
+   "shape": [
+    16384,
+    24
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": "blk.L.{attn,ffn}_hc.fn",
+   "blocked_by": "ernie_mhc_pre_rms / ernie_mhc_head have no libr4d row in any weight format (4-1 inventory, story dev-*): the f32 matrix is read by the host libref op until a device row is written",
+   "fallback": "host_libref",
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:624",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:32",
+    "data/recipes/ernie55-weights.recipe:11",
+    "docs/ernie55/device-dispatch.md:13"
+   ],
+   "group": "mhc_mixing",
+   "precision": "f32",
+   "justification": "The mHC mixing matrices feed a 20-iteration Sinkhorn and the residual stream mixing of every layer; an error here is multiplied through all 43 layers. Radiance stores the flagship model's mixing matrices as e4m3 rows or bf16 under its own fused read; ERNIE's ernie_mhc_pre_rms reads them f32 and has no device row in any format, and they are 0.26 GiB (0.2% of the model), so they stay f32 (rule: cast dtype=f32, the transpose the plugin already does). bf16 is the fallback once a kernel exists and the Sinkhorn sensitivity is measured.",
+   "logical_template": "blk.{L}.ffn_hc.fn",
+   "recipe_rule": null,
+   "logical_tensors_checked": 43,
+   "gap_verdict": "missing",
+   "intended_precision": "bf16",
+   "blocking_op": "ernie_mhc_pre_rms",
+   "fallback_kernel": "ref_ernie_mhc_pre_rms"
+  },
+  {
+   "class_name": "model.layers.L.self_attention_hyper_connection.alpha_post",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attention_hyper_connection.alpha_pre",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attention_hyper_connection.alpha_res",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attention_hyper_connection.bias",
+   "shape": [
+    24
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attention_hyper_connection.mapping_proj.weight",
+   "shape": [
+    16384,
+    24
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": "blk.L.{attn,ffn}_hc.fn",
+   "blocked_by": "ernie_mhc_pre_rms / ernie_mhc_head have no libr4d row in any weight format (4-1 inventory, story dev-*): the f32 matrix is read by the host libref op until a device row is written",
+   "fallback": "host_libref",
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:624",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:32",
+    "data/recipes/ernie55-weights.recipe:11",
+    "docs/ernie55/device-dispatch.md:13"
+   ],
+   "group": "mhc_mixing",
+   "precision": "f32",
+   "justification": "The mHC mixing matrices feed a 20-iteration Sinkhorn and the residual stream mixing of every layer; an error here is multiplied through all 43 layers. Radiance stores the flagship model's mixing matrices as e4m3 rows or bf16 under its own fused read; ERNIE's ernie_mhc_pre_rms reads them f32 and has no device row in any format, and they are 0.26 GiB (0.2% of the model), so they stay f32 (rule: cast dtype=f32, the transpose the plugin already does). bf16 is the fallback once a kernel exists and the Sinkhorn sensitivity is measured.",
+   "logical_template": "blk.{L}.attn_hc.fn",
+   "recipe_rule": null,
+   "logical_tensors_checked": 43,
+   "gap_verdict": "missing",
+   "intended_precision": "bf16",
+   "blocking_op": "ernie_mhc_pre_rms",
+   "fallback_kernel": "ref_ernie_mhc_pre_rms"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.attn_sink",
+   "shape": [
+    64
+   ],
+   "dtype": "F32",
+   "count": 37,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.compressor.ape",
+   "shape": [
+    128,
+    512
+   ],
+   "dtype": "F32",
+   "count": 37,
+   "logical": "blk.L.attn_comp_ape.weight",
+   "blocked_by": "ernie_hca_compress has no libr4d row in any format (4-1)",
+   "fallback": "host_libref",
+   "logical_sample": null,
+   "cites": [
+    "docs/ernie55/device-dispatch.md:13"
+   ],
+   "group": "hca_compressor",
+   "precision": "f32",
+   "justification": "The compressor's absolute position bias [128, 512] f32, 9 MiB for all layers, read by ernie_hca_compress. Kept f32.",
+   "logical_template": "blk.{L}.attn_comp_ape.weight",
+   "recipe_rule": null,
+   "logical_tensors_checked": 37,
+   "gap_verdict": "missing",
+   "intended_precision": "bf16",
+   "blocking_op": "ernie_hca_compress",
+   "fallback_kernel": "ref_ernie_hca_compress"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.gate_proj.weight_scale_inv",
+   "shape": [
+    64,
+    8
+   ],
+   "dtype": "F32",
+   "count": 37,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.linear_kv_proj.weight_scale_inv",
+   "shape": [
+    4,
+    32
+   ],
+   "dtype": "F32",
+   "count": 37,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.linear_o_group_proj_scale_inv",
+   "shape": [
+    64,
+    32
+   ],
+   "dtype": "F32",
+   "count": 37,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.linear_q_down_proj.weight_scale_inv",
+   "shape": [
+    8,
+    32
+   ],
+   "dtype": "F32",
+   "count": 37,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.linear_q_up_proj.weight_scale_inv",
+   "shape": [
+    256,
+    8
+   ],
+   "dtype": "F32",
+   "count": 37,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.o_proj.weight_scale_inv",
+   "shape": [
+    32,
+    64
+   ],
+   "dtype": "F32",
+   "count": 37,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.e_score_correction_bias",
+   "shape": [
+    512
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.experts.E.w1.weight_scale_inv",
+   "shape": [
+    16,
+    16
+   ],
+   "dtype": "F32",
+   "count": 22016,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.experts.E.w2.weight_scale_inv",
+   "shape": [
+    16,
+    16
+   ],
+   "dtype": "F32",
+   "count": 22016,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.experts.E.w3.weight_scale_inv",
+   "shape": [
+    16,
+    16
+   ],
+   "dtype": "F32",
+   "count": 22016,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.embed_tokens.weight",
+   "shape": [
+    201216,
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 1,
+   "logical": "token_embd.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628",
+    "docs/IQR.md:79"
+   ],
+   "group": "embedding",
+   "precision": "bf16",
+   "justification": "The embedding gather feeds every layer and costs 1.5 GiB bf16 (a 4-bit embedding costs IQ8R +0.00058 KL on the 27B, 6-bit +0.00003; docs/IQR.md). Radiance keeps embed_tokens bf16 for the flagship MoE. embed_lookup_q / embed_lookup_iqr exist if the bytes are wanted later (n_embd 4096 is a multiple of 128).",
+   "logical_template": "token_embd.weight",
+   "recipe_rule": null,
+   "logical_tensors_checked": 1,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.input_layernorm.weight",
+   "shape": [
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 44,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.post_attention_layernorm.weight",
+   "shape": [
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 44,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.compressor.linear_wgate.weight",
+   "shape": [
+    512,
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 37,
+   "logical": "blk.L.attn_comp_{kv,gate}.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628",
+    "docs/ernie55/moe-forward.md:58"
+   ],
+   "group": "hca_compressor",
+   "precision": "bf16",
+   "justification": "The HCA compressor's kv and score projections (512 x 4096, bf16, read f32) build the compressed cache every 128 tokens; their error accumulates in the fp32 compressor state and is carried by every later token. 296 MiB in total: kept as shipped.",
+   "logical_template": "blk.{L}.attn_comp_gate.weight",
+   "recipe_rule": null,
+   "logical_tensors_checked": 37,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.compressor.linear_wkv.weight",
+   "shape": [
+    512,
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 37,
+   "logical": "blk.L.attn_comp_{kv,gate}.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628",
+    "docs/ernie55/moe-forward.md:58"
+   ],
+   "group": "hca_compressor",
+   "precision": "bf16",
+   "justification": "The HCA compressor's kv and score projections (512 x 4096, bf16, read f32) build the compressed cache every 128 tokens; their error accumulates in the fp32 compressor state and is carried by every later token. 296 MiB in total: kept as shipped.",
+   "logical_template": "blk.{L}.attn_comp_kv.weight",
+   "recipe_rule": null,
+   "logical_tensors_checked": 37,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.compressor.norm.weight",
+   "shape": [
+    512
+   ],
+   "dtype": "BF16",
+   "count": 37,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.kv_layernorm.weight",
+   "shape": [
+    512
+   ],
+   "dtype": "BF16",
+   "count": 37,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.q_layernorm.weight",
+   "shape": [
+    1024
+   ],
+   "dtype": "BF16",
+   "count": 37,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.vha_postmix_U",
+   "shape": [
+    64,
+    16
+   ],
+   "dtype": "BF16",
+   "count": 44,
+   "logical": "blk.L.attn_vha_{u,v}.weight",
+   "blocked_by": "ernie_vha_mix has no libr4d row in any format (4-1)",
+   "fallback": "host_libref",
+   "logical_sample": null,
+   "cites": [
+    "docs/ernie55/device-dispatch.md:13"
+   ],
+   "group": "vha",
+   "precision": "bf16",
+   "justification": "The VHA post-mix factors are [64, 16] bf16 (0.1 MiB each, all layers 0.2 MiB): nothing to gain, and ernie_vha_mix has no quantised reader. Kept bf16.",
+   "logical_template": "blk.{L}.attn_vha_u.weight",
+   "recipe_rule": null,
+   "logical_tensors_checked": 44,
+   "gap_verdict": "missing",
+   "intended_precision": "f32",
+   "blocking_op": "ernie_vha_mix",
+   "fallback_kernel": "ref_ernie_vha_mix"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.vha_postmix_V",
+   "shape": [
+    64,
+    16
+   ],
+   "dtype": "BF16",
+   "count": 44,
+   "logical": "blk.L.attn_vha_{u,v}.weight",
+   "blocked_by": "ernie_vha_mix has no libr4d row in any format (4-1)",
+   "fallback": "host_libref",
+   "logical_sample": null,
+   "cites": [
+    "docs/ernie55/device-dispatch.md:13"
+   ],
+   "group": "vha",
+   "precision": "bf16",
+   "justification": "The VHA post-mix factors are [64, 16] bf16 (0.1 MiB each, all layers 0.2 MiB): nothing to gain, and ernie_vha_mix has no quantised reader. Kept bf16.",
+   "logical_template": "blk.{L}.attn_vha_v.weight",
+   "recipe_rule": null,
+   "logical_tensors_checked": 44,
+   "gap_verdict": "missing",
+   "intended_precision": "f32",
+   "blocking_op": "ernie_vha_mix",
+   "fallback_kernel": "ref_ernie_vha_mix"
+  },
+  {
+   "class_name": "model.layers.L.mlp.down_proj.weight",
+   "shape": [
+    4096,
+    14336
+   ],
+   "dtype": "F8_E4M3",
+   "count": 1,
+   "logical": "blk.0.ffn_{gate,up,down}.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.0.ffn_down.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "data/recipes/q38-27b-iq8r.recipe:36",
+    "libr4d/r4d_rows.cpp:5264"
+   ],
+   "group": "dense_ffn",
+   "precision": "iq8r",
+   "justification": "Layer 0 is the one dense feed-forward (14336 wide, 168 MiB): every token runs it, so IQ8R.",
+   "logical_template": "blk.{L}.ffn_down.weight",
+   "recipe_rule": "blk.*.ffn_down.weight                rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 27,
+   "logical_tensors_checked": 1,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.mlp.gate_proj.weight",
+   "shape": [
+    14336,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 1,
+   "logical": "blk.0.ffn_{gate,up,down}.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.0.ffn_gate.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "data/recipes/q38-27b-iq8r.recipe:36",
+    "libr4d/r4d_rows.cpp:5264"
+   ],
+   "group": "dense_ffn",
+   "precision": "iq8r",
+   "justification": "Layer 0 is the one dense feed-forward (14336 wide, 168 MiB): every token runs it, so IQ8R.",
+   "logical_template": "blk.{L}.ffn_gate.weight",
+   "recipe_rule": "blk.*.ffn_gate.weight                rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 25,
+   "logical_tensors_checked": 1,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.mlp.up_proj.weight",
+   "shape": [
+    14336,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 1,
+   "logical": "blk.0.ffn_{gate,up,down}.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.0.ffn_up.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "data/recipes/q38-27b-iq8r.recipe:36",
+    "libr4d/r4d_rows.cpp:5264"
+   ],
+   "group": "dense_ffn",
+   "precision": "iq8r",
+   "justification": "Layer 0 is the one dense feed-forward (14336 wide, 168 MiB): every token runs it, so IQ8R.",
+   "logical_template": "blk.{L}.ffn_up.weight",
+   "recipe_rule": "blk.*.ffn_up.weight                  rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 26,
+   "logical_tensors_checked": 1,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.gate_proj.weight",
+   "shape": [
+    8192,
+    1024
+   ],
+   "dtype": "F8_E4M3",
+   "count": 37,
+   "logical": "blk.L.attn_gate.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.attn_gate.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:39",
+    "data/recipes/q38-27b-iq8r.recipe:36",
+    "libr4d/r4d_rows.cpp:5264",
+    "data/recipes/museglimmer-30b-iq4r-v4.recipe:24"
+   ],
+   "group": "attention",
+   "precision": "iq8r",
+   "justification": "The attention output gate sits on every token's critical path and is small (the whole attention stack is about 5 GiB of the 268.6). Radiance serves attention projections as int8 W8A8 for the flagship MoE and as rotated int8 (or u5 trellis for attn_output) in the Qwen IQR-V4 recipes; a 4-bit grid here buys 2.5 GiB and costs error in every token. IQ8R (gemm_iq8r_*, K a multiple of 256) it is.",
+   "logical_template": "blk.{L}.attn_gate.weight",
+   "recipe_rule": "blk.*.attn_gate.weight               rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 22,
+   "logical_tensors_checked": 37,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.linear_kv_proj.weight",
+   "shape": [
+    512,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 37,
+   "logical": "blk.L.attn_kv_a_mqa.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.attn_kv_a_mqa.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:39",
+    "data/recipes/q38-27b-iq8r.recipe:36",
+    "libr4d/r4d_rows.cpp:5264",
+    "data/recipes/museglimmer-30b-iq4r-v4.recipe:24"
+   ],
+   "group": "attention",
+   "precision": "iq8r",
+   "justification": "The kv projection sits on every token's critical path and is small (the whole attention stack is about 5 GiB of the 268.6). Radiance serves attention projections as int8 W8A8 for the flagship MoE and as rotated int8 (or u5 trellis for attn_output) in the Qwen IQR-V4 recipes; a 4-bit grid here buys 2.5 GiB and costs error in every token. IQ8R (gemm_iq8r_*, K a multiple of 256) it is.",
+   "logical_template": "blk.{L}.attn_kv_a_mqa.weight",
+   "recipe_rule": "blk.*.attn_kv_a_mqa.weight           rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 21,
+   "logical_tensors_checked": 37,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.linear_o_group_proj",
+   "shape": [
+    8192,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 37,
+   "logical": "blk.L.attn_o_group.weight",
+   "blocked_by": "ernie_hca_wo_a has no libr4d row in any weight format (4-1); the weight is read inside the operation",
+   "fallback": "host_libref",
+   "logical_sample": "blk.1.attn_o_group.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "docs/ernie55/device-dispatch.md:13"
+   ],
+   "group": "attention",
+   "precision": "bf16",
+   "justification": "wo_a (the grouped output projection, [8192, 4096] per HCA layer) is read INSIDE ernie_hca_wo_a together with the inverse rotary, and no row of any format exists for that operation. It is dequantised from FP8 to bf16 exactly (e4m3 x power of two is representable) and served bf16 (1.1 GiB over 37 layers). IQ8R is the intended precision when the operation grows an int8 reader.",
+   "logical_template": "blk.{L}.attn_o_group.weight",
+   "recipe_rule": "blk.*.attn_o_group.weight            cast dtype=bf16",
+   "logical_tensors_checked": 37,
+   "gap_verdict": "missing",
+   "intended_precision": "iq8r",
+   "blocking_op": "ernie_hca_wo_a",
+   "fallback_kernel": "ref_ernie_hca_wo_a"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.linear_q_down_proj.weight",
+   "shape": [
+    1024,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 37,
+   "logical": "blk.L.attn_q_a.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.attn_q_a.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:39",
+    "data/recipes/q38-27b-iq8r.recipe:36",
+    "libr4d/r4d_rows.cpp:5264",
+    "data/recipes/museglimmer-30b-iq4r-v4.recipe:24"
+   ],
+   "group": "attention",
+   "precision": "iq8r",
+   "justification": "The q down sits on every token's critical path and is small (the whole attention stack is about 5 GiB of the 268.6). Radiance serves attention projections as int8 W8A8 for the flagship MoE and as rotated int8 (or u5 trellis for attn_output) in the Qwen IQR-V4 recipes; a 4-bit grid here buys 2.5 GiB and costs error in every token. IQ8R (gemm_iq8r_*, K a multiple of 256) it is.",
+   "logical_template": "blk.{L}.attn_q_a.weight",
+   "recipe_rule": "blk.*.attn_q_a.weight                rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 19,
+   "logical_tensors_checked": 37,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.linear_q_up_proj.weight",
+   "shape": [
+    32768,
+    1024
+   ],
+   "dtype": "F8_E4M3",
+   "count": 37,
+   "logical": "blk.L.attn_q_b.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.attn_q_b.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:39",
+    "data/recipes/q38-27b-iq8r.recipe:36",
+    "libr4d/r4d_rows.cpp:5264",
+    "data/recipes/museglimmer-30b-iq4r-v4.recipe:24"
+   ],
+   "group": "attention",
+   "precision": "iq8r",
+   "justification": "The q up (64 heads) sits on every token's critical path and is small (the whole attention stack is about 5 GiB of the 268.6). Radiance serves attention projections as int8 W8A8 for the flagship MoE and as rotated int8 (or u5 trellis for attn_output) in the Qwen IQR-V4 recipes; a 4-bit grid here buys 2.5 GiB and costs error in every token. IQ8R (gemm_iq8r_*, K a multiple of 256) it is.",
+   "logical_template": "blk.{L}.attn_q_b.weight",
+   "recipe_rule": "blk.*.attn_q_b.weight                rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 20,
+   "logical_tensors_checked": 37,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.o_proj.weight",
+   "shape": [
+    4096,
+    8192
+   ],
+   "dtype": "F8_E4M3",
+   "count": 37,
+   "logical": "blk.L.attn_output.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.attn_output.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:39",
+    "data/recipes/q38-27b-iq8r.recipe:36",
+    "libr4d/r4d_rows.cpp:5264",
+    "data/recipes/museglimmer-30b-iq4r-v4.recipe:24"
+   ],
+   "group": "attention",
+   "precision": "iq8r",
+   "justification": "The attention output projection sits on every token's critical path and is small (the whole attention stack is about 5 GiB of the 268.6). Radiance serves attention projections as int8 W8A8 for the flagship MoE and as rotated int8 (or u5 trellis for attn_output) in the Qwen IQR-V4 recipes; a 4-bit grid here buys 2.5 GiB and costs error in every token. IQ8R (gemm_iq8r_*, K a multiple of 256) it is.",
+   "logical_template": "blk.{L}.attn_output.weight",
+   "recipe_rule": "blk.*.attn_output.weight             rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 23,
+   "logical_tensors_checked": 37,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.experts.E.w1.weight",
+   "shape": [
+    2048,
+    2048
+   ],
+   "dtype": "F8_E4M3",
+   "count": 22016,
+   "logical": "blk.L.ffn_{gate,up,down}_exps.E.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.ffn_gate_exps.0.weight",
+   "cites": [
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:29",
+    "data/recipes/museglimmer-30b-iq4r-v4.recipe:25",
+    "docs/ARCHITECTURES.md:658",
+    "docs/ARCHITECTURES.md:654",
+    "libr4d/r4d_rows.cpp:5143",
+    "docs/IQR.md:204"
+   ],
+   "group": "routed_experts",
+   "precision": "iqr_v4",
+   "justification": "The routed gate experts are 86% of the checkpoint (258 of 268.6 GiB), so they take the narrowest grid that keeps the model: IQR-V4's computed 16-bit trellis at four bits under one f32 scale a row (moe_gemm_iqr reads exactly this at i8a8h: N%16, K%128, 512 experts). Radiance's own four-bit candidate puts the trellis on its 512 routed experts and the Qwen3.8 V4 recipes on every FFN; IQR-V4 beats block FP8 at 55% of its size on the 27B. Expert GEMMs are the bandwidth term of decode, so the bytes are what pays.",
+   "logical_template": "blk.{L}.ffn_gate_exps.{E}.weight",
+   "recipe_rule": "blk.*.ffn_gate_exps.*.weight         gptq codes=u4 tcq=16 tcq_code=mad tcq_rows=512 block=1x* scale=f32 transform=fwht128 tcq_gain=1.12 damp=0.01 calib=$CALIB tcq_order=1",
+   "recipe_line": 13,
+   "logical_tensors_checked": 22016,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.experts.E.w2.weight",
+   "shape": [
+    2048,
+    2048
+   ],
+   "dtype": "F8_E4M3",
+   "count": 22016,
+   "logical": "blk.L.ffn_{gate,up,down}_exps.E.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.ffn_down_exps.0.weight",
+   "cites": [
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:29",
+    "data/recipes/museglimmer-30b-iq4r-v4.recipe:25",
+    "docs/ARCHITECTURES.md:658",
+    "docs/ARCHITECTURES.md:654",
+    "libr4d/r4d_rows.cpp:5143",
+    "docs/IQR.md:204"
+   ],
+   "group": "routed_experts",
+   "precision": "iqr_v4",
+   "justification": "The routed down experts are 86% of the checkpoint (258 of 268.6 GiB), so they take the narrowest grid that keeps the model: IQR-V4's computed 16-bit trellis at four bits under one f32 scale a row (moe_gemm_iqr reads exactly this at i8a8h: N%16, K%128, 512 experts). Radiance's own four-bit candidate puts the trellis on its 512 routed experts and the Qwen3.8 V4 recipes on every FFN; IQR-V4 beats block FP8 at 55% of its size on the 27B. Expert GEMMs are the bandwidth term of decode, so the bytes are what pays.",
+   "logical_template": "blk.{L}.ffn_down_exps.{E}.weight",
+   "recipe_rule": "blk.*.ffn_down_exps.*.weight         gptq codes=u4 tcq=16 tcq_code=mad tcq_rows=256 block=1x* scale=f32 transform=fwht128 tcq_gain=1.12 damp=0.01 calib=$CALIB tcq_order=1",
+   "recipe_line": 15,
+   "logical_tensors_checked": 22016,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.experts.E.w3.weight",
+   "shape": [
+    2048,
+    2048
+   ],
+   "dtype": "F8_E4M3",
+   "count": 22016,
+   "logical": "blk.L.ffn_{gate,up,down}_exps.E.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.ffn_up_exps.0.weight",
+   "cites": [
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:29",
+    "data/recipes/museglimmer-30b-iq4r-v4.recipe:25",
+    "docs/ARCHITECTURES.md:658",
+    "docs/ARCHITECTURES.md:654",
+    "libr4d/r4d_rows.cpp:5143",
+    "docs/IQR.md:204"
+   ],
+   "group": "routed_experts",
+   "precision": "iqr_v4",
+   "justification": "The routed up experts are 86% of the checkpoint (258 of 268.6 GiB), so they take the narrowest grid that keeps the model: IQR-V4's computed 16-bit trellis at four bits under one f32 scale a row (moe_gemm_iqr reads exactly this at i8a8h: N%16, K%128, 512 experts). Radiance's own four-bit candidate puts the trellis on its 512 routed experts and the Qwen3.8 V4 recipes on every FFN; IQR-V4 beats block FP8 at 55% of its size on the 27B. Expert GEMMs are the bandwidth term of decode, so the bytes are what pays.",
+   "logical_template": "blk.{L}.ffn_up_exps.{E}.weight",
+   "recipe_rule": "blk.*.ffn_up_exps.*.weight           gptq codes=u4 tcq=16 tcq_code=mad tcq_rows=512 block=1x* scale=f32 transform=fwht128 tcq_gain=1.12 damp=0.01 calib=$CALIB tcq_order=1",
+   "recipe_line": 14,
+   "logical_tensors_checked": 22016,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.fc1_latent_proj.weight_scale_inv",
+   "shape": [
+    16,
+    32
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.fc2_latent_proj.weight_scale_inv",
+   "shape": [
+    32,
+    16
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.gate.routed_scaling_factor_param",
+   "shape": [
+    512
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.shared_experts.w1.weight_scale_inv",
+   "shape": [
+    16,
+    32
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.shared_experts.w2.weight_scale_inv",
+   "shape": [
+    32,
+    16
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.shared_experts.w3.weight_scale_inv",
+   "shape": [
+    16,
+    32
+   ],
+   "dtype": "F32",
+   "count": 43,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.gate.weight",
+   "shape": [
+    512,
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 43,
+   "logical": "blk.L.ffn_gate_inp{,_1}.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628",
+    "docs/ernie55/moe-forward.md:58",
+    "docs/ernie55/device-dispatch.md:13"
+   ],
+   "group": "router",
+   "precision": "bf16",
+   "justification": "The two routers decide which 10 of 512 experts run and Baidu's gate computes its matmul and logits in f32 (moe-forward.md: a bf16 logit moves the output by more than 1e-3). Radiance keeps the router bf16 for the flagship MoE and for every MoE it serves. There is no quantised f32-arithmetic router row (gemm_nt_f32 has a bf16-weight row only), so IQ8R would need a new kernel; the bytes at stake are 0.34 GiB. The measured IQ8R top-10 agreement is in iqr-v4-layers.json (block kind router) as the evidence for that later lever.",
+   "logical_template": "blk.{L}.ffn_gate_inp.weight",
+   "recipe_rule": null,
+   "logical_tensors_checked": 43,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.gate.weight_1",
+   "shape": [
+    512,
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 43,
+   "logical": "blk.L.ffn_gate_inp{,_1}.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628",
+    "docs/ernie55/moe-forward.md:58",
+    "docs/ernie55/device-dispatch.md:13"
+   ],
+   "group": "router",
+   "precision": "bf16",
+   "justification": "The two routers decide which 10 of 512 experts run and Baidu's gate computes its matmul and logits in f32 (moe-forward.md: a bf16 logit moves the output by more than 1e-3). Radiance keeps the router bf16 for the flagship MoE and for every MoE it serves. There is no quantised f32-arithmetic router row (gemm_nt_f32 has a bf16-weight row only), so IQ8R would need a new kernel; the bytes at stake are 0.34 GiB. The measured IQ8R top-10 agreement is in iqr-v4-layers.json (block kind router) as the evidence for that later lever.",
+   "logical_template": "blk.{L}.ffn_gate_inp_1.weight",
+   "recipe_rule": null,
+   "logical_tensors_checked": 43,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.latent_norm.weight",
+   "shape": [
+    2048
+   ],
+   "dtype": "BF16",
+   "count": 43,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.fc1_latent_proj.weight",
+   "shape": [
+    2048,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 43,
+   "logical": "blk.L.ffn_latent_{in,out}.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.ffn_latent_in.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:43",
+    "libr4d/r4d_rows.cpp:5264"
+   ],
+   "group": "latent_moe",
+   "precision": "iq8r",
+   "justification": "The latent down/up projections wrap every routed block and see all tokens (4096 <-> 2048, 43 layers, 0.7 GiB): an error here scales the whole routed output, so IQ8R, not the expert grid.",
+   "logical_template": "blk.{L}.ffn_latent_in.weight",
+   "recipe_rule": "blk.*.ffn_latent_in.weight           rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 31,
+   "logical_tensors_checked": 43,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.fc2_latent_proj.weight",
+   "shape": [
+    4096,
+    2048
+   ],
+   "dtype": "F8_E4M3",
+   "count": 43,
+   "logical": "blk.L.ffn_latent_{in,out}.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.ffn_latent_out.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:43",
+    "libr4d/r4d_rows.cpp:5264"
+   ],
+   "group": "latent_moe",
+   "precision": "iq8r",
+   "justification": "The latent down/up projections wrap every routed block and see all tokens (4096 <-> 2048, 43 layers, 0.7 GiB): an error here scales the whole routed output, so IQ8R, not the expert grid.",
+   "logical_template": "blk.{L}.ffn_latent_out.weight",
+   "recipe_rule": "blk.*.ffn_latent_out.weight          rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 32,
+   "logical_tensors_checked": 43,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.shared_experts.w1.weight",
+   "shape": [
+    2048,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 43,
+   "logical": "blk.L.ffn_{gate,up,down}_shexp.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.ffn_gate_shexp.weight",
+   "cites": [
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:43",
+    "docs/ARCHITECTURES.md:620",
+    "libr4d/r4d_rows.cpp:5264"
+   ],
+   "group": "shared_expert",
+   "precision": "iq8r",
+   "justification": "The shared expert is active for every token (unlike a routed expert it is never averaged out) and is 1 GiB over 43 layers. Radiance serves the flagship model's shared expert as int8 and keeps it a grid wider than the routed experts.",
+   "logical_template": "blk.{L}.ffn_gate_shexp.weight",
+   "recipe_rule": "blk.*.ffn_gate_shexp.weight          rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 28,
+   "logical_tensors_checked": 43,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.shared_experts.w2.weight",
+   "shape": [
+    4096,
+    2048
+   ],
+   "dtype": "F8_E4M3",
+   "count": 43,
+   "logical": "blk.L.ffn_{gate,up,down}_shexp.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.ffn_down_shexp.weight",
+   "cites": [
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:43",
+    "docs/ARCHITECTURES.md:620",
+    "libr4d/r4d_rows.cpp:5264"
+   ],
+   "group": "shared_expert",
+   "precision": "iq8r",
+   "justification": "The shared expert is active for every token (unlike a routed expert it is never averaged out) and is 1 GiB over 43 layers. Radiance serves the flagship model's shared expert as int8 and keeps it a grid wider than the routed experts.",
+   "logical_template": "blk.{L}.ffn_down_shexp.weight",
+   "recipe_rule": "blk.*.ffn_down_shexp.weight          rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 30,
+   "logical_tensors_checked": 43,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.block_sparse_moe.shared_experts.w3.weight",
+   "shape": [
+    2048,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 43,
+   "logical": "blk.L.ffn_{gate,up,down}_shexp.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.ffn_up_shexp.weight",
+   "cites": [
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:43",
+    "docs/ARCHITECTURES.md:620",
+    "libr4d/r4d_rows.cpp:5264"
+   ],
+   "group": "shared_expert",
+   "precision": "iq8r",
+   "justification": "The shared expert is active for every token (unlike a routed expert it is never averaged out) and is 1 GiB over 43 layers. Radiance serves the flagship model's shared expert as int8 and keeps it a grid wider than the routed experts.",
+   "logical_template": "blk.{L}.ffn_up_shexp.weight",
+   "recipe_rule": "blk.*.ffn_up_shexp.weight            rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 29,
+   "logical_tensors_checked": 43,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.indexer.wq_b.weight_scale_inv",
+   "shape": [
+    64,
+    8
+   ],
+   "dtype": "F32",
+   "count": 7,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.gate_proj.weight_scale_inv",
+   "shape": [
+    128,
+    8
+   ],
+   "dtype": "F32",
+   "count": 7,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.kv_a_proj_with_mqa.weight_scale_inv",
+   "shape": [
+    5,
+    32
+   ],
+   "dtype": "F32",
+   "count": 7,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.kv_b_proj.weight_scale_inv",
+   "shape": [
+    224,
+    4
+   ],
+   "dtype": "F32",
+   "count": 7,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.o_proj.weight_scale_inv",
+   "shape": [
+    32,
+    128
+   ],
+   "dtype": "F32",
+   "count": 7,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.q_a_proj.weight_scale_inv",
+   "shape": [
+    8,
+    32
+   ],
+   "dtype": "F32",
+   "count": 7,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.q_b_proj.weight_scale_inv",
+   "shape": [
+    128,
+    8
+   ],
+   "dtype": "F32",
+   "count": 7,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.indexer.k_norm.bias",
+   "shape": [
+    128
+   ],
+   "dtype": "BF16",
+   "count": 7,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.indexer.k_norm.weight",
+   "shape": [
+    128
+   ],
+   "dtype": "BF16",
+   "count": 7,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.indexer.weights_proj.weight",
+   "shape": [
+    64,
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 7,
+   "logical": "blk.L.attn_idx_w.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628",
+    "docs/ernie55/device-dispatch.md:13"
+   ],
+   "group": "indexer",
+   "precision": "bf16",
+   "justification": "The indexer key (128 x 4096, a bf16 gemm_nt in the plugin) and head-weight (64 x 4096, read at f32) projections are 10 MiB per MLA layer in total, stored bf16 in the release (the key is then quantised to FP8 by the 4-1 quantiser rule, a second rounding we do not stack a third on). Radiance has no quantised row for the f32-arithmetic indexer gate. Kept as shipped.",
+   "logical_template": "blk.{L}.attn_idx_w.weight",
+   "recipe_rule": null,
+   "logical_tensors_checked": 7,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.indexer.wk.weight",
+   "shape": [
+    128,
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 7,
+   "logical": "blk.L.attn_idx_k.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628",
+    "docs/ernie55/device-dispatch.md:13"
+   ],
+   "group": "indexer",
+   "precision": "bf16",
+   "justification": "The indexer key (128 x 4096, a bf16 gemm_nt in the plugin) and head-weight (64 x 4096, read at f32) projections are 10 MiB per MLA layer in total, stored bf16 in the release (the key is then quantised to FP8 by the 4-1 quantiser rule, a second rounding we do not stack a third on). Radiance has no quantised row for the f32-arithmetic indexer gate. Kept as shipped.",
+   "logical_template": "blk.{L}.attn_idx_k.weight",
+   "recipe_rule": null,
+   "logical_tensors_checked": 7,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.softmax_offset",
+   "shape": [
+    64
+   ],
+   "dtype": "BF16",
+   "count": 7,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.kv_a_layernorm.weight",
+   "shape": [
+    512
+   ],
+   "dtype": "BF16",
+   "count": 7,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.q_a_layernorm.weight",
+   "shape": [
+    1024
+   ],
+   "dtype": "BF16",
+   "count": 7,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.core_attention.indexer.wq_b.weight",
+   "shape": [
+    8192,
+    1024
+   ],
+   "dtype": "F8_E4M3",
+   "count": 7,
+   "logical": "blk.L.attn_idx_q_b.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.7.attn_idx_q_b.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:39",
+    "libr4d/r4d_rows.cpp:5264"
+   ],
+   "group": "indexer",
+   "precision": "iq8r",
+   "justification": "The DSA indexer's query up-projection (64 heads x 128) is a plain GEMM and an int8 grid keeps its scores to ~0.3% relative error; the selection it feeds is a top-2048 of dot products, so only near-ties at the cut move. Same class as the attention projections: IQ8R.",
+   "logical_template": "blk.{L}.attn_idx_q_b.weight",
+   "recipe_rule": "blk.*.attn_idx_q_b.weight            rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 24,
+   "logical_tensors_checked": 7,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.gate_proj.weight",
+   "shape": [
+    16384,
+    1024
+   ],
+   "dtype": "F8_E4M3",
+   "count": 7,
+   "logical": "blk.L.attn_gate.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.attn_gate.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:39",
+    "data/recipes/q38-27b-iq8r.recipe:36",
+    "libr4d/r4d_rows.cpp:5264",
+    "data/recipes/museglimmer-30b-iq4r-v4.recipe:24"
+   ],
+   "group": "attention",
+   "precision": "iq8r",
+   "justification": "The attention output gate sits on every token's critical path and is small (the whole attention stack is about 5 GiB of the 268.6). Radiance serves attention projections as int8 W8A8 for the flagship MoE and as rotated int8 (or u5 trellis for attn_output) in the Qwen IQR-V4 recipes; a 4-bit grid here buys 2.5 GiB and costs error in every token. IQ8R (gemm_iq8r_*, K a multiple of 256) it is.",
+   "logical_template": "blk.{L}.attn_gate.weight",
+   "recipe_rule": "blk.*.attn_gate.weight               rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 22,
+   "logical_tensors_checked": 7,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.kv_a_proj_with_mqa.weight",
+   "shape": [
+    576,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 7,
+   "logical": "blk.L.attn_kv_a_mqa.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.attn_kv_a_mqa.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:39",
+    "data/recipes/q38-27b-iq8r.recipe:36",
+    "libr4d/r4d_rows.cpp:5264",
+    "data/recipes/museglimmer-30b-iq4r-v4.recipe:24"
+   ],
+   "group": "attention",
+   "precision": "iq8r",
+   "justification": "The kv projection sits on every token's critical path and is small (the whole attention stack is about 5 GiB of the 268.6). Radiance serves attention projections as int8 W8A8 for the flagship MoE and as rotated int8 (or u5 trellis for attn_output) in the Qwen IQR-V4 recipes; a 4-bit grid here buys 2.5 GiB and costs error in every token. IQ8R (gemm_iq8r_*, K a multiple of 256) it is. N = 576 has no prefill row (tiled rows need N%128): the narrow rows serve M <= 64 and a 640-row pad or split serves the rest.",
+   "logical_template": "blk.{L}.attn_kv_a_mqa.weight",
+   "recipe_rule": "blk.*.attn_kv_a_mqa.weight           rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 21,
+   "logical_tensors_checked": 7,
+   "gap_verdict": "partial",
+   "band_gap": "no accepting row for M in ['2048']: gemm_iq8r_tiled: N multiple of 128 (given 576); gemm_iq8r_nt_m16: M <= 64 (given 2048)",
+   "band_fallback": "pad the weight's N to the next multiple of 128 at convert (576 -> 640: 64 zero rows, +11% of this matrix, +1.8 MiB over its 7 layers at int8, not in the memory plan) so the tiled prefill rows apply, or add an N%64 tile to libr4d; the rows gemm_iq8r_nt_m16 already serve the other bands"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.kv_b_proj.weight",
+   "shape": [
+    28672,
+    512
+   ],
+   "dtype": "F8_E4M3",
+   "count": 7,
+   "logical": "blk.L.attn_kv_b.weight",
+   "blocked_by": "ernie_mla_project has no libr4d row in any weight format (4-1); mla_project_bf16 is the nearest (head_dim 128 or 256, bf16)",
+   "fallback": "host_libref",
+   "logical_sample": "blk.7.attn_kv_b.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "docs/ernie55/device-dispatch.md:13"
+   ],
+   "group": "attention",
+   "precision": "bf16",
+   "justification": "kv_b ([28672, 512] per MLA-DSA layer) is read INSIDE ernie_mla_project (the absorb and expand modes); the nearest existing row, mla_project_bf16, is head_dim 128/256 only. Dequantised to bf16 exactly and served bf16 (0.1 GiB total). IQ8R follows the operation.",
+   "logical_template": "blk.{L}.attn_kv_b.weight",
+   "recipe_rule": "blk.*.attn_kv_b.weight               cast dtype=bf16",
+   "logical_tensors_checked": 7,
+   "gap_verdict": "missing",
+   "intended_precision": "iq8r",
+   "blocking_op": "ernie_mla_project",
+   "fallback_kernel": "ref_ernie_mla_project"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.o_proj.weight",
+   "shape": [
+    4096,
+    16384
+   ],
+   "dtype": "F8_E4M3",
+   "count": 7,
+   "logical": "blk.L.attn_output.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.attn_output.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:39",
+    "data/recipes/q38-27b-iq8r.recipe:36",
+    "libr4d/r4d_rows.cpp:5264",
+    "data/recipes/museglimmer-30b-iq4r-v4.recipe:24"
+   ],
+   "group": "attention",
+   "precision": "iq8r",
+   "justification": "The attention output projection sits on every token's critical path and is small (the whole attention stack is about 5 GiB of the 268.6). Radiance serves attention projections as int8 W8A8 for the flagship MoE and as rotated int8 (or u5 trellis for attn_output) in the Qwen IQR-V4 recipes; a 4-bit grid here buys 2.5 GiB and costs error in every token. IQ8R (gemm_iq8r_*, K a multiple of 256) it is.",
+   "logical_template": "blk.{L}.attn_output.weight",
+   "recipe_rule": "blk.*.attn_output.weight             rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 23,
+   "logical_tensors_checked": 7,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.q_a_proj.weight",
+   "shape": [
+    1024,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 7,
+   "logical": "blk.L.attn_q_a.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.attn_q_a.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:39",
+    "data/recipes/q38-27b-iq8r.recipe:36",
+    "libr4d/r4d_rows.cpp:5264",
+    "data/recipes/museglimmer-30b-iq4r-v4.recipe:24"
+   ],
+   "group": "attention",
+   "precision": "iq8r",
+   "justification": "The q down sits on every token's critical path and is small (the whole attention stack is about 5 GiB of the 268.6). Radiance serves attention projections as int8 W8A8 for the flagship MoE and as rotated int8 (or u5 trellis for attn_output) in the Qwen IQR-V4 recipes; a 4-bit grid here buys 2.5 GiB and costs error in every token. IQ8R (gemm_iq8r_*, K a multiple of 256) it is.",
+   "logical_template": "blk.{L}.attn_q_a.weight",
+   "recipe_rule": "blk.*.attn_q_a.weight                rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 19,
+   "logical_tensors_checked": 7,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.self_attn.q_b_proj.weight",
+   "shape": [
+    16384,
+    1024
+   ],
+   "dtype": "F8_E4M3",
+   "count": 7,
+   "logical": "blk.L.attn_q_b.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.1.attn_q_b.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:39",
+    "data/recipes/q38-27b-iq8r.recipe:36",
+    "libr4d/r4d_rows.cpp:5264",
+    "data/recipes/museglimmer-30b-iq4r-v4.recipe:24"
+   ],
+   "group": "attention",
+   "precision": "iq8r",
+   "justification": "The q up (64 heads) sits on every token's critical path and is small (the whole attention stack is about 5 GiB of the 268.6). Radiance serves attention projections as int8 W8A8 for the flagship MoE and as rotated int8 (or u5 trellis for attn_output) in the Qwen IQR-V4 recipes; a 4-bit grid here buys 2.5 GiB and costs error in every token. IQ8R (gemm_iq8r_*, K a multiple of 256) it is.",
+   "logical_template": "blk.{L}.attn_q_b.weight",
+   "recipe_rule": "blk.*.attn_q_b.weight                rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 20,
+   "logical_tensors_checked": 7,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.e_proj.weight_scale_inv",
+   "shape": [
+    32,
+    32
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.h_proj.weight_scale_inv",
+   "shape": [
+    32,
+    32
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [],
+   "group": "source_scale_plane",
+   "precision": "f32",
+   "justification": "The fp8 block-scale plane belongs to the SOURCE format only: the converter reads it to dequantise the weight and the serving container carries its own scales (IQR-V4: one f32 a row; IQ8R: u8 per 256 of K under a bf16 row scale). Nothing of it is served.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.hc_head_base",
+   "shape": [
+    4
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.hc_head_fn",
+   "shape": [
+    16384,
+    4
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": "head_hc.fn",
+   "blocked_by": "ernie_mhc_pre_rms / ernie_mhc_head have no libr4d row in any weight format (4-1 inventory, story dev-*): the f32 matrix is read by the host libref op until a device row is written",
+   "fallback": "host_libref",
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:624",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:32",
+    "data/recipes/ernie55-weights.recipe:11",
+    "docs/ernie55/device-dispatch.md:13"
+   ],
+   "group": "mhc_mixing",
+   "precision": "f32",
+   "justification": "The mHC mixing matrices feed a 20-iteration Sinkhorn and the residual stream mixing of every layer; an error here is multiplied through all 43 layers. Radiance stores the flagship model's mixing matrices as e4m3 rows or bf16 under its own fused read; ERNIE's ernie_mhc_pre_rms reads them f32 and has no device row in any format, and they are 0.26 GiB (0.2% of the model), so they stay f32 (rule: cast dtype=f32, the transpose the plugin already does). bf16 is the fallback once a kernel exists and the Sinkhorn sensitivity is measured.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "missing",
+   "intended_precision": "bf16",
+   "blocking_op": "ernie_mhc_head",
+   "fallback_kernel": "ref_ernie_mhc_head"
+  },
+  {
+   "class_name": "model.layers.L.hc_head_scale",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.mlp_hyper_connection.alpha_post",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.mlp_hyper_connection.alpha_pre",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.mlp_hyper_connection.alpha_res",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.mlp_hyper_connection.bias",
+   "shape": [
+    24
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.mlp_hyper_connection.mapping_proj.weight",
+   "shape": [
+    16384,
+    24
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": "blk.L.{attn,ffn}_hc.fn",
+   "blocked_by": "ernie_mhc_pre_rms / ernie_mhc_head have no libr4d row in any weight format (4-1 inventory, story dev-*): the f32 matrix is read by the host libref op until a device row is written",
+   "fallback": "host_libref",
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:624",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:32",
+    "data/recipes/ernie55-weights.recipe:11",
+    "docs/ernie55/device-dispatch.md:13"
+   ],
+   "group": "mhc_mixing",
+   "precision": "f32",
+   "justification": "The mHC mixing matrices feed a 20-iteration Sinkhorn and the residual stream mixing of every layer; an error here is multiplied through all 43 layers. Radiance stores the flagship model's mixing matrices as e4m3 rows or bf16 under its own fused read; ERNIE's ernie_mhc_pre_rms reads them f32 and has no device row in any format, and they are 0.26 GiB (0.2% of the model), so they stay f32 (rule: cast dtype=f32, the transpose the plugin already does). bf16 is the fallback once a kernel exists and the Sinkhorn sensitivity is measured.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "missing",
+   "intended_precision": "bf16",
+   "blocking_op": "ernie_mhc_pre_rms",
+   "fallback_kernel": "ref_ernie_mhc_pre_rms"
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.self_attention_hyper_connection.alpha_post",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.self_attention_hyper_connection.alpha_pre",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.self_attention_hyper_connection.alpha_res",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.self_attention_hyper_connection.bias",
+   "shape": [
+    24
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.transformer_layer.self_attention_hyper_connection.mapping_proj.weight",
+   "shape": [
+    16384,
+    24
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": "blk.L.{attn,ffn}_hc.fn",
+   "blocked_by": "ernie_mhc_pre_rms / ernie_mhc_head have no libr4d row in any weight format (4-1 inventory, story dev-*): the f32 matrix is read by the host libref op until a device row is written",
+   "fallback": "host_libref",
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:624",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:32",
+    "data/recipes/ernie55-weights.recipe:11",
+    "docs/ernie55/device-dispatch.md:13"
+   ],
+   "group": "mhc_mixing",
+   "precision": "f32",
+   "justification": "The mHC mixing matrices feed a 20-iteration Sinkhorn and the residual stream mixing of every layer; an error here is multiplied through all 43 layers. Radiance stores the flagship model's mixing matrices as e4m3 rows or bf16 under its own fused read; ERNIE's ernie_mhc_pre_rms reads them f32 and has no device row in any format, and they are 0.26 GiB (0.2% of the model), so they stay f32 (rule: cast dtype=f32, the transpose the plugin already does). bf16 is the fallback once a kernel exists and the Sinkhorn sensitivity is measured.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "missing",
+   "intended_precision": "bf16",
+   "blocking_op": "ernie_mhc_pre_rms",
+   "fallback_kernel": "ref_ernie_mhc_pre_rms"
+  },
+  {
+   "class_name": "model.mhc_contract.hc_head_base",
+   "shape": [
+    4
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.mhc_contract.hc_head_fn",
+   "shape": [
+    16384,
+    4
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": "head_hc.fn",
+   "blocked_by": "ernie_mhc_pre_rms / ernie_mhc_head have no libr4d row in any weight format (4-1 inventory, story dev-*): the f32 matrix is read by the host libref op until a device row is written",
+   "fallback": "host_libref",
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:624",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:32",
+    "data/recipes/ernie55-weights.recipe:11",
+    "docs/ernie55/device-dispatch.md:13"
+   ],
+   "group": "mhc_mixing",
+   "precision": "f32",
+   "justification": "The mHC mixing matrices feed a 20-iteration Sinkhorn and the residual stream mixing of every layer; an error here is multiplied through all 43 layers. Radiance stores the flagship model's mixing matrices as e4m3 rows or bf16 under its own fused read; ERNIE's ernie_mhc_pre_rms reads them f32 and has no device row in any format, and they are 0.26 GiB (0.2% of the model), so they stay f32 (rule: cast dtype=f32, the transpose the plugin already does). bf16 is the fallback once a kernel exists and the Sinkhorn sensitivity is measured.",
+   "logical_template": "head_hc.fn",
+   "recipe_rule": null,
+   "logical_tensors_checked": 1,
+   "gap_verdict": "missing",
+   "intended_precision": "bf16",
+   "blocking_op": "ernie_mhc_head",
+   "fallback_kernel": "ref_ernie_mhc_head"
+  },
+  {
+   "class_name": "model.mhc_contract.hc_head_scale",
+   "shape": [
+    1
+   ],
+   "dtype": "F32",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "f32",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "lm_head.weight",
+   "shape": [
+    201216,
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 1,
+   "logical": "output.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "output.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:626",
+    "data/recipes/qwen4exp-u4-w6nl-bf16ple.recipe:45",
+    "data/recipes/q38-27b-iq8r.recipe:42",
+    "libr4d/r4d_rows.cpp:5979",
+    "docs/IQR.md:79"
+   ],
+   "group": "head",
+   "precision": "iq8r",
+   "justification": "The output head is 1.5 GiB bf16 and decode reads all of it every token; int8 rows with a bf16 scale a (row, 128) (logits_gemm_i8, n_embd % 128) is what every IQ8R recipe of this tree does, GPTQ'd against the head's input Hessian when one exists. The head's measured top-1 and KL against the bf16 head are in iqr-v4-layers.json. The vocabulary-weighted IQR head (logits_gemm_vocab_iqr) is the later size lever.",
+   "logical_template": "output.weight",
+   "recipe_rule": "output.weight                        rtn codes=i8 group=128 scale=bf16 clamp=sym rule=search",
+   "recipe_line": 38,
+   "logical_tensors_checked": 1,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.enorm.weight",
+   "shape": [
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.hnorm.weight",
+   "shape": [
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.shared_head.norm.weight",
+   "shape": [
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.lm_head.multimax_ranges",
+   "shape": [
+    4
+   ],
+   "dtype": "BF16",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.lm_head.multimax_ts",
+   "shape": [
+    4
+   ],
+   "dtype": "BF16",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.norm.weight",
+   "shape": [
+    4096
+   ],
+   "dtype": "BF16",
+   "count": 1,
+   "logical": null,
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": null,
+   "cites": [
+    "docs/ARCHITECTURES.md:628"
+   ],
+   "group": "vector_or_scalar",
+   "precision": "bf16",
+   "justification": "A norm gain, bias, sink, mHC alpha/base/scale, correction bias, per-expert scale or MultiMax table: a vector or scalar that no GEMM reads, tiny, and the plugin reads at its stored width. Kept exactly as shipped.",
+   "logical_template": null,
+   "recipe_rule": null,
+   "gap_verdict": "not_applicable"
+  },
+  {
+   "class_name": "model.layers.L.e_proj.weight",
+   "shape": [
+    4096,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 1,
+   "logical": "blk.43.mtp_{e,h}_proj.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.43.mtp_e_proj.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "libr4d/r4d_rows.cpp:5264"
+   ],
+   "group": "mtp",
+   "precision": "iq8r",
+   "justification": "The MTP draft layer's e/h projections (4096 x 4096). The plugin does not declare the draft layer yet, so these have no logical name today (mtp_e_proj / mtp_h_proj are proposed). IQ8R like the trunk linears; the draft is verified by the target, so a draft error costs acceptance rate, not correctness.",
+   "logical_template": "blk.{L}.mtp_e_proj.weight",
+   "recipe_rule": "blk.*.mtp_e_proj.weight              rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 33,
+   "logical_tensors_checked": 1,
+   "gap_verdict": "exists"
+  },
+  {
+   "class_name": "model.layers.L.h_proj.weight",
+   "shape": [
+    4096,
+    4096
+   ],
+   "dtype": "F8_E4M3",
+   "count": 1,
+   "logical": "blk.43.mtp_{e,h}_proj.weight",
+   "blocked_by": null,
+   "fallback": null,
+   "logical_sample": "blk.43.mtp_h_proj.weight",
+   "cites": [
+    "docs/ARCHITECTURES.md:620",
+    "libr4d/r4d_rows.cpp:5264"
+   ],
+   "group": "mtp",
+   "precision": "iq8r",
+   "justification": "The MTP draft layer's e/h projections (4096 x 4096). The plugin does not declare the draft layer yet, so these have no logical name today (mtp_e_proj / mtp_h_proj are proposed). IQ8R like the trunk linears; the draft is verified by the target, so a draft error costs acceptance rate, not correctness.",
+   "logical_template": "blk.{L}.mtp_h_proj.weight",
+   "recipe_rule": "blk.*.mtp_h_proj.weight              rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search",
+   "recipe_line": 34,
+   "logical_tensors_checked": 1,
+   "gap_verdict": "exists"
+  }
+ ],
+ "summary": {
+  "by_precision": {
+   "f32": {
+    "classes": 56,
+    "tensors": 67145
+   },
+   "bf16": {
+    "classes": 28,
+    "tensors": 590
+   },
+   "iq8r": {
+    "classes": 22,
+    "tensors": 448
+   },
+   "iqr_v4": {
+    "classes": 3,
+    "tensors": 66048
+   }
+  },
+  "blockers": [
+   "ernie_hca_compress has no libr4d row in any format (4-1)",
+   "ernie_hca_wo_a has no libr4d row in any weight format (4-1); the weight is read inside the operation",
+   "ernie_mhc_pre_rms / ernie_mhc_head have no libr4d row in any weight format (4-1 inventory, story dev-*): the f32 matrix is read by the host libref op until a device row is written",
+   "ernie_mla_project has no libr4d row in any weight format (4-1); mla_project_bf16 is the nearest (head_dim 128 or 256, bf16)",
+   "ernie_vha_mix has no libr4d row in any format (4-1)"
+  ]
+ }
+}

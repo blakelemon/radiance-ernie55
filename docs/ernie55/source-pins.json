@@ -1,0 +1,10 @@
+{
+  "radiance_upstream": "https://codeberg.org/StillDeadcode/radiance",
+  "radiance_tag": "v2.1.0",
+  "radiance_tag_object": "1a637c1ebe30a5a2b1ac12ae1f4fa2adea417fc9",
+  "radiance_commit": "2a2b756371c26f2768b8d129a098df275ace2c73",
+  "baidu_plugin_commit": "b8414da6b703579814c2009c5a63bac101916bbe",
+  "hf_revision": "028544b2ffceea189b2d8768ed2b9d09b06f2343",
+  "vllm_ernie_branch": "pending user identification",
+  "radiance_plugin_abi": 40
+}

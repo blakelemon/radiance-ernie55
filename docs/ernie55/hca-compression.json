@@ -1,0 +1,3049 @@
+{
+ "report": "ernie55-hca-compression",
+ "schema_version": 1,
+ "pins": {
+  "baidu": {
+   "repo": "https://github.com/baidu/vLLM-ERNIE",
+   "commit": "b8414da6b703579814c2009c5a63bac101916bbe"
+  },
+  "vllm": {
+   "repo": "https://github.com/vllm-project/vllm",
+   "tag": "v0.32.0",
+   "commit": "5df63a7203cdb9328d824a27b682e77c7b9928be"
+  },
+  "hf_config": {
+   "model": "baidu/ERNIE-5.5-Flash-Base",
+   "revision": "028544b2ffceea189b2d8768ed2b9d09b06f2343",
+   "file": "config.json"
+  },
+  "ernie_repo": {
+   "repo": "radiance (this repository)",
+   "commit": "a767783056567e1bdd14fb5ee181aa329ecfacde",
+   "note": "pinned pilot tip a767783; repository citations are file:line of that commit"
+  },
+  "hf_headers": {
+   "model_dir": "ernie55-flash-fp8",
+   "revision": "028544b2ffceea189b2d8768ed2b9d09b06f2343",
+   "note": "safetensors shard headers (names, dtypes, shapes) read from the local copy of the pinned revision; no tensor data was read"
+  }
+ },
+ "sources": [
+  {
+   "pin": "baidu",
+   "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py",
+   "url": "https://raw.githubusercontent.com/baidu/vLLM-ERNIE/b8414da6b703579814c2009c5a63bac101916bbe/src/vllm_ernie/models/ernie5_5/nvidia/attention.py",
+   "sha256": "0a2892b4483778b1901a21683c2c083995c23e22a2030a6f4c093ef9f4c9c962"
+  },
+  {
+   "pin": "baidu",
+   "file": "src/vllm_ernie/models/ernie5_5/nvidia/model.py",
+   "url": "https://raw.githubusercontent.com/baidu/vLLM-ERNIE/b8414da6b703579814c2009c5a63bac101916bbe/src/vllm_ernie/models/ernie5_5/nvidia/model.py",
+   "sha256": "5423fd48df72ff0c0aa4573e32b3fdbf65d37bff13eaf5663f7961605a77bb56"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "abi/rad_builder.h"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "docs/OPS.md"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "libref/ref_ernie_attn.cpp"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "libref/ref_ops.h"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "libref/ref_registry.cpp"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "libref/ref_shapes.cpp"
+  },
+  {
+   "pin": "ernie_repo",
+   "file": "tests/ref_test.cpp"
+  },
+  {
+   "pin": "hf_config",
+   "file": "config.json"
+  },
+  {
+   "pin": "vllm",
+   "file": "csrc/cpu/sgl-kernels/compressor.cpp",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/csrc/cpu/sgl-kernels/compressor.cpp",
+   "sha256": "2408047a26ad909492ba6103529605422e62fc184e772e06968eff2b3263d51e"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/attention.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/attention.py",
+   "sha256": "896da67731ead60c3278625173005d8e586c22290c20e7348249212124c29dba"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/common/ops/cache_utils.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/common/ops/cache_utils.py",
+   "sha256": "294a3b5bc325f896e7e8618be4522e5c6e7bc42c457047f487ded6e7af9f0b40"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py",
+   "sha256": "bd93b0c1e2717c957532a1f342351115daaeedf4811b93d4039ef8cc48457891"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/common/ops/save_partial_states.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/common/ops/save_partial_states.py",
+   "sha256": "cff29750c4cd098cae608b22c6645446c373c85fd664eeaca64aa16489e0ec71"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/compressor.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/compressor.py",
+   "sha256": "5a20631846031656185b50d60787750dd6080700bcc339c298ce15be39bd2303"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/cpu/cpu_compressor.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/cpu/cpu_compressor.py",
+   "sha256": "f092b31c4cfc16948e0580b6d1bfbc38be0e051c7d569e65a35be20a893f8ab3"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/cpu/cpu_utils.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/cpu/cpu_utils.py",
+   "sha256": "524bd3364c623bc3329b6a718b0e8129cef1f75a16d68459623d79979921f7a0"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py",
+   "sha256": "e7c2437865490d300a6ebd81c520792d1f153c0c0ead67f849265cfb240c15be"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/models/deepseek_v4/sparse_mla.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/models/deepseek_v4/sparse_mla.py",
+   "sha256": "e28e8f75f27cc2e2262d63e2ff767496e070a45cc9c37c9108d0ca557ba20067"
+  },
+  {
+   "pin": "vllm",
+   "file": "vllm/v1/attention/backends/mla/compressor_utils.py",
+   "url": "https://raw.githubusercontent.com/vllm-project/vllm/v0.32.0/vllm/v1/attention/backends/mla/compressor_utils.py",
+   "sha256": "0d6ce9a9c96093b81dff88bcab1501b73eb0e6443c6ba5475c1e58fdbff9cb1a"
+  }
+ ],
+ "config": {
+  "hidden_size": 4096,
+  "head_dim": 512,
+  "rope_dim": 64,
+  "nope_dim": 448,
+  "rms_norm_eps": 1e-06,
+  "compress_rope_theta": 160000,
+  "max_position_embeddings": 1048576,
+  "hca_layers": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   8,
+   9,
+   10,
+   11,
+   12,
+   13,
+   15,
+   16,
+   17,
+   18,
+   19,
+   20,
+   22,
+   23,
+   24,
+   25,
+   26,
+   27,
+   29,
+   30,
+   31,
+   32,
+   33,
+   34,
+   36,
+   37,
+   38,
+   39,
+   40,
+   41
+  ],
+  "hca_layer_count": 37,
+  "max_compressed_rows_at_128": 8192,
+  "compressor_tensors_expected": 148
+ },
+ "periods": [
+  {
+   "ratio": 4,
+   "role": "small legal period",
+   "used_by_checkpoint": false,
+   "overlap": true,
+   "coff": 2,
+   "indexer": true,
+   "window_rows": 8,
+   "state_block_rows": 4,
+   "state_width": 1024,
+   "state_row_floats": 2048,
+   "state_row_bytes": 8192,
+   "ape_shape": [4, 1024],
+   "projection_out_widths": [1024, 1024],
+   "projection_in_width": 4096,
+   "lanes": [
+    {
+     "lane": "previous",
+     "window_index_range": [0, 3],
+     "source": "previous group",
+     "channels": [0, 512]
+    },
+    {
+     "lane": "current",
+     "window_index_range": [4, 7],
+     "source": "current group",
+     "channels": [512, 1024]
+    }
+   ],
+   "first_group_masked_rows": 4,
+   "compressed_row_bytes": {
+    "fp8_ds_mla": 584,
+    "bf16_full": 1024,
+    "fp8_full_per_tensor": 512
+   },
+   "state_retention_rows": 8
+  },
+  {
+   "ratio": 128,
+   "role": "production",
+   "used_by_checkpoint": true,
+   "overlap": false,
+   "coff": 1,
+   "indexer": false,
+   "window_rows": 128,
+   "state_block_rows": 8,
+   "state_width": 512,
+   "state_row_floats": 1024,
+   "state_row_bytes": 4096,
+   "ape_shape": [128, 512],
+   "projection_out_widths": [512, 512],
+   "projection_in_width": 4096,
+   "lanes": [
+    {
+     "lane": "only",
+     "window_index_range": [0, 127],
+     "source": "current group",
+     "channels": [0, 512]
+    }
+   ],
+   "first_group_masked_rows": 0,
+   "compressed_row_bytes": {
+    "fp8_ds_mla": 584,
+    "bf16_full": 1024,
+    "fp8_full_per_tensor": 512
+   },
+   "state_retention_rows": 128
+  }
+ ],
+ "visibility": [
+  {
+   "ratio": 4,
+   "rule": "visible_groups = (position + 1) // ratio; group j completes at position j*ratio + ratio - 1 and is visible from sequence length j*ratio + ratio; the incomplete tail is invisible",
+   "position_table": [
+    {
+     "position": 0,
+     "seq_len": 1,
+     "visible_groups": 0,
+     "newest_visible_group": null,
+     "newest_visible_group_last_position": null,
+     "incomplete_start": 0,
+     "incomplete_tokens": 1,
+     "completes_here": false
+    },
+    {
+     "position": 1,
+     "seq_len": 2,
+     "visible_groups": 0,
+     "newest_visible_group": null,
+     "newest_visible_group_last_position": null,
+     "incomplete_start": 0,
+     "incomplete_tokens": 2,
+     "completes_here": false
+    },
+    {
+     "position": 2,
+     "seq_len": 3,
+     "visible_groups": 0,
+     "newest_visible_group": null,
+     "newest_visible_group_last_position": null,
+     "incomplete_start": 0,
+     "incomplete_tokens": 3,
+     "completes_here": false
+    },
+    {
+     "position": 3,
+     "seq_len": 4,
+     "visible_groups": 1,
+     "newest_visible_group": 0,
+     "newest_visible_group_last_position": 3,
+     "incomplete_start": 4,
+     "incomplete_tokens": 0,
+     "completes_here": true
+    },
+    {
+     "position": 4,
+     "seq_len": 5,
+     "visible_groups": 1,
+     "newest_visible_group": 0,
+     "newest_visible_group_last_position": 3,
+     "incomplete_start": 4,
+     "incomplete_tokens": 1,
+     "completes_here": false
+    },
+    {
+     "position": 5,
+     "seq_len": 6,
+     "visible_groups": 1,
+     "newest_visible_group": 0,
+     "newest_visible_group_last_position": 3,
+     "incomplete_start": 4,
+     "incomplete_tokens": 2,
+     "completes_here": false
+    },
+    {
+     "position": 6,
+     "seq_len": 7,
+     "visible_groups": 1,
+     "newest_visible_group": 0,
+     "newest_visible_group_last_position": 3,
+     "incomplete_start": 4,
+     "incomplete_tokens": 3,
+     "completes_here": false
+    },
+    {
+     "position": 7,
+     "seq_len": 8,
+     "visible_groups": 2,
+     "newest_visible_group": 1,
+     "newest_visible_group_last_position": 7,
+     "incomplete_start": 8,
+     "incomplete_tokens": 0,
+     "completes_here": true
+    },
+    {
+     "position": 8,
+     "seq_len": 9,
+     "visible_groups": 2,
+     "newest_visible_group": 1,
+     "newest_visible_group_last_position": 7,
+     "incomplete_start": 8,
+     "incomplete_tokens": 1,
+     "completes_here": false
+    },
+    {
+     "position": 9,
+     "seq_len": 10,
+     "visible_groups": 2,
+     "newest_visible_group": 1,
+     "newest_visible_group_last_position": 7,
+     "incomplete_start": 8,
+     "incomplete_tokens": 2,
+     "completes_here": false
+    },
+    {
+     "position": 11,
+     "seq_len": 12,
+     "visible_groups": 3,
+     "newest_visible_group": 2,
+     "newest_visible_group_last_position": 11,
+     "incomplete_start": 12,
+     "incomplete_tokens": 0,
+     "completes_here": true
+    },
+    {
+     "position": 12,
+     "seq_len": 13,
+     "visible_groups": 3,
+     "newest_visible_group": 2,
+     "newest_visible_group_last_position": 11,
+     "incomplete_start": 12,
+     "incomplete_tokens": 1,
+     "completes_here": false
+    },
+    {
+     "position": 15,
+     "seq_len": 16,
+     "visible_groups": 4,
+     "newest_visible_group": 3,
+     "newest_visible_group_last_position": 15,
+     "incomplete_start": 16,
+     "incomplete_tokens": 0,
+     "completes_here": true
+    },
+    {
+     "position": 16,
+     "seq_len": 17,
+     "visible_groups": 4,
+     "newest_visible_group": 3,
+     "newest_visible_group_last_position": 15,
+     "incomplete_start": 16,
+     "incomplete_tokens": 1,
+     "completes_here": false
+    },
+    {
+     "position": 1048571,
+     "seq_len": 1048572,
+     "visible_groups": 262143,
+     "newest_visible_group": 262142,
+     "newest_visible_group_last_position": 1048571,
+     "incomplete_start": 1048572,
+     "incomplete_tokens": 0,
+     "completes_here": true
+    },
+    {
+     "position": 1048572,
+     "seq_len": 1048573,
+     "visible_groups": 262143,
+     "newest_visible_group": 262142,
+     "newest_visible_group_last_position": 1048571,
+     "incomplete_start": 1048572,
+     "incomplete_tokens": 1,
+     "completes_here": false
+    },
+    {
+     "position": 1048575,
+     "seq_len": 1048576,
+     "visible_groups": 262144,
+     "newest_visible_group": 262143,
+     "newest_visible_group_last_position": 1048575,
+     "incomplete_start": 1048576,
+     "incomplete_tokens": 0,
+     "completes_here": true
+    }
+   ],
+   "group_table": [
+    {
+     "group": 0,
+     "first_token": 0,
+     "last_token": 3,
+     "completes_at_position": 3,
+     "visible_from_seq_len": 4,
+     "anchor_position": 0,
+     "ape_rows": [0, 3]
+    },
+    {
+     "group": 1,
+     "first_token": 4,
+     "last_token": 7,
+     "completes_at_position": 7,
+     "visible_from_seq_len": 8,
+     "anchor_position": 4,
+     "ape_rows": [0, 3]
+    },
+    {
+     "group": 2,
+     "first_token": 8,
+     "last_token": 11,
+     "completes_at_position": 11,
+     "visible_from_seq_len": 12,
+     "anchor_position": 8,
+     "ape_rows": [0, 3]
+    },
+    {
+     "group": 3,
+     "first_token": 12,
+     "last_token": 15,
+     "completes_at_position": 15,
+     "visible_from_seq_len": 16,
+     "anchor_position": 12,
+     "ape_rows": [0, 3]
+    },
+    {
+     "group": 262143,
+     "first_token": 1048572,
+     "last_token": 1048575,
+     "completes_at_position": 1048575,
+     "visible_from_seq_len": 1048576,
+     "anchor_position": 1048572,
+     "ape_rows": [0, 3]
+    }
+   ],
+   "chunk_table": [
+    {
+     "start": 0,
+     "qlen": 1,
+     "end": 1,
+     "groups_before": 0,
+     "groups_after": 0,
+     "groups_completed": 0,
+     "boundary_flag": false,
+     "first_completing_position": null,
+     "state_rows_from_earlier_chunks": 0,
+     "tail_tokens_after": 1,
+     "state_rows_needed_after": 1
+    },
+    {
+     "start": 0,
+     "qlen": 3,
+     "end": 3,
+     "groups_before": 0,
+     "groups_after": 0,
+     "groups_completed": 0,
+     "boundary_flag": false,
+     "first_completing_position": null,
+     "state_rows_from_earlier_chunks": 0,
+     "tail_tokens_after": 3,
+     "state_rows_needed_after": 3
+    },
+    {
+     "start": 0,
+     "qlen": 4,
+     "end": 4,
+     "groups_before": 0,
+     "groups_after": 1,
+     "groups_completed": 1,
+     "boundary_flag": true,
+     "first_completing_position": 3,
+     "state_rows_from_earlier_chunks": 0,
+     "tail_tokens_after": 0,
+     "state_rows_needed_after": 4
+    },
+    {
+     "start": 3,
+     "qlen": 1,
+     "end": 4,
+     "groups_before": 0,
+     "groups_after": 1,
+     "groups_completed": 1,
+     "boundary_flag": true,
+     "first_completing_position": 3,
+     "state_rows_from_earlier_chunks": 3,
+     "tail_tokens_after": 0,
+     "state_rows_needed_after": 4
+    },
+    {
+     "start": 2,
+     "qlen": 6,
+     "end": 8,
+     "groups_before": 0,
+     "groups_after": 2,
+     "groups_completed": 2,
+     "boundary_flag": true,
+     "first_completing_position": 3,
+     "state_rows_from_earlier_chunks": 2,
+     "tail_tokens_after": 0,
+     "state_rows_needed_after": 7
+    },
+    {
+     "start": 4,
+     "qlen": 4,
+     "end": 8,
+     "groups_before": 1,
+     "groups_after": 2,
+     "groups_completed": 1,
+     "boundary_flag": true,
+     "first_completing_position": 7,
+     "state_rows_from_earlier_chunks": 4,
+     "tail_tokens_after": 0,
+     "state_rows_needed_after": 7
+    },
+    {
+     "start": 7,
+     "qlen": 2,
+     "end": 9,
+     "groups_before": 1,
+     "groups_after": 2,
+     "groups_completed": 1,
+     "boundary_flag": true,
+     "first_completing_position": 7,
+     "state_rows_from_earlier_chunks": 7,
+     "tail_tokens_after": 1,
+     "state_rows_needed_after": 7
+    },
+    {
+     "start": 8,
+     "qlen": 16,
+     "end": 24,
+     "groups_before": 2,
+     "groups_after": 6,
+     "groups_completed": 4,
+     "boundary_flag": true,
+     "first_completing_position": 11,
+     "state_rows_from_earlier_chunks": 4,
+     "tail_tokens_after": 0,
+     "state_rows_needed_after": 7
+    },
+    {
+     "start": 5,
+     "qlen": 40,
+     "end": 45,
+     "groups_before": 1,
+     "groups_after": 11,
+     "groups_completed": 10,
+     "boundary_flag": true,
+     "first_completing_position": 7,
+     "state_rows_from_earlier_chunks": 5,
+     "tail_tokens_after": 1,
+     "state_rows_needed_after": 7
+    }
+   ],
+   "overlap_rows": [
+    {
+     "group": 0,
+     "completing_position": 3,
+     "rows": [
+      {
+       "w": 0,
+       "position": -4,
+       "source_group": null,
+       "lane": "previous",
+       "channels": [0, 512],
+       "masked": true
+      },
+      {
+       "w": 1,
+       "position": -3,
+       "source_group": null,
+       "lane": "previous",
+       "channels": [0, 512],
+       "masked": true
+      },
+      {
+       "w": 2,
+       "position": -2,
+       "source_group": null,
+       "lane": "previous",
+       "channels": [0, 512],
+       "masked": true
+      },
+      {
+       "w": 3,
+       "position": -1,
+       "source_group": null,
+       "lane": "previous",
+       "channels": [0, 512],
+       "masked": true
+      },
+      {
+       "w": 4,
+       "position": 0,
+       "source_group": 0,
+       "lane": "current",
+       "channels": [512, 1024],
+       "masked": false
+      },
+      {
+       "w": 5,
+       "position": 1,
+       "source_group": 0,
+       "lane": "current",
+       "channels": [512, 1024],
+       "masked": false
+      },
+      {
+       "w": 6,
+       "position": 2,
+       "source_group": 0,
+       "lane": "current",
+       "channels": [512, 1024],
+       "masked": false
+      },
+      {
+       "w": 7,
+       "position": 3,
+       "source_group": 0,
+       "lane": "current",
+       "channels": [512, 1024],
+       "masked": false
+      }
+     ]
+    },
+    {
+     "group": 1,
+     "completing_position": 7,
+     "rows": [
+      {
+       "w": 0,
+       "position": 0,
+       "source_group": 0,
+       "lane": "previous",
+       "channels": [0, 512],
+       "masked": false
+      },
+      {
+       "w": 1,
+       "position": 1,
+       "source_group": 0,
+       "lane": "previous",
+       "channels": [0, 512],
+       "masked": false
+      },
+      {
+       "w": 2,
+       "position": 2,
+       "source_group": 0,
+       "lane": "previous",
+       "channels": [0, 512],
+       "masked": false
+      },
+      {
+       "w": 3,
+       "position": 3,
+       "source_group": 0,
+       "lane": "previous",
+       "channels": [0, 512],
+       "masked": false
+      },
+      {
+       "w": 4,
+       "position": 4,
+       "source_group": 1,
+       "lane": "current",
+       "channels": [512, 1024],
+       "masked": false
+      },
+      {
+       "w": 5,
+       "position": 5,
+       "source_group": 1,
+       "lane": "current",
+       "channels": [512, 1024],
+       "masked": false
+      },
+      {
+       "w": 6,
+       "position": 6,
+       "source_group": 1,
+       "lane": "current",
+       "channels": [512, 1024],
+       "masked": false
+      },
+      {
+       "w": 7,
+       "position": 7,
+       "source_group": 1,
+       "lane": "current",
+       "channels": [512, 1024],
+       "masked": false
+      }
+     ]
+    },
+    {
+     "group": 2,
+     "completing_position": 11,
+     "rows": [
+      {
+       "w": 0,
+       "position": 4,
+       "source_group": 1,
+       "lane": "previous",
+       "channels": [0, 512],
+       "masked": false
+      },
+      {
+       "w": 1,
+       "position": 5,
+       "source_group": 1,
+       "lane": "previous",
+       "channels": [0, 512],
+       "masked": false
+      },
+      {
+       "w": 2,
+       "position": 6,
+       "source_group": 1,
+       "lane": "previous",
+       "channels": [0, 512],
+       "masked": false
+      },
+      {
+       "w": 3,
+       "position": 7,
+       "source_group": 1,
+       "lane": "previous",
+       "channels": [0, 512],
+       "masked": false
+      },
+      {
+       "w": 4,
+       "position": 8,
+       "source_group": 2,
+       "lane": "current",
+       "channels": [512, 1024],
+       "masked": false
+      },
+      {
+       "w": 5,
+       "position": 9,
+       "source_group": 2,
+       "lane": "current",
+       "channels": [512, 1024],
+       "masked": false
+      },
+      {
+       "w": 6,
+       "position": 10,
+       "source_group": 2,
+       "lane": "current",
+       "channels": [512, 1024],
+       "masked": false
+      },
+      {
+       "w": 7,
+       "position": 11,
+       "source_group": 2,
+       "lane": "current",
+       "channels": [512, 1024],
+       "masked": false
+      }
+     ]
+    },
+    {
+     "group": 3,
+     "completing_position": 15,
+     "rows": [
+      {
+       "w": 0,
+       "position": 8,
+       "source_group": 2,
+       "lane": "previous",
+       "channels": [0, 512],
+       "masked": false
+      },
+      {
+       "w": 1,
+       "position": 9,
+       "source_group": 2,
+       "lane": "previous",
+       "channels": [0, 512],
+       "masked": false
+      },
+      {
+       "w": 2,
+       "position": 10,
+       "source_group": 2,
+       "lane": "previous",
+       "channels": [0, 512],
+       "masked": false
+      },
+      {
+       "w": 3,
+       "position": 11,
+       "source_group": 2,
+       "lane": "previous",
+       "channels": [0, 512],
+       "masked": false
+      },
+      {
+       "w": 4,
+       "position": 12,
+       "source_group": 3,
+       "lane": "current",
+       "channels": [512, 1024],
+       "masked": false
+      },
+      {
+       "w": 5,
+       "position": 13,
+       "source_group": 3,
+       "lane": "current",
+       "channels": [512, 1024],
+       "masked": false
+      },
+      {
+       "w": 6,
+       "position": 14,
+       "source_group": 3,
+       "lane": "current",
+       "channels": [512, 1024],
+       "masked": false
+      },
+      {
+       "w": 7,
+       "position": 15,
+       "source_group": 3,
+       "lane": "current",
+       "channels": [512, 1024],
+       "masked": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "ratio": 128,
+   "rule": "visible_groups = (position + 1) // ratio; group j completes at position j*ratio + ratio - 1 and is visible from sequence length j*ratio + ratio; the incomplete tail is invisible",
+   "position_table": [
+    {
+     "position": 0,
+     "seq_len": 1,
+     "visible_groups": 0,
+     "newest_visible_group": null,
+     "newest_visible_group_last_position": null,
+     "incomplete_start": 0,
+     "incomplete_tokens": 1,
+     "completes_here": false
+    },
+    {
+     "position": 1,
+     "seq_len": 2,
+     "visible_groups": 0,
+     "newest_visible_group": null,
+     "newest_visible_group_last_position": null,
+     "incomplete_start": 0,
+     "incomplete_tokens": 2,
+     "completes_here": false
+    },
+    {
+     "position": 126,
+     "seq_len": 127,
+     "visible_groups": 0,
+     "newest_visible_group": null,
+     "newest_visible_group_last_position": null,
+     "incomplete_start": 0,
+     "incomplete_tokens": 127,
+     "completes_here": false
+    },
+    {
+     "position": 127,
+     "seq_len": 128,
+     "visible_groups": 1,
+     "newest_visible_group": 0,
+     "newest_visible_group_last_position": 127,
+     "incomplete_start": 128,
+     "incomplete_tokens": 0,
+     "completes_here": true
+    },
+    {
+     "position": 128,
+     "seq_len": 129,
+     "visible_groups": 1,
+     "newest_visible_group": 0,
+     "newest_visible_group_last_position": 127,
+     "incomplete_start": 128,
+     "incomplete_tokens": 1,
+     "completes_here": false
+    },
+    {
+     "position": 129,
+     "seq_len": 130,
+     "visible_groups": 1,
+     "newest_visible_group": 0,
+     "newest_visible_group_last_position": 127,
+     "incomplete_start": 128,
+     "incomplete_tokens": 2,
+     "completes_here": false
+    },
+    {
+     "position": 254,
+     "seq_len": 255,
+     "visible_groups": 1,
+     "newest_visible_group": 0,
+     "newest_visible_group_last_position": 127,
+     "incomplete_start": 128,
+     "incomplete_tokens": 127,
+     "completes_here": false
+    },
+    {
+     "position": 255,
+     "seq_len": 256,
+     "visible_groups": 2,
+     "newest_visible_group": 1,
+     "newest_visible_group_last_position": 255,
+     "incomplete_start": 256,
+     "incomplete_tokens": 0,
+     "completes_here": true
+    },
+    {
+     "position": 256,
+     "seq_len": 257,
+     "visible_groups": 2,
+     "newest_visible_group": 1,
+     "newest_visible_group_last_position": 255,
+     "incomplete_start": 256,
+     "incomplete_tokens": 1,
+     "completes_here": false
+    },
+    {
+     "position": 257,
+     "seq_len": 258,
+     "visible_groups": 2,
+     "newest_visible_group": 1,
+     "newest_visible_group_last_position": 255,
+     "incomplete_start": 256,
+     "incomplete_tokens": 2,
+     "completes_here": false
+    },
+    {
+     "position": 383,
+     "seq_len": 384,
+     "visible_groups": 3,
+     "newest_visible_group": 2,
+     "newest_visible_group_last_position": 383,
+     "incomplete_start": 384,
+     "incomplete_tokens": 0,
+     "completes_here": true
+    },
+    {
+     "position": 384,
+     "seq_len": 385,
+     "visible_groups": 3,
+     "newest_visible_group": 2,
+     "newest_visible_group_last_position": 383,
+     "incomplete_start": 384,
+     "incomplete_tokens": 1,
+     "completes_here": false
+    },
+    {
+     "position": 511,
+     "seq_len": 512,
+     "visible_groups": 4,
+     "newest_visible_group": 3,
+     "newest_visible_group_last_position": 511,
+     "incomplete_start": 512,
+     "incomplete_tokens": 0,
+     "completes_here": true
+    },
+    {
+     "position": 512,
+     "seq_len": 513,
+     "visible_groups": 4,
+     "newest_visible_group": 3,
+     "newest_visible_group_last_position": 511,
+     "incomplete_start": 512,
+     "incomplete_tokens": 1,
+     "completes_here": false
+    },
+    {
+     "position": 1048447,
+     "seq_len": 1048448,
+     "visible_groups": 8191,
+     "newest_visible_group": 8190,
+     "newest_visible_group_last_position": 1048447,
+     "incomplete_start": 1048448,
+     "incomplete_tokens": 0,
+     "completes_here": true
+    },
+    {
+     "position": 1048448,
+     "seq_len": 1048449,
+     "visible_groups": 8191,
+     "newest_visible_group": 8190,
+     "newest_visible_group_last_position": 1048447,
+     "incomplete_start": 1048448,
+     "incomplete_tokens": 1,
+     "completes_here": false
+    },
+    {
+     "position": 1048575,
+     "seq_len": 1048576,
+     "visible_groups": 8192,
+     "newest_visible_group": 8191,
+     "newest_visible_group_last_position": 1048575,
+     "incomplete_start": 1048576,
+     "incomplete_tokens": 0,
+     "completes_here": true
+    }
+   ],
+   "group_table": [
+    {
+     "group": 0,
+     "first_token": 0,
+     "last_token": 127,
+     "completes_at_position": 127,
+     "visible_from_seq_len": 128,
+     "anchor_position": 0,
+     "ape_rows": [0, 127]
+    },
+    {
+     "group": 1,
+     "first_token": 128,
+     "last_token": 255,
+     "completes_at_position": 255,
+     "visible_from_seq_len": 256,
+     "anchor_position": 128,
+     "ape_rows": [0, 127]
+    },
+    {
+     "group": 2,
+     "first_token": 256,
+     "last_token": 383,
+     "completes_at_position": 383,
+     "visible_from_seq_len": 384,
+     "anchor_position": 256,
+     "ape_rows": [0, 127]
+    },
+    {
+     "group": 3,
+     "first_token": 384,
+     "last_token": 511,
+     "completes_at_position": 511,
+     "visible_from_seq_len": 512,
+     "anchor_position": 384,
+     "ape_rows": [0, 127]
+    },
+    {
+     "group": 8191,
+     "first_token": 1048448,
+     "last_token": 1048575,
+     "completes_at_position": 1048575,
+     "visible_from_seq_len": 1048576,
+     "anchor_position": 1048448,
+     "ape_rows": [0, 127]
+    }
+   ],
+   "chunk_table": [
+    {
+     "start": 0,
+     "qlen": 1,
+     "end": 1,
+     "groups_before": 0,
+     "groups_after": 0,
+     "groups_completed": 0,
+     "boundary_flag": false,
+     "first_completing_position": null,
+     "state_rows_from_earlier_chunks": 0,
+     "tail_tokens_after": 1,
+     "state_rows_needed_after": 1
+    },
+    {
+     "start": 0,
+     "qlen": 127,
+     "end": 127,
+     "groups_before": 0,
+     "groups_after": 0,
+     "groups_completed": 0,
+     "boundary_flag": false,
+     "first_completing_position": null,
+     "state_rows_from_earlier_chunks": 0,
+     "tail_tokens_after": 127,
+     "state_rows_needed_after": 127
+    },
+    {
+     "start": 0,
+     "qlen": 128,
+     "end": 128,
+     "groups_before": 0,
+     "groups_after": 1,
+     "groups_completed": 1,
+     "boundary_flag": true,
+     "first_completing_position": 127,
+     "state_rows_from_earlier_chunks": 0,
+     "tail_tokens_after": 0,
+     "state_rows_needed_after": 127
+    },
+    {
+     "start": 127,
+     "qlen": 1,
+     "end": 128,
+     "groups_before": 0,
+     "groups_after": 1,
+     "groups_completed": 1,
+     "boundary_flag": true,
+     "first_completing_position": 127,
+     "state_rows_from_earlier_chunks": 127,
+     "tail_tokens_after": 0,
+     "state_rows_needed_after": 127
+    },
+    {
+     "start": 100,
+     "qlen": 60,
+     "end": 160,
+     "groups_before": 0,
+     "groups_after": 1,
+     "groups_completed": 1,
+     "boundary_flag": true,
+     "first_completing_position": 127,
+     "state_rows_from_earlier_chunks": 100,
+     "tail_tokens_after": 32,
+     "state_rows_needed_after": 127
+    },
+    {
+     "start": 128,
+     "qlen": 128,
+     "end": 256,
+     "groups_before": 1,
+     "groups_after": 2,
+     "groups_completed": 1,
+     "boundary_flag": true,
+     "first_completing_position": 255,
+     "state_rows_from_earlier_chunks": 0,
+     "tail_tokens_after": 0,
+     "state_rows_needed_after": 127
+    },
+    {
+     "start": 255,
+     "qlen": 2,
+     "end": 257,
+     "groups_before": 1,
+     "groups_after": 2,
+     "groups_completed": 1,
+     "boundary_flag": true,
+     "first_completing_position": 255,
+     "state_rows_from_earlier_chunks": 127,
+     "tail_tokens_after": 1,
+     "state_rows_needed_after": 127
+    },
+    {
+     "start": 256,
+     "qlen": 1024,
+     "end": 1280,
+     "groups_before": 2,
+     "groups_after": 10,
+     "groups_completed": 8,
+     "boundary_flag": true,
+     "first_completing_position": 383,
+     "state_rows_from_earlier_chunks": 0,
+     "tail_tokens_after": 0,
+     "state_rows_needed_after": 127
+    }
+   ],
+   "overlap_rows": []
+  }
+ ],
+ "rounding_stages": [
+  {
+   "stage": "projection",
+   "dtype_in": "bf16",
+   "dtype_out": "fp32",
+   "operation": "hidden @ [Wkv; Wgate]^T, output fp32 (kv first, score second)",
+   "facts": ["k02"]
+  },
+  {
+   "stage": "state_write_kv",
+   "dtype_in": "fp32",
+   "dtype_out": "fp32",
+   "operation": "store the kv row unchanged",
+   "facts": ["k03"]
+  },
+  {
+   "stage": "state_write_score",
+   "dtype_in": "fp32",
+   "dtype_out": "fp32",
+   "operation": "score + APE[position % ratio], fp32 add, stored fp32",
+   "facts": ["k03"]
+  },
+  {
+   "stage": "window_gather",
+   "dtype_in": "fp32",
+   "dtype_out": "fp32",
+   "operation": "rows position-coff*ratio+1 .. position; rows before 0 masked (score -inf, kv 0); lane offset D for rows w >= ratio",
+   "facts": ["k06", "k07"]
+  },
+  {
+   "stage": "channel_softmax_pool",
+   "dtype_in": "fp32",
+   "dtype_out": "fp32",
+   "operation": "per channel softmax over the window, weighted sum of kv; CPU exp, CuTeDSL exp2 fastmath",
+   "facts": ["k08", "k12"]
+  },
+  {
+   "stage": "rmsnorm",
+   "dtype_in": "fp32",
+   "dtype_out": "fp32",
+   "operation": "x * rsqrt(mean(x^2) + eps) * weight (bf16 weight widened); CPU 1/sqrt, CuTeDSL fastmath rsqrt",
+   "facts": ["k08", "k12"]
+  },
+  {
+   "stage": "nope_round",
+   "dtype_in": "fp32",
+   "dtype_out": "bf16",
+   "operation": "channels [0, head_dim - rope_dim) rounded to bf16 (feeds only the quantiser in the fp8_ds_mla layout)",
+   "facts": ["k09"]
+  },
+  {
+   "stage": "nope_scale",
+   "dtype_in": "bf16",
+   "dtype_out": "ue8m0 byte",
+   "operation": "per block of 64: scale = max(absmax/448, 1e-4), exponent = ceil(log2(scale)), byte = exponent + 127",
+   "facts": ["k09", "k10"]
+  },
+  {
+   "stage": "nope_fp8",
+   "dtype_in": "bf16",
+   "dtype_out": "fp8 e4m3fn",
+   "operation": "value * 2^-exponent, clamp +-448, round to nearest even",
+   "facts": ["k09"]
+  },
+  {
+   "stage": "rope_rotate",
+   "dtype_in": "fp32 (un-rounded)",
+   "dtype_out": "fp32",
+   "operation": "GPT-J interleaved rotation of the trailing rope channels at the group start, fp32 cos/sin",
+   "facts": ["k11"]
+  },
+  {
+   "stage": "rope_store",
+   "dtype_in": "fp32",
+   "dtype_out": "bf16",
+   "operation": "one bf16 rounding of the rotated rope channels",
+   "facts": ["k11"]
+  },
+  {
+   "stage": "alt_layout_bf16_full",
+   "dtype_in": "fp32",
+   "dtype_out": "bf16",
+   "operation": "nope channels rounded to bf16 and stored, rope as above; no FP8, no scale bytes",
+   "facts": ["k13"]
+  },
+  {
+   "stage": "alt_layout_fp8_full",
+   "dtype_in": "fp32",
+   "dtype_out": "fp8 e4m3fn",
+   "operation": "whole row (rope rotated) to bf16, times 1/fp8_scale, clamp +-448, convert; one per-tensor scale",
+   "facts": ["k13"]
+  }
+ ],
+ "cache_layouts": [
+  {
+   "id": "fp8_ds_mla",
+   "selected_when": "cache dtype uint8",
+   "nope": "448 x fp8 e4m3fn, 7 ue8m0 scale bytes (block 64) + 1 pad byte",
+   "rope": "64 x bf16",
+   "bytes_at_head_512": 584,
+   "facts": ["k13", "k09"]
+  },
+  {
+   "id": "bf16_full",
+   "selected_when": "cache dtype not uint8 and not fp8",
+   "nope": "448 x bf16",
+   "rope": "64 x bf16",
+   "bytes_at_head_512": 1024,
+   "facts": ["k13"]
+  },
+  {
+   "id": "fp8_full_per_tensor",
+   "selected_when": "cache dtype float8_e4m3fn",
+   "nope": "448 x fp8",
+   "rope": "64 x fp8 (one per-tensor scale for all 512)",
+   "bytes_at_head_512": 512,
+   "facts": ["k13"]
+  }
+ ],
+ "agreement": [
+  {
+   "aspect": "boundary gate (position + 1) % ratio == 0",
+   "cpu": "yes",
+   "cutedsl": "yes",
+   "triton": "yes",
+   "verdict": "agree",
+   "facts": ["k04"]
+  },
+  {
+   "aspect": "window rows and masking of rows before position 0",
+   "cpu": "slot -1 skipped",
+   "cutedsl": "C4 pos >= 0 test, C128 none needed",
+   "triton": "-inf score, 0 kv",
+   "verdict": "agree",
+   "facts": ["k06"]
+  },
+  {
+   "aspect": "overlap lane channel offset (rows w >= ratio use channels [D, 2D))",
+   "cpu": "head_offset",
+   "cutedsl": "C4 head_offset = (row // ratio) * D",
+   "triton": "head_offset",
+   "verdict": "agree",
+   "facts": ["k07"]
+  },
+  {
+   "aspect": "per-channel softmax pool",
+   "cpu": "max-subtract exp",
+   "cutedsl": "online softmax, exp2 fastmath, warp combine",
+   "triton": "tl.softmax",
+   "verdict": "same algorithm, different fp32 summation order and exp",
+   "facts": ["k08", "k12"]
+  },
+  {
+   "aspect": "RMSNorm",
+   "cpu": "1/sqrt",
+   "cutedsl": "fastmath rsqrt, butterfly sums",
+   "triton": "tl.rsqrt",
+   "verdict": "same formula, different rounding",
+   "facts": ["k08", "k12"]
+  },
+  {
+   "aspect": "nope bf16 round before the quantiser",
+   "cpu": "yes",
+   "cutedsl": "yes",
+   "triton": "yes",
+   "verdict": "agree",
+   "facts": ["k09"]
+  },
+  {
+   "aspect": "FP8 scale floor",
+   "cpu": "scale >= 1e-4",
+   "cutedsl": "scale >= 1e-4",
+   "triton": "absmax >= 1e-4",
+   "verdict": "CPU = CuTeDSL; Triton differs: scale below absmax 0.0448, exponent byte at or below absmax 0.02734375",
+   "facts": ["k09", "k10"]
+  },
+  {
+   "aspect": "FP8 subnormals",
+   "cpu": "exact scalar patch",
+   "cutedsl": "hardware conversion",
+   "triton": "hardware conversion",
+   "verdict": "agree where representable",
+   "facts": ["k10"]
+  },
+  {
+   "aspect": "rope anchor",
+   "cpu": "(p // ratio) * ratio",
+   "cutedsl": "p - (ratio - 1) on fp8_ds_mla, (p // ratio) * ratio on full rows",
+   "triton": "(p // ratio) * ratio",
+   "verdict": "identical at boundary tokens",
+   "facts": ["k11"]
+  },
+  {
+   "aspect": "rope applied to the un-rounded row, one bf16 rounding",
+   "cpu": "yes",
+   "cutedsl": "yes",
+   "triton": "yes",
+   "verdict": "agree",
+   "facts": ["k11"]
+  }
+ ],
+ "state_api": {
+  "state_cache": {
+   "rows": "one per absolute token position",
+   "row_layout": "[kv: coff*D fp32 | score+APE: coff*D fp32]",
+   "dtype": "fp32",
+   "retention": "coff*ratio positions",
+   "facts": ["k02", "k14"]
+  },
+  "operations": [
+   {
+    "name": "state_write",
+    "per": "token",
+    "effect": "state[slot] = [kv, score + APE[pos % ratio]]",
+    "skip": "slot < 0",
+    "facts": ["k03"]
+   },
+   {
+    "name": "compress",
+    "per": "token with (pos + 1) % ratio == 0",
+    "effect": "gather window rows, per-channel softmax pool, RMSNorm, nope fp8/bf16, rope at group start, store at the compressed slot",
+    "skip": "kv slot < 0 (PAD)",
+    "facts": ["k04", "k06", "k08", "k09", "k11"]
+   },
+   {
+    "name": "compressed_slot",
+    "per": "token",
+    "effect": "block_table[(pos//ratio)//block_size]*block_size + (pos//ratio)%block_size at boundary tokens, PAD elsewhere",
+    "facts": ["k04", "k18"]
+   },
+   {
+    "name": "visibility",
+    "per": "query",
+    "effect": "compressed rows 0..(pos+1)//ratio - 1",
+    "facts": ["k05"]
+   }
+  ],
+  "rules": [
+   "state rows: one fp32 row per absolute position, [kv | score + APE[pos % ratio]], only the newest coff*ratio positions are ever read",
+   "a chunk writes all its rows first, then compresses every token with (pos + 1) % ratio == 0, reading earlier-chunk rows from the state",
+   "the compressed row of the group completed at pos is row pos // ratio of the compressed cache; no other token writes a compressed row",
+   "queries at position pos read compressed rows 0 .. (pos + 1)//ratio - 1; the group completed by pos itself is included",
+   "replayed tokens (PAD slot) neither rewrite state nor compressed rows"
+  ],
+  "periods": [
+   {
+    "ratio": 4,
+    "window_rows": 8,
+    "state_row_floats": 2048,
+    "state_block_rows": 4
+   },
+   {
+    "ratio": 128,
+    "window_rows": 128,
+    "state_row_floats": 1024,
+    "state_block_rows": 8
+   }
+  ]
+ },
+ "code_map": [
+  {
+   "id": "m1",
+   "path": "libref/ref_ernie_hca.cpp",
+   "action": "new",
+   "purpose": "host ops ernie_hca_state_write and ernie_hca_compress (stage-rounded semantics of this report: k03, k06-k11); one file like ref_ernie_attn.cpp",
+   "api": {
+    "ernie_hca_state_write": "kv f32 [M, coff*D], score f32 [M, coff*D], ape f32 [ratio, coff*D], positions i32 [M], state_slots i32 [M] (-1 skip), state f32 INOUT [S, 2*coff*D]; params ratio (4|128), head_dim",
+    "ernie_hca_compress": "state f32, gather_slots i32 [M, coff*ratio] (-1 masked), positions i32 [M], out_slots i32 [M] (-1 skip), norm_weight bf16 [D], out rows bf16 [R, D] (full layout) or the packed fp8_ds_mla layout; params ratio, head_dim, rope_dim, eps, theta, layout"
+   },
+   "citations": [
+    {"pin": "ernie_repo", "file": "libref/ref_ernie_attn.cpp", "line": 33, "line_end": 33, "quote": "int ref_ernie_rope_tail(const RadArgs* a, RadStream) {"}
+   ]
+  },
+  {
+   "id": "m2",
+   "path": "libref/ref_ops.h",
+   "action": "modify",
+   "purpose": "declare the two ops and their shape functions next to ernie_rope_tail",
+   "citations": [
+    {"pin": "ernie_repo", "file": "libref/ref_ops.h", "line": 101, "line_end": 101, "quote": "int ref_ernie_rope_tail(const RadArgs*, RadStream);"},
+    {"pin": "ernie_repo", "file": "libref/ref_ops.h", "line": 408, "line_end": 408, "quote": "REF_SHAPE_FN(ref_ernie_rope_tail);"}
+   ]
+  },
+  {
+   "id": "m3",
+   "path": "libref/ref_registry.cpp",
+   "action": "modify",
+   "purpose": "operand and parameter tables plus one SIMPLE entry per op (documentation text is checked by existing tests)",
+   "citations": [
+    {"pin": "ernie_repo", "file": "libref/ref_registry.cpp", "line": 1812, "line_end": 1812, "quote": "{ \"ernie_rope_tail\", ARR(pErnieRopeTail), ARR(oErnieRopeTail),"},
+    {"pin": "ernie_repo", "file": "libref/ref_registry.cpp", "line": 2556, "line_end": 2556, "quote": "SIMPLE(\"ref_ernie_rope_tail\", \"ernie_rope_tail\", \"attn\","}
+   ]
+  },
+  {
+   "id": "m4",
+   "path": "libref/ref_shapes.cpp",
+   "action": "modify",
+   "purpose": "shape functions: state row width 2*coff*D, gather width coff*ratio, rows [R, D]",
+   "citations": [
+    {"pin": "ernie_repo", "file": "libref/ref_shapes.cpp", "line": 2114, "line_end": 2114, "quote": "int ref_ernie_rope_tail_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {"}
+   ]
+  },
+  {
+   "id": "m5",
+   "path": "docs/OPS.md",
+   "action": "modify",
+   "purpose": "one table row per new op with operands and rounding stages",
+   "citations": [
+    {"pin": "ernie_repo", "file": "docs/OPS.md", "line": 237, "line_end": 237, "quote": "| `ernie_multimax` | `M`(range) `n` `dtype` |"}
+   ]
+  },
+  {
+   "id": "m6",
+   "path": "tests/ref_test.cpp",
+   "action": "modify",
+   "purpose": "compose test: chunked state_write + compress equals one-shot; fixtures of this report as golden numbers",
+   "citations": [
+    {"pin": "ernie_repo", "file": "tests/ref_test.cpp", "line": 1509, "line_end": 1509, "quote": "ernie_rope_tail"}
+   ]
+  },
+  {
+   "id": "m7",
+   "path": "arch/ernie55/ernie55.cpp",
+   "action": "modify",
+   "purpose": "(later plugin story, after the ops) per HCA layer declare a RAD_KV_WINDOW state group (fp32, window coff*ratio, head_dim 2*coff*D) and a compressed-row group whose slot is position // ratio; block sizes come from the consuming kernel (rad_kv_block_size)",
+   "gap": "the ABI has no group kind that stores one row per ratio tokens; the group would either be RAD_KV_FULL with op-owned slot translation (as ernie_dsa_select does with block_table) or sized for every token; decide in 3-3b without changing ABI 40",
+   "citations": [
+    {"pin": "ernie_repo", "file": "abi/rad_builder.h", "line": 451, "line_end": 451, "quote": "RAD_KV_WINDOW  = 1,   /* paged, per-token, bounded by the window */"},
+    {"pin": "ernie_repo", "file": "abi/rad_builder.h", "line": 477, "line_end": 477, "quote": "rad_kvgroup rad_decl_kv_group(RadBuilder* b, const char* name, const RadKVGroupDecl* d);"}
+   ]
+  }
+ ],
+ "facts": [
+  {
+   "id": "k01",
+   "topic": "periods",
+   "status": "established",
+   "statement": "The compressor and its state cache accept exactly two periods, 4 and 128 (assert compress_ratio in [4, 128]). overlap = (ratio == 4) and coff = 1 + overlap, so period 128 has one lane per row and period 4 has two (the overlap lanes). The pinned checkpoint selects only 128 (compress_ratios holds 128 and -2); ratio 4 is the only other legal period and the only one with an indexer. The CuTeDSL path hard-codes the same pair: a C128 kernel for state block size 8, and a C4 wrapper that refuses anything but head 512, ratio 4 with overlap. No other period (8, 16, 64, ...) is legal.",
+   "provenance": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 158, "line_end": 158, "quote": "assert compress_ratio in [4, 128]"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 239, "line_end": 239, "quote": "self.overlap = compress_ratio == 4"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 240, "line_end": 240, "quote": "self.coff = 1 + self.overlap"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 1096, "line_end": 1096, "quote": "compress_ratio = 128"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 2182, "line_end": 2182, "quote": "and compress_ratio == 4"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 2438, "line_end": 2438, "quote": "supports compress_ratio 4 or"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 298, "line_end": 298, "quote": "if self.compress_ratio == 4:"},
+    {"pin": "hf_config", "file": "config.json", "line": 10, "line_end": 10, "quote": "\"compress_ratios\": ["}
+   ]
+  },
+  {
+   "id": "k02",
+   "topic": "state_geometry",
+   "status": "established",
+   "statement": "State cache per request and compressed layer: one fp32 row per absolute token position holding [kv (coff*head_dim) | score+APE (coff*head_dim)], so 2*coff*head_dim floats: 1024 floats (4096 B) at period 128 and 2048 floats (8192 B) at period 4 for head_dim 512. Rows are kept for a sliding window of coff*ratio positions (128 and 8) in pages of 8 rows (period 128) or 4 rows (period 4) that share physical pages with the compressed KV blocks. APE is an fp32 parameter [ratio, coff*head_dim]. The projection that feeds the state is one GEMM of the bf16 hidden states with the fused [kv; score] weight with an fp32 OUTPUT, kv first and score second.",
+   "provenance": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 283, "line_end": 283, "quote": "state_dim=2 * self.coff * self.head_dim,  # kv_state + score_state"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 160, "line_end": 160, "quote": "self.sliding_window = coff * compress_ratio"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 169, "line_end": 169, "quote": "self.block_size = 4"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 171, "line_end": 171, "quote": "self.block_size = 8"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 157, "line_end": 157, "quote": "assert self.dtype == torch.float32"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 264, "line_end": 264, "quote": "(compress_ratio, self.coff * self.head_dim),"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 273, "line_end": 273, "quote": "[self.coff * self.head_dim, self.coff * self.head_dim],"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 363, "line_end": 363, "quote": "# input bf16, output are fp32"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 697, "line_end": 697, "quote": "compressor.fused_wkv_wgate.weight.T,"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 698, "line_end": 698, "quote": "out_dtype=torch.float32,"}
+   ]
+  },
+  {
+   "id": "k03",
+   "topic": "state_write",
+   "status": "established",
+   "statement": "Every token, complete group or not, first writes its raw kv row (fp32) and score + APE[position % ratio] (fp32) into its state slot (skipped when the slot is negative). The APE row index is the ABSOLUTE position modulo the period, not the offset inside the chunk, so a group is pooled with the same APE rows however the prompt is chunked. In one forward the write kernel runs before the compress kernel, so the completing token's own row is part of its window.",
+   "provenance": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/save_partial_states.py", "line": 80, "line_end": 80, "quote": "# Fused: score += ape[position % compress_ratio]"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/save_partial_states.py", "line": 82, "line_end": 82, "quote": "ape_row = position % COMPRESS_RATIO"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/save_partial_states.py", "line": 63, "line_end": 63, "quote": "if slot_id < 0:"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 250, "line_end": 250, "quote": "const float* const ape_row = ape + (position % compress_ratio) * state_width;"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 254, "line_end": 254, "quote": "(fVec::loadu(score_t + i) + fVec::loadu(ape_row + i)).store(score_out + i);"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 393, "line_end": 393, "quote": "# Store the KV and score (with fused APE addition) in the state."},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 475, "line_end": 475, "quote": "compress_norm_rope_store_fn("}
+   ]
+  },
+  {
+   "id": "k04",
+   "topic": "completion",
+   "status": "established",
+   "statement": "A compressed entry is produced only by the token whose position satisfies (position + 1) % ratio == 0, i.e. the LAST token of its group. All three implementations (Triton, CPU, CuTeDSL) gate on exactly this, and the compressed slot mapping marks only such tokens valid (PAD elsewhere, and PAD for replayed tokens whose slot is already cached). The compressed row index of the group completed at position p is p // ratio.",
+   "provenance": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 201, "line_end": 201, "quote": "if (position + 1) % COMPRESS_RATIO != 0:"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 289, "line_end": 289, "quote": "if ((position + 1) % compress_ratio != 0) continue;"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 152, "line_end": 152, "quote": "(position + Int64(1)) % Int64(compress_ratio) == Int64(0)"},
+    {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/compressor_utils.py", "line": 83, "line_end": 83, "quote": "is_valid = ((pos + 1) % COMPRESS_RATIO == 0) & (slot != PAD_ID)"},
+    {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/compressor_utils.py", "line": 91, "line_end": 91, "quote": "pos_after_compress = local_pos // COMPRESS_RATIO"},
+    {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/compressor_utils.py", "line": 103, "line_end": 103, "quote": "slot_ids = tl.where(is_valid, slot_ids, PAD_ID)"},
+    {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/compressor_utils.py", "line": 78, "line_end": 78, "quote": "# A replayed token has a PAD slot (SWA bounded replay: its KV is"}
+   ]
+  },
+  {
+   "id": "k05",
+   "topic": "visibility",
+   "status": "established",
+   "statement": "Compressed rows visible to a query at position p are exactly the complete groups 0 .. (p+1)//ratio - 1: group j (tokens j*ratio .. j*ratio+ratio-1) becomes visible at the step that processes its last token (position j*ratio+ratio-1, sequence length j*ratio+ratio), including to that token's own query because the compressor completes before the sparse attention of the same layer. The incomplete trailing group exists only as state rows and is invisible; the window covers it. Batch-level shortcut: the CUDA path skips the compress kernels for a step when no request crosses a boundary (start % 128 + query_len >= 128 per request).",
+   "provenance": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/sparse_mla.py", "line": 405, "line_end": 405, "quote": "num_compressed = (position + 1) // compress_ratio"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/sparse_mla.py", "line": 446, "line_end": 446, "quote": "tl.where(offset < num_compressed, offset, -1),"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/cache_utils.py", "line": 884, "line_end": 884, "quote": "topk_len = tl.minimum((pos + 1) // COMPRESS_RATIO, TOP_K)"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/sparse_mla.py", "line": 260, "line_end": 260, "quote": "assert active_topk_width >= cm.max_seq_len // self.compress_ratio"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/sparse_mla.py", "line": 158, "line_end": 158, "quote": "c128a_max_compressed = cdiv("},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/sparse_mla.py", "line": 39, "line_end": 39, "quote": "_C128A_TOPK_ALIGNMENT = 128"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/sparse_mla.py", "line": 405, "line_end": 405, "quote": "num_compressed = (position + 1) // compress_ratio"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 55, "line_end": 55, "quote": "start % 128 + query_start_loc[i + 1] - query_start_loc[i] >= 128"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 399, "line_end": 399, "quote": "_SAVE_PARTIAL_STATES_KERNEL("},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 237, "line_end": 237, "quote": "if (slot_id < 0) continue;"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 616, "line_end": 616, "quote": "lambda: compressor(kv_score, positions, self.rotary_emb),"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/attention.py", "line": 636, "line_end": 636, "quote": "self._sparse_indexer_and_attn("},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 55, "line_end": 55, "quote": "start % 128 + query_start_loc[i + 1] - query_start_loc[i] >= 128"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 418, "line_end": 418, "quote": "and state_metadata.c128_boundary is False"}
+   ],
+   "audit_refs": ["h03", "h07"]
+  },
+  {
+   "id": "k06",
+   "topic": "window_gather",
+   "status": "established",
+   "statement": "The window pooled for the group completed at position p is the coff*ratio state rows at positions p-coff*ratio+1 .. p (128 rows at period 128, 8 rows at period 4). Rows before position 0 (only the first group of a period-4 stream) are masked: Triton loads score -inf and kv 0, the CPU path maps negative local indices to slot -1 and skips them, so they take no part in the softmax. The C128 CuTeDSL kernel reads exactly 128 rows through the block table and needs no mask because p >= 127.",
+   "provenance": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 207, "line_end": 207, "quote": "start = position - (1 + OVERLAP) * COMPRESS_RATIO + 1"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 210, "line_end": 210, "quote": "mask_pos = pos >= 0"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 239, "line_end": 239, "quote": "other=float(\"-inf\"),"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 246, "line_end": 246, "quote": "other=0.0,"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/cpu/cpu_compressor.py", "line": 85, "line_end": 85, "quote": "window = (1 + self.overlap) * self.compress_ratio"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/cpu/cpu_compressor.py", "line": 87, "line_end": 87, "quote": "win_local = positions.unsqueeze(-1) - window + 1 + win_offsets"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/cpu/cpu_utils.py", "line": 35, "line_end": 35, "quote": "return torch.where(valid, slot, torch.full_like(slot, -1))"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 301, "line_end": 301, "quote": "if (slot < 0) continue;"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 1161, "line_end": 1161, "quote": "start = position - Int64(compress_ratio - 1)"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 212, "line_end": 212, "quote": "if pos >= Int64(0):"}
+   ]
+  },
+  {
+   "id": "k07",
+   "topic": "overlap_lanes",
+   "status": "established",
+   "statement": "Overlap lane rule (period 4 only): window index w runs 0..7; rows with w < ratio belong to the PREVIOUS group and read channels [0, D) of the state row (kv and score), rows with w >= ratio belong to the CURRENT group and read channels [D, 2D). The softmax is per channel d < D over all 8 rows jointly, and the output is D wide. So each token's row carries two D-wide lanes: lane 1 is used when the token's own group completes, lane 0 when the next group completes. The first group has no previous rows (masked, see k06). At period 128 there is one lane and head_offset is 0 for every row.",
+   "provenance": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 219, "line_end": 219, "quote": "head_offset = (tokens >= COMPRESS_RATIO).to(tl.int32) * HEAD_SIZE"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 304, "line_end": 304, "quote": "const int64_t head_offset = (w >= compress_ratio) ? kHeadDim : 0;"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 306, "line_end": 306, "quote": "pos_in_block * state_row_width + head_offset + state_width;"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 239, "line_end": 239, "quote": "self.overlap = compress_ratio == 4"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 216, "line_end": 216, "quote": "head_offset = Int64((row // compress_ratio) * head_dim)"}
+   ]
+  },
+  {
+   "id": "k08",
+   "topic": "arithmetic",
+   "status": "established",
+   "statement": "Pooling and normalisation arithmetic of one group (CPU kernel and Triton agree): per CHANNEL softmax over the window rows of (score+APE) in fp32, the softmax-weighted sum of the fp32 kv rows, then an fp32 RMSNorm over all D=512 channels: x * rsqrt(mean(x^2) + eps) * weight, with the compressor's own norm weight (stored bf16, widened to fp32) and the model's rms_norm_eps.",
+   "provenance": [
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 297, "line_end": 297, "quote": "// Per-channel (not per-position) softmax over the window: each of the"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 323, "line_end": 323, "quote": "fVec e_v = (fVec::loadu(score_row + d) - fVec::loadu(max_v.data() + d)).exp();"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 339, "line_end": 339, "quote": "const float inv_rms = 1.0f / std::sqrt(sq_sum / static_cast<float>(kHeadDim) + rms_norm_eps);"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 343, "line_end": 343, "quote": "(fVec::loadu(normed.data() + d) * inv_rms_v * fVec::loadu(rms_norm_weight + d)).store(normed.data() + d);"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 241, "line_end": 241, "quote": "score = tl.softmax(score, dim=0)"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 249, "line_end": 249, "quote": "compressed_kv = tl.sum(kv * score, axis=0)  # [TRITON_BLOCK_SIZE] fp32"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 253, "line_end": 253, "quote": "variance = tl.sum(compressed_kv * compressed_kv, axis=0) / HEAD_SIZE"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 255, "line_end": 255, "quote": "normed = compressed_kv * rrms * rms_w"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/cpu/cpu_compressor.py", "line": 46, "line_end": 46, "quote": "self._norm_weight_fp32 = self.norm.weight.to(torch.float32).contiguous()"}
+   ]
+  },
+  {
+   "id": "k09",
+   "topic": "nope_quant",
+   "status": "established",
+   "statement": "FP8 nope quantisation of the fp8_ds_mla row (CPU kernel and CuTeDSL agree): the first 448 channels are rounded to bf16, then per block of 64 absmax of the bf16 values, scale = max(absmax / 448, 1e-4) (the floor is on the SCALE), exponent = ceil(log2(scale)), stored scale byte = exponent + 127 (UE8M0), values multiplied by 2^-exponent, clamped to +-448 and rounded to FP8 E4M3 (round to nearest even). The eighth scale byte is zero padding.",
+   "provenance": [
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 351, "line_end": 351, "quote": "store_from_float_ext<at::BFloat16>(nope_bf16.data() + d, fVec::loadu(normed.data() + d));"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 58, "line_end": 58, "quote": "constexpr float kQuantEps = 1e-4f;"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 166, "line_end": 166, "quote": "float scale = std::max(amax / kFp8Max, kQuantEps);"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 167, "line_end": 167, "quote": "float ceil_log2 = std::ceil(std::log2(scale));"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 172, "line_end": 172, "quote": "uint8_t scale_uint8 = static_cast<uint8_t>(exponent + 127);"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 373, "line_end": 373, "quote": "token_scale_ptr[kNumQuantBlocks] = 0;"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 103, "line_end": 103, "quote": "// Implements RNE (round-to-nearest-even). Flushes subnormal fp8 to zero."},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 1590, "line_end": 1590, "quote": "q_packed = _fp32x2_to_bf16x2(x0, x1)"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 81, "line_end": 81, "quote": "min_scale = 1.0e-4"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 348, "line_end": 348, "quote": "ue8m0 = ((bits + Uint32(0x7FFFFF)) >> Uint32(23)) & Uint32(0xFF)"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 370, "line_end": 370, "quote": "k_cache.iterator[scale_base + Int64(nope_blocks)] = Uint8(0)"}
+   ]
+  },
+  {
+   "id": "k10",
+   "topic": "nope_quant_variant",
+   "status": "established",
+   "statement": "The Triton kernels (ROCm, XPU, indexer) floor the ABSMAX at 1e-4 before multiplying by 1/448, not the scale: block_absmax = max(absmax, 1e-4); raw_scale = block_absmax / 448. This is identical to the CPU/CuTeDSL rule for any block whose bf16 absmax is at least 0.0448; below it the SCALE differs (the CPU/CuTeDSL scale saturates at 1e-4), and the stored exponent byte differs for absmax at or below 448/2^14 = 0.02734375 (CPU/CuTeDSL exponent -13, Triton lower). The Triton kernel also has a NaN-sanitising option and clamps the stored exponent; the CPU kernel patches fp8 subnormal outputs with the exact scalar conversion whereas the SIMD conversion otherwise flushes them to zero.",
+   "provenance": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 284, "line_end": 284, "quote": "block_absmax = tl.maximum(block_absmax, 1e-4)"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 286, "line_end": 286, "quote": "raw_scales = block_absmax * INV_FP8_MAX"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 287, "line_end": 287, "quote": "exponents = tl.ceil(tl.log2(raw_scales))"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 331, "line_end": 331, "quote": "result = tl.where(result == result, result, 0.0)"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 197, "line_end": 197, "quote": "// Patch subnormal-magnitude lanes: `cvt_fp32x16_to_fp8x16` flushes"}
+   ]
+  },
+  {
+   "id": "k11",
+   "topic": "rope_anchor",
+   "status": "established",
+   "statement": "The rope part of a compressed row (trailing 64 channels) is rotated GPT-J interleaved (pair 2i,2i+1: even' = e cos - o sin, odd' = e sin + o cos) at the position of its group START, (position // ratio) * ratio (0, ratio, 2*ratio, ...), taken from the absolute position, never from the chunk offset. The CPU and Triton kernels compute it as (position // ratio) * ratio; the fp8_ds_mla CuTeDSL kernel computes position - (ratio - 1). They are equal because the kernel only runs where position % ratio == ratio - 1. The rotation is applied to the un-rounded fp32 normalised row, in fp32, and rounded once to bf16 when stored.",
+   "provenance": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 428, "line_end": 428, "quote": "# - position used: (positions // compress_ratio) * compress_ratio"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 427, "line_end": 427, "quote": "# - applied to LAST rope_head_dim elements of head_dim"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 353, "line_end": 353, "quote": "const int64_t compressed_pos = (position / compress_ratio) * compress_ratio;"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 356, "line_end": 356, "quote": "apply_gptj_rope_inplace(normed.data() + kNopeDim, cos, sin, rope_half);"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 322, "line_end": 322, "quote": "compressed_pos = (position // COMPRESS_RATIO) * COMPRESS_RATIO"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 327, "line_end": 327, "quote": "new_even = even * cos_v - odd * sin_v"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 328, "line_end": 328, "quote": "new_odd = odd * cos_v + even * sin_v"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 1578, "line_end": 1578, "quote": "compressed_pos = position - Int64(compress_ratio - 1)"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 348, "line_end": 348, "quote": "// the un-rounded `normed` below, then casts once to bf16"}
+   ]
+  },
+  {
+   "id": "k12",
+   "topic": "cuda_path",
+   "status": "established",
+   "statement": "On CUDA the head-512 compressor always runs the CuTeDSL kernels. At period 128 this is two kernels: a compress kernel (rows split over 8 warps of 16, per-channel partial max/sum/product, then a cross-warp combine, exp2 with fastmath and a log2(e) pre-multiply) that writes an fp32 compressed_kv, and a norm/rope/store kernel (butterfly sum reductions, fastmath rsqrt). The algorithm is the one of k06-k11; the summation order, exp2/rsqrt fastmath and butterfly reduction order are not those of the CPU kernel, so the two agree to fp32 rounding at best, not bit for bit (see k19).",
+   "provenance": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 207, "line_end": 207, "quote": "head_dim=512 path which uses the CuTeDSL compressor kernels for better"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 455, "line_end": 455, "quote": "compress_norm_rope_store_fn = _SPARSE_ATTN_COMPRESSOR_CUTEDSL_KERNEL"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 82, "line_end": 82, "quote": "rcp_ln2 = 1.4426950408889634"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 1277, "line_end": 1277, "quote": "(score_vals[i, e] - local_max[e]) * Float32(rcp_ln2),"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 1093, "line_end": 1093, "quote": "final_reduce_steps = 3"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 275, "line_end": 275, "quote": "total / Float32(head_dim) + rms_norm_eps, fastmath=True"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 2447, "line_end": 2447, "quote": "compressed_kv = self.c128_compress("},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 2473, "line_end": 2473, "quote": "self.c128_store("}
+   ]
+  },
+  {
+   "id": "k13",
+   "topic": "cache_layouts",
+   "status": "established",
+   "statement": "The compressed row is stored in one of three layouts chosen by the cache dtype of the layer's KV cache (uint8 -> fp8_ds_mla; otherwise a full row; fp8 e4m3 -> full row with ONE per-tensor scale): (a) fp8_ds_mla, 584 B/row: 448 FP8 nope + 64 bf16 rope (128 B) + 8 scale bytes (7 UE8M0 + 1 pad); (b) full bf16 row, 1024 B: nothing is FP8-quantised, the nope channels are the fp32 normalised values rounded to bf16 and the rope channels are rotated then rounded to bf16; (c) full fp8 row, 512 B + a per-tensor scale: the whole 512-channel row (rope rotated in fp32) is rounded to bf16, multiplied by 1/fp8_scale, clamped to +-448 and converted to E4M3.",
+   "provenance": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 436, "line_end": 436, "quote": "store_full_kv = self.head_dim == 512 and kv_cache.dtype != torch.uint8"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 437, "line_end": 437, "quote": "store_full_fp8 = kv_cache.dtype == torch.float8_e4m3fn"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 300, "line_end": 300, "quote": "self._token_stride = self.nope_head_dim + self.rope_head_dim * 2"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 301, "line_end": 301, "quote": "self._scale_dim = self.nope_head_dim // 64 + 1  # 7 real + 1 pad"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 1978, "line_end": 1978, "quote": "k_cache_u32.iterator[out_base // Int64(4)] = bf16_packed"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 793, "line_end": 793, "quote": "inv_fp8 = Float32(1.0) / fp8_scale[0]"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 1947, "line_end": 1947, "quote": "fp8_packed_bf16 = _fp32x2_to_bf16x2(fp8_v0, fp8_v1)"}
+   ]
+  },
+  {
+   "id": "k14",
+   "topic": "chunk_persistence",
+   "status": "established",
+   "statement": "State rows are written at the step that processes the token and read only by the window gather of a boundary token, which reaches back coff*ratio - 1 positions. A chunk that completes a group therefore reads rows written by earlier chunks (up to ratio - 1 rows at period 128, up to 2*ratio - 1 = 7 rows at period 4); the result is independent of the chunking only if those rows persist, which the sliding-window state spec guarantees for coff*ratio positions. Rows older than that are never read.",
+   "provenance": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 190, "line_end": 190, "quote": "sliding_window=self.sliding_window,"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 161, "line_end": 161, "quote": "# Block size is constrained by tensor sharing between compressor states"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/cpu/cpu_compressor.py", "line": 87, "line_end": 87, "quote": "win_local = positions.unsqueeze(-1) - window + 1 + win_offsets"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/save_partial_states.py", "line": 68, "line_end": 68, "quote": "base_ptr = ("}
+   ]
+  },
+  {
+   "id": "k15",
+   "topic": "subclass",
+   "status": "established",
+   "statement": "The Baidu plugin subclasses the compressor only to keep C128 compression inside piecewise CUDA graphs (it clears the c128_boundary skip while a graph is captured): no arithmetic, window, lane or layout change. The checkpoint tensors linear_wkv and linear_wgate are mapped to shards 0 (kv) and 1 (score) of fused_wkv_wgate.",
+   "provenance": [
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 155, "line_end": 155, "quote": "class Ernie5_5Compressor(DeepseekCompressor):"},
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 156, "line_end": 156, "quote": "\"\"\"Keeps C128 compression in piecewise CUDA graphs (upstream #59709).\"\"\""},
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/attention.py", "line": 164, "line_end": 164, "quote": "metadata[name] = dataclasses.replace(state, c128_boundary=None)"},
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/model.py", "line": 631, "line_end": 631, "quote": "\".compressor.linear_wkv.\": (\".compressor.fused_wkv_wgate.\", 0),"},
+    {"pin": "baidu", "file": "src/vllm_ernie/models/ernie5_5/nvidia/model.py", "line": 632, "line_end": 632, "quote": "\".compressor.linear_wgate.\": (\".compressor.fused_wkv_wgate.\", 1),"}
+   ]
+  },
+  {
+   "id": "k16",
+   "topic": "kernel_constants",
+   "status": "established",
+   "statement": "The CPU kernel hard-codes the production row: head 512 = 448 nope + 64 rope, quant block 64 (7 blocks), 448 maximum, token data 448 + 128 bytes; the shared compressor derives the same numbers from the model config (rope_head_dim from qk_rope_head_dim, nope = head_dim - rope).",
+   "provenance": [
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 49, "line_end": 49, "quote": "constexpr int64_t kNopeDim = 448;"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 51, "line_end": 51, "quote": "constexpr int64_t kHeadDim = kNopeDim + kRopeDim;"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 56, "line_end": 56, "quote": "constexpr float kFp8Max = 448.0f;"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 55, "line_end": 55, "quote": "constexpr int64_t kTokenDataBytes = kNopeDim + kRopeDim * 2;"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 233, "line_end": 233, "quote": "self.nope_head_dim = self.head_dim - self.rope_head_dim"}
+   ]
+  },
+  {
+   "id": "k17",
+   "topic": "weights",
+   "status": "established",
+   "statement": "Checkpoint tensors of the HCA compressor, per HCA layer (37 layers, identical shapes, none in the six DSA layers or the draft layer): core_attention.compressor.ape F32 [128, 512], linear_wkv.weight BF16 [512, 4096], linear_wgate.weight BF16 [512, 4096], norm.weight BF16 [512]. 512 = head_dim at one lane (period 128) and 4096 = hidden_size; a period-4 compressor would need ape [4, 1024] and [1024, 4096] projections, which the checkpoint does not contain. The --verify-headers mode checks all 148 compressor tensors, not only the cited ones.",
+   "provenance": [
+    {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.core_attention.compressor.ape", "dtype": "F32", "shape": [128, 512]},
+    {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.core_attention.compressor.linear_wkv.weight", "dtype": "BF16", "shape": [512, 4096]},
+    {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.core_attention.compressor.linear_wgate.weight", "dtype": "BF16", "shape": [512, 4096]},
+    {"pin": "hf_headers", "file": "model-00001-of-00128.safetensors", "tensor": "model.layers.0.self_attn.core_attention.compressor.norm.weight", "dtype": "BF16", "shape": [512]},
+    {"pin": "hf_headers", "file": "model-00004-of-00128.safetensors", "tensor": "model.layers.1.self_attn.core_attention.compressor.ape", "dtype": "F32", "shape": [128, 512]},
+    {"pin": "hf_headers", "file": "model-00004-of-00128.safetensors", "tensor": "model.layers.1.self_attn.core_attention.compressor.linear_wkv.weight", "dtype": "BF16", "shape": [512, 4096]},
+    {"pin": "hf_headers", "file": "model-00004-of-00128.safetensors", "tensor": "model.layers.1.self_attn.core_attention.compressor.linear_wgate.weight", "dtype": "BF16", "shape": [512, 4096]},
+    {"pin": "hf_headers", "file": "model-00004-of-00128.safetensors", "tensor": "model.layers.1.self_attn.core_attention.compressor.norm.weight", "dtype": "BF16", "shape": [512]},
+    {"pin": "hf_headers", "file": "model-00122-of-00128.safetensors", "tensor": "model.layers.41.self_attn.core_attention.compressor.ape", "dtype": "F32", "shape": [128, 512]},
+    {"pin": "hf_headers", "file": "model-00122-of-00128.safetensors", "tensor": "model.layers.41.self_attn.core_attention.compressor.linear_wkv.weight", "dtype": "BF16", "shape": [512, 4096]},
+    {"pin": "hf_headers", "file": "model-00122-of-00128.safetensors", "tensor": "model.layers.41.self_attn.core_attention.compressor.linear_wgate.weight", "dtype": "BF16", "shape": [512, 4096]},
+    {"pin": "hf_headers", "file": "model-00122-of-00128.safetensors", "tensor": "model.layers.41.self_attn.core_attention.compressor.norm.weight", "dtype": "BF16", "shape": [512]}
+   ]
+  },
+  {
+   "id": "k18",
+   "topic": "state_api",
+   "status": "established",
+   "statement": "Traced cache-state API, one HCA layer: (1) state write per token: state[slot_state[t]] = [kv_t | score_t + APE[pos_t % ratio]] (fp32, skip slot < 0); (2) compress per boundary token: gather rows pos-coff*ratio+1..pos (negative -> masked), per-channel softmax pool, RMSNorm, split nope/rope, store the row at kv_slot_mapping[t] = block_table[(pos//ratio)//block_size]*block_size + (pos//ratio)%block_size (PAD for non-boundary and replayed tokens); (3) read side: the attention of the same layer and step sees compressed rows 0..(pos+1)//ratio-1. The state and the compressed cache are separate caches with separate block tables; the state's page geometry is fixed by page sharing, not by the algorithm.",
+   "provenance": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 377, "line_end": 377, "quote": "token_to_req_indices = state_metadata.token_to_req_indices"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 378, "line_end": 378, "quote": "slot_mapping = state_metadata.slot_mapping"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 399, "line_end": 399, "quote": "_SAVE_PARTIAL_STATES_KERNEL("},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 430, "line_end": 430, "quote": "k_cache_metadata = cast(Any, attn_metadata[self.k_cache_prefix])"},
+    {"pin": "vllm", "file": "vllm/v1/attention/backends/mla/compressor_utils.py", "line": 98, "line_end": 98, "quote": "slot_ids = block_numbers.to(tl.int64) * block_size + ("},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/cpu/cpu_utils.py", "line": 34, "line_end": 34, "quote": "slot = block_num * block_size + offset"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 1235, "line_end": 1235, "quote": "block0_i32 = block_table[req_idx, warp_block_index]"}
+   ]
+  },
+  {
+   "id": "k19",
+   "topic": "numerics",
+   "status": "unresolved",
+   "statement": "Bit-level agreement of the CPU reference kernel (the statement of the compressor used here) with the CUDA CuTeDSL kernel that really runs on NVIDIA. This report resolves the ALGORITHM (same window, boundary, per-channel softmax, fp32 state, RMSNorm form, bf16 round of the nope, scale rule, rope anchor, bf16 rope store: k06-k12) but not the numbers: exp2 with fastmath, a different summation and reduction order and fastmath rsqrt make the fp32 normalised row differ in low bits, and a one-ulp difference can flip a bf16 rounding or an FP8 code at a tie.",
+   "provenance": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 82, "line_end": 82, "quote": "rcp_ln2 = 1.4426950408889634"},
+    {"pin": "vllm", "file": "csrc/cpu/sgl-kernels/compressor.cpp", "line": 323, "line_end": 323, "quote": "fVec e_v = (fVec::loadu(score_row + d) - fVec::loadu(max_v.data() + d)).exp();"}
+   ],
+   "why": "Needs the CuTeDSL kernel to run (NVIDIA, CUTLASS DSL) next to the CPU kernel on the same state rows; neither is available in the reference environment or on the AMD node.",
+   "impact": "Tolerances for the Radiance compressor op must be measured against a stage-rounded reference (this report's fixtures) not against bit-exact CUDA output; the number of FP8 code mismatches versus CUDA stays unknown.",
+   "resolver": {
+    "kind": "runtime-probe",
+    "action": "On an NVIDIA machine run vLLM v0.32.0 _SPARSE_ATTN_COMPRESSOR_CUTEDSL_KERNEL and compress_norm_rope_store_cpu on identical state rows (a synthetic stream of fp32 kv/score rows through save_partial_states at periods 4 and 128) and record the largest relative difference of the pre-quant normalised row and the number of differing FP8 codes and scale bytes; keep the receipt next to this report."
+   }
+  },
+  {
+   "id": "k20",
+   "topic": "cache_dtype",
+   "status": "unresolved",
+   "statement": "Which cache layout Radiance should store for HCA compressed rows (k13: fp8_ds_mla 584 B, full bf16 1024 B, per-tensor fp8). The report measures the synthetic rounding cost of each layout against the fp32 normalised row (see fixtures, scale rule and layout error) and records bf16 full rows as the proposed default for the implementation story, but the accuracy on real compressed rows cannot be measured without activations from the first layers.",
+   "provenance": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/compressor.py", "line": 436, "line_end": 436, "quote": "store_full_kv = self.head_dim == 512 and kv_cache.dtype != torch.uint8"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 1978, "line_end": 1978, "quote": "k_cache_u32.iterator[out_base // Int64(4)] = bf16_packed"}
+   ],
+   "why": "Real compressed rows need hidden states from a running model (kv/score projections of real layers); only weights are available for reading, bounded.",
+   "impact": "Fixes the compressed-row KV group dtype and row width (and whether the 3-4 attention op needs an fp8 dequantiser).",
+   "resolver": {
+    "kind": "design-decision",
+    "action": "Decide in the implementation story 3-3b: default to full bf16 rows (no FP8 error beyond one bf16 rounding), keep fp8_ds_mla behind a layout parameter, and compare both against the fp32 reference on a bounded real-weight group once a hidden-state source for layer 0 exists (3-6)."
+   }
+  },
+  {
+   "id": "k21",
+   "topic": "scale_rule",
+   "status": "unresolved",
+   "statement": "Which FP8 scale-floor rule an AMD or generic target should follow when a nope block's bf16 absmax is at or below 0.02734375 (where the stored exponent byte differs; the scale already differs below 0.0448): the CPU/CuTeDSL rule (scale floored at 1e-4) or the Triton rule (absmax floored at 1e-4). The pinned CUDA path (CuTeDSL) and the CPU kernel agree, so this report's reference uses that rule; the Triton rule is recorded as a variant (k10). Whether any real compressed block falls below the threshold is unmeasured.",
+   "provenance": [
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/common/ops/fused_compress_quant_cache.py", "line": 284, "line_end": 284, "quote": "block_absmax = tl.maximum(block_absmax, 1e-4)"},
+    {"pin": "vllm", "file": "vllm/models/deepseek_v4/nvidia/ops/sparse_attn_compress_cutedsl.py", "line": 81, "line_end": 81, "quote": "min_scale = 1.0e-4"}
+   ],
+   "why": "Real compressed rows need hidden states from a running model. A bounded probe of compressor.norm.weight of layers 0, 1 and 41 (1 KiB each, no other tensor data) gives a per-block minimum |weight| of 0.71 to 1.20 over the seven nope blocks, so a unit-RMS row falls to or below 0.02734375 in a block only if it is nearly zero there; this is a plausibility bound, not a measurement.",
+   "impact": "Only matters when the FP8 (fp8_ds_mla) layout is chosen; with the full bf16 row (k20 default) there is no scale at all.",
+   "resolver": {
+    "kind": "runtime-probe",
+    "action": "With real hidden states (a short prompt through the first HCA layers once the checkpoint runs, story 3-6) form compressed rows and count nope blocks whose bf16 absmax is at or below 0.02734375 and below 0.0448; if none occurs on real rows the two scale rules coincide for this checkpoint and the Triton variant needs no separate parity fixture."
+   }
+  },
+  {
+   "id": "k22",
+   "topic": "yarn_branch",
+   "status": "unresolved",
+   "statement": "Inherited from the attention audit (h12): whether the YaRN branch of the rope scaling is taken for the pinned config (its rope_scaling object uses the key 'type', the vLLM reader looks for 'rope_type'). The compressed rows' rope uses the cos/sin cache of the HCA layer, so the absolute rotation angles of compressed rows inherit this open item; this report's fixtures use plain RoPE and prove only the anchoring (group start), not the angle values.",
+   "provenance": [
+    {"pin": "hf_config", "file": "config.json", "line": 122, "line_end": 122, "quote": "\"type\": \"yarn\""}
+   ],
+   "why": "Depends on the transformers version's handling of rope_scaling outside the pinned files.",
+   "impact": "Compressed-row rope angles (theta 160000, factor 16) could differ from the YaRN-scaled ones; the anchor positions do not change.",
+   "resolver": {
+    "kind": "source-read",
+    "action": "Resolve h12 of docs/ernie55/attention-reference.json: probe Ernie5_5Config rope_parameters under the transformers version pinned by vLLM v0.32.0 and record whether rope_type resolves to deepseek_yarn; then the cos/sin cache of the compressed rows follows."
+   }
+  }
+ ],
+ "resolves_3_7": {
+  "h21": "split: the algorithm-level agreement CPU kernel / CuTeDSL / Triton is established (k06-k12); the bit-level agreement stays open as k19",
+  "h23": "narrowed to the layout decision k20 with synthetic measurements in the fixtures; default proposed for 3-3b",
+  "h12": "carried unchanged as the unresolved fact k22 (whether the YaRN branch of the rope scaling is taken)"
+ },
+ "fixtures": [
+  {
+   "id": "chunk_invariance_period4",
+   "topic": "group_completion",
+   "spec": {
+    "ratio": 4,
+    "head_dim": 16,
+    "rope_dim": 4,
+    "quant_block": 4,
+    "eps": 1e-06,
+    "theta": 10000.0,
+    "tokens": 23,
+    "seed_kv": 11,
+    "seed_score": 12,
+    "seed_ape": 13,
+    "seed_norm": 14
+   },
+   "generator": "Park-Miller minstd (s = s*48271 mod 2147483647, u = s/2147483647); kv=(u-.5)*4, score=(u-.5)*6, ape=(u-.5)*2, norm=bf16(.5+u), each rounded to fp32, order: kv rows, score rows, ape rows, norm; seeds in spec",
+   "complete_groups": 5,
+   "incomplete_tail_tokens": 3,
+   "partitions": {
+    "one_shot": {
+     "partition": [23],
+     "rows_identical_to_one_shot": true,
+     "progress": [
+      {
+       "start": 0,
+       "qlen": 23,
+       "visible_groups_after": 5,
+       "completed_here": [0, 1, 2, 3, 4],
+       "state_rows_after": 7
+      }
+     ]
+    },
+    "irregular": {
+     "partition": [1, 2, 5, 3, 7, 5],
+     "rows_identical_to_one_shot": true,
+     "progress": [
+      {
+       "start": 0,
+       "qlen": 1,
+       "visible_groups_after": 0,
+       "completed_here": [],
+       "state_rows_after": 1
+      },
+      {
+       "start": 1,
+       "qlen": 2,
+       "visible_groups_after": 0,
+       "completed_here": [],
+       "state_rows_after": 3
+      },
+      {
+       "start": 3,
+       "qlen": 5,
+       "visible_groups_after": 2,
+       "completed_here": [0, 1],
+       "state_rows_after": 7
+      },
+      {
+       "start": 8,
+       "qlen": 3,
+       "visible_groups_after": 2,
+       "completed_here": [],
+       "state_rows_after": 7
+      },
+      {
+       "start": 11,
+       "qlen": 7,
+       "visible_groups_after": 4,
+       "completed_here": [2, 3],
+       "state_rows_after": 7
+      },
+      {
+       "start": 18,
+       "qlen": 5,
+       "visible_groups_after": 5,
+       "completed_here": [4],
+       "state_rows_after": 7
+      }
+     ]
+    },
+    "decode": {
+     "partition": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+     "rows_identical_to_one_shot": true,
+     "progress": [
+      {
+       "start": 0,
+       "qlen": 1,
+       "visible_groups_after": 0,
+       "completed_here": [],
+       "state_rows_after": 1
+      },
+      {
+       "start": 1,
+       "qlen": 1,
+       "visible_groups_after": 0,
+       "completed_here": [],
+       "state_rows_after": 2
+      },
+      {
+       "start": 2,
+       "qlen": 1,
+       "visible_groups_after": 0,
+       "completed_here": [],
+       "state_rows_after": 3
+      },
+      {
+       "start": 3,
+       "qlen": 1,
+       "visible_groups_after": 1,
+       "completed_here": [0],
+       "state_rows_after": 4
+      },
+      {
+       "start": 4,
+       "qlen": 1,
+       "visible_groups_after": 1,
+       "completed_here": [],
+       "state_rows_after": 5
+      },
+      {
+       "start": 5,
+       "qlen": 1,
+       "visible_groups_after": 1,
+       "completed_here": [],
+       "state_rows_after": 6
+      },
+      {
+       "start": 6,
+       "qlen": 1,
+       "visible_groups_after": 1,
+       "completed_here": [],
+       "state_rows_after": 7
+      },
+      {
+       "start": 7,
+       "qlen": 1,
+       "visible_groups_after": 2,
+       "completed_here": [1],
+       "state_rows_after": 7
+      },
+      {
+       "start": 8,
+       "qlen": 1,
+       "visible_groups_after": 2,
+       "completed_here": [],
+       "state_rows_after": 7
+      },
+      {
+       "start": 9,
+       "qlen": 1,
+       "visible_groups_after": 2,
+       "completed_here": [],
+       "state_rows_after": 7
+      },
+      {
+       "start": 10,
+       "qlen": 1,
+       "visible_groups_after": 2,
+       "completed_here": [],
+       "state_rows_after": 7
+      },
+      {
+       "start": 11,
+       "qlen": 1,
+       "visible_groups_after": 3,
+       "completed_here": [2],
+       "state_rows_after": 7
+      },
+      {
+       "start": 12,
+       "qlen": 1,
+       "visible_groups_after": 3,
+       "completed_here": [],
+       "state_rows_after": 7
+      },
+      {
+       "start": 13,
+       "qlen": 1,
+       "visible_groups_after": 3,
+       "completed_here": [],
+       "state_rows_after": 7
+      },
+      {
+       "start": 14,
+       "qlen": 1,
+       "visible_groups_after": 3,
+       "completed_here": [],
+       "state_rows_after": 7
+      },
+      {
+       "start": 15,
+       "qlen": 1,
+       "visible_groups_after": 4,
+       "completed_here": [3],
+       "state_rows_after": 7
+      },
+      {
+       "start": 16,
+       "qlen": 1,
+       "visible_groups_after": 4,
+       "completed_here": [],
+       "state_rows_after": 7
+      },
+      {
+       "start": 17,
+       "qlen": 1,
+       "visible_groups_after": 4,
+       "completed_here": [],
+       "state_rows_after": 7
+      },
+      {
+       "start": 18,
+       "qlen": 1,
+       "visible_groups_after": 4,
+       "completed_here": [],
+       "state_rows_after": 7
+      },
+      {
+       "start": 19,
+       "qlen": 1,
+       "visible_groups_after": 5,
+       "completed_here": [4],
+       "state_rows_after": 7
+      },
+      {
+       "start": 20,
+       "qlen": 1,
+       "visible_groups_after": 5,
+       "completed_here": [],
+       "state_rows_after": 7
+      },
+      {
+       "start": 21,
+       "qlen": 1,
+       "visible_groups_after": 5,
+       "completed_here": [],
+       "state_rows_after": 7
+      },
+      {
+       "start": 22,
+       "qlen": 1,
+       "visible_groups_after": 5,
+       "completed_here": [],
+       "state_rows_after": 7
+      }
+     ]
+    },
+    "split_group": {
+     "partition": [2, 6, 15],
+     "rows_identical_to_one_shot": true,
+     "progress": [
+      {
+       "start": 0,
+       "qlen": 2,
+       "visible_groups_after": 0,
+       "completed_here": [],
+       "state_rows_after": 2
+      },
+      {
+       "start": 2,
+       "qlen": 6,
+       "visible_groups_after": 2,
+       "completed_here": [0, 1],
+       "state_rows_after": 7
+      },
+      {
+       "start": 8,
+       "qlen": 15,
+       "visible_groups_after": 5,
+       "completed_here": [2, 3, 4],
+       "state_rows_after": 7
+      }
+     ]
+    }
+   },
+   "all_partitions_identical": true,
+   "tail_perturbation_leaves_rows_unchanged": true,
+   "dropped_state_changes_rows": true,
+   "pruning_one_row_too_many_changes_rows": true,
+   "rows": [
+    {
+     "group": 0,
+     "position": 3,
+     "anchor_position": 0,
+     "pooled": [
+      -0.156681225,
+      1.40457559,
+      1.31615937,
+      0.554930389,
+      -0.558349073,
+      -0.493202895,
+      0.0955911651,
+      -0.82901144,
+      1.000543,
+      0.156852812,
+      1.65600204,
+      1.63205886,
+      0.877735913,
+      -0.782918572,
+      -1.1103512,
+      0.263168305
+     ],
+     "normed": [
+      -0.0825605169,
+      1.02344346,
+      1.27327383,
+      0.575684488,
+      -0.620604634,
+      -0.600983858,
+      0.0716200471,
+      -0.93509686,
+      1.24390769,
+      0.150450528,
+      1.31572056,
+      2.31121182,
+      0.603428543,
+      -0.686501801,
+      -0.918759704,
+      0.184173867
+     ],
+     "nope_scale_bytes": [119, 119, 120],
+     "nope_codes": [219, 120, 122, 113, 242, 242, 89, 247, 114, 90, 114, 121],
+     "rope_bf16": [0.6015625, -0.6875, -0.91796875, 0.184570312],
+     "bf16_full": [
+      -0.0825195312,
+      1.0234375,
+      1.2734375,
+      0.57421875,
+      -0.62109375,
+      -0.6015625,
+      0.0717773438,
+      -0.93359375,
+      1.2421875,
+      0.150390625,
+      1.3125,
+      2.3125,
+      0.6015625,
+      -0.6875,
+      -0.91796875,
+      0.184570312
+     ]
+    },
+    {
+     "group": 1,
+     "position": 7,
+     "anchor_position": 4,
+     "pooled": [
+      -0.906831384,
+      -0.0863668844,
+      -1.20025074,
+      1.22194564,
+      -0.505032122,
+      0.70535773,
+      -1.05427623,
+      -0.936093926,
+      -0.330949783,
+      -0.165198624,
+      -0.573239148,
+      -0.239486054,
+      -0.81219542,
+      -0.0509282872,
+      0.858839154,
+      0.522945106
+     ],
+     "normed": [
+      -0.614888012,
+      -0.0809804276,
+      -1.4941678,
+      1.63121784,
+      -0.722341061,
+      1.10601413,
+      -1.01644838,
+      -1.35871863,
+      -0.52945441,
+      -0.203902185,
+      -0.586074293,
+      -0.436413527,
+      -0.718516171,
+      -0.057464309,
+      0.914465725,
+      0.470938891
+     ],
+     "nope_scale_bytes": [119, 119, 118],
+     "nope_codes": [242, 218, 252, 125, 244, 121, 248, 251, 248, 237, 249, 246],
+     "rope_bf16": [0.42578125, 0.58203125, 0.89453125, 0.5078125],
+     "bf16_full": [
+      -0.61328125,
+      -0.0810546875,
+      -1.4921875,
+      1.6328125,
+      -0.72265625,
+      1.109375,
+      -1.015625,
+      -1.359375,
+      -0.53125,
+      -0.204101562,
+      -0.5859375,
+      -0.435546875,
+      0.42578125,
+      0.58203125,
+      0.89453125,
+      0.5078125
+     ]
+    },
+    {
+     "group": 2,
+     "position": 11,
+     "anchor_position": 8,
+     "pooled": [
+      -0.130731225,
+      0.274674416,
+      -1.25203311,
+      -0.246045858,
+      -1.17405331,
+      -0.316107512,
+      0.58533752,
+      0.141300201,
+      0.0827068985,
+      -0.855063021,
+      0.558992267,
+      0.544166088,
+      -0.936805189,
+      -0.175038934,
+      0.03682236,
+      -0.917308569
+     ],
+     "normed": [
+      -0.101320684,
+      0.294374555,
+      -1.7815274,
+      -0.375426918,
+      -1.91937757,
+      -0.566546202,
+      0.645039916,
+      0.234424055,
+      0.151236817,
+      -1.206321,
+      0.653238773,
+      1.13344049,
+      -0.947271705,
+      -0.22574757,
+      0.0448142886,
+      -0.944219947
+     ],
+     "nope_scale_bytes": [120, 120, 119],
+     "nope_codes": [213, 97, 246, 228, 247, 233, 106, 95, 98, 250, 114, 121],
+     "rope_bf16": [0.361328125, -0.90625, 0.120117188, -0.9375],
+     "bf16_full": [
+      -0.1015625,
+      0.294921875,
+      -1.78125,
+      -0.375,
+      -1.921875,
+      -0.56640625,
+      0.64453125,
+      0.234375,
+      0.151367188,
+      -1.203125,
+      0.65234375,
+      1.1328125,
+      0.361328125,
+      -0.90625,
+      0.120117188,
+      -0.9375
+     ]
+    },
+    {
+     "group": 3,
+     "position": 15,
+     "anchor_position": 12,
+     "pooled": [
+      -0.0864192769,
+      -0.257292509,
+      0.108004093,
+      -0.884652317,
+      0.391542315,
+      -0.0394449644,
+      -1.01316714,
+      0.0308042932,
+      1.01131094,
+      0.985005319,
+      -0.838226914,
+      -0.0174926482,
+      -1.20850861,
+      0.966111481,
+      -1.074736,
+      0.0795978829
+     ],
+     "normed": [
+      -0.0599878989,
+      -0.246969566,
+      0.137642041,
+      -1.20897186,
+      0.573304713,
+      -0.0633178726,
+      -0.999989688,
+      0.0457725227,
+      1.6562835,
+      1.24462223,
+      -0.877327859,
+      -0.0326330028,
+      -1.09448361,
+      1.11596322,
+      -1.17149627,
+      0.0733826682
+     ],
+     "nope_scale_bytes": [119, 119, 119],
+     "nope_codes": [215, 232, 97, 250, 113, 216, 248, 84, 125, 122, 246, 208],
+     "rope_bf16": [-0.32421875, 1.53125, -1.171875, -0.0673828125],
+     "bf16_full": [
+      -0.0600585938,
+      -0.247070312,
+      0.137695312,
+      -1.2109375,
+      0.57421875,
+      -0.0634765625,
+      -1.0,
+      0.0456542969,
+      1.65625,
+      1.2421875,
+      -0.87890625,
+      -0.0327148438,
+      -0.32421875,
+      1.53125,
+      -1.171875,
+      -0.0673828125
+     ]
+    },
+    {
+     "group": 4,
+     "position": 19,
+     "anchor_position": 16,
+     "pooled": [
+      0.0113430256,
+      -0.162905172,
+      0.333360761,
+      -0.649980128,
+      -0.264859349,
+      -0.818479061,
+      0.552719712,
+      -0.0643480271,
+      0.769447625,
+      0.904292226,
+      -0.0213111732,
+      0.259539127,
+      0.183415115,
+      0.7658723,
+      0.0575275607,
+      -0.264826685
+     ],
+     "normed": [
+      0.0116665363,
+      -0.231692091,
+      0.629485011,
+      -1.31614482,
+      -0.574621856,
+      -1.946715,
+      0.808312714,
+      -0.14167358,
+      1.86719239,
+      1.69304216,
+      -0.0330497138,
+      0.717404902,
+      0.246124387,
+      1.31080782,
+      0.0929127038,
+      -0.361754328
+     ],
+     "nope_scale_bytes": [119, 120, 120],
+     "nope_codes": [68, 231, 114, 250, 233, 248, 109, 217, 119, 118, 200, 108],
+     "rope_bf16": [0.141601562, -1.328125, 0.149414062, -0.341796875],
+     "bf16_full": [
+      0.0116577148,
+      -0.231445312,
+      0.62890625,
+      -1.3125,
+      -0.57421875,
+      -1.9453125,
+      0.80859375,
+      -0.141601562,
+      1.8671875,
+      1.6953125,
+      -0.0329589844,
+      0.71875,
+      0.141601562,
+      -1.328125,
+      0.149414062,
+      -0.341796875
+     ]
+    }
+   ]
+  },
+  {
+   "id": "chunk_invariance_period128",
+   "topic": "group_completion",
+   "spec": {
+    "ratio": 128,
+    "head_dim": 16,
+    "rope_dim": 4,
+    "quant_block": 4,
+    "eps": 1e-06,
+    "theta": 10000.0,
+    "tokens": 300,
+    "seed_kv": 21,
+    "seed_score": 22,
+    "seed_ape": 23,
+    "seed_norm": 24
+   },
+   "generator": "Park-Miller minstd (s = s*48271 mod 2147483647, u = s/2147483647); kv=(u-.5)*4, score=(u-.5)*6, ape=(u-.5)*2, norm=bf16(.5+u), each rounded to fp32, order: kv rows, score rows, ape rows, norm; seeds in spec",
+   "complete_groups": 2,
+   "incomplete_tail_tokens": 44,
+   "partitions": {
+    "one_shot": {
+     "partition": [300],
+     "rows_identical_to_one_shot": true,
+     "progress": [
+      {
+       "start": 0,
+       "qlen": 300,
+       "visible_groups_after": 2,
+       "completed_here": [0, 1],
+       "state_rows_after": 127
+      }
+     ]
+    },
+    "irregular": {
+     "partition": [100, 27, 1, 128, 44],
+     "rows_identical_to_one_shot": true,
+     "progress": [
+      {
+       "start": 0,
+       "qlen": 100,
+       "visible_groups_after": 0,
+       "completed_here": [],
+       "state_rows_after": 100
+      },
+      {
+       "start": 100,
+       "qlen": 27,
+       "visible_groups_after": 0,
+       "completed_here": [],
+       "state_rows_after": 127
+      },
+      {
+       "start": 127,
+       "qlen": 1,
+       "visible_groups_after": 1,
+       "completed_here": [0],
+       "state_rows_after": 127
+      },
+      {
+       "start": 128,
+       "qlen": 128,
+       "visible_groups_after": 2,
+       "completed_here": [1],
+       "state_rows_after": 127
+      },
+      {
+       "start": 256,
+       "qlen": 44,
+       "visible_groups_after": 2,
+       "completed_here": [],
+       "state_rows_after": 127
+      }
+     ]
+    },
+    "split_at_boundary": {
+     "partition": [127, 1, 172],
+     "rows_identical_to_one_shot": true,
+     "progress": [
+      {
+       "start": 0,
+       "qlen": 127,
+       "visible_groups_after": 0,
+       "completed_here": [],
+       "state_rows_after": 127
+      },
+      {
+       "start": 127,
+       "qlen": 1,
+       "visible_groups_after": 1,
+       "completed_here": [0],
+       "state_rows_after": 127
+      },
+      {
+       "start": 128,
+       "qlen": 172,
+       "visible_groups_after": 2,
+       "completed_here": [1],
+       "state_rows_after": 127
+      }
+     ]
+    },
+    "lopsided": {
+     "partition": [255, 45],
+     "rows_identical_to_one_shot": true,
+     "progress": [
+      {
+       "start": 0,
+       "qlen": 255,
+       "visible_groups_after": 1,
+       "completed_here": [0],
+       "state_rows_after": 127
+      },
+      {
+       "start": 255,
+       "qlen": 45,
+       "visible_groups_after": 2,
+       "completed_here": [1],
+       "state_rows_after": 127
+      }
+     ]
+    }
+   },
+   "all_partitions_identical": true,
+   "tail_perturbation_leaves_rows_unchanged": true,
+   "dropped_state_changes_rows": true,
+   "pruning_one_row_too_many_changes_rows": true,
+   "rows": [
+    {
+     "group": 0,
+     "position": 127,
+     "anchor_position": 0,
+     "pooled": [
+      0.194088325,
+      0.262489289,
+      0.0580295399,
+      0.027155865,
+      -0.376915485,
+      -0.37972343,
+      0.414950669,
+      0.121418566,
+      -0.233601049,
+      -0.128794298,
+      -0.271639109,
+      0.00353801926,
+      0.333916426,
+      -0.230614319,
+      -0.0522011109,
+      0.202932224
+     ],
+     "normed": [
+      0.400924057,
+      0.584579289,
+      0.223820448,
+      0.100796215,
+      -1.13746572,
+      -1.65456522,
+      1.47323453,
+      0.529055893,
+      -0.780365169,
+      -0.715002894,
+      -0.727701247,
+      0.0138745597,
+      2.03695917,
+      -0.885759771,
+      -0.152479351,
+      0.654988587
+     ],
+     "nope_scale_bytes": [118, 119, 118],
+     "nope_codes": [117, 121, 110, 101, 249, 253, 124, 112, 252, 251, 252, 78],
+     "rope_bf16": [2.03125, -0.88671875, -0.15234375, 0.65625],
+     "bf16_full": [
+      0.400390625,
+      0.5859375,
+      0.223632812,
+      0.100585938,
+      -1.140625,
+      -1.65625,
+      1.4765625,
+      0.52734375,
+      -0.78125,
+      -0.71484375,
+      -0.7265625,
+      0.0138549805,
+      2.03125,
+      -0.88671875,
+      -0.15234375,
+      0.65625
+     ]
+    },
+    {
+     "group": 1,
+     "position": 255,
+     "anchor_position": 128,
+     "pooled": [
+      -0.429738313,
+      -0.164547518,
+      0.0107785249,
+      -0.0734362826,
+      -0.0633108988,
+      -0.0468367599,
+      0.0884567872,
+      -0.0715107173,
+      0.0138937579,
+      -0.166307464,
+      -0.00337900198,
+      -0.275271833,
+      -0.0779634416,
+      -0.23410964,
+      -0.0262228362,
+      -0.0345226377
+     ],
+     "normed": [
+      -1.35418916,
+      -0.559030771,
+      0.0634194538,
+      -0.415818512,
+      -0.291464299,
+      -0.311326355,
+      0.47909224,
+      -0.475335419,
+      0.0708035976,
+      -1.4084307,
+      -0.0138089871,
+      -1.64677143,
+      -0.725517809,
+      -1.37170756,
+      -0.116848603,
+      -0.169980556
+     ],
+     "nope_scale_bytes": [119, 118, 119],
+     "nope_codes": [251, 241, 88, 237, 241, 242, 119, 247, 89, 251, 198, 253],
+     "rope_bf16": [1.4921875, 0.427734375, 0.12890625, -0.161132812],
+     "bf16_full": [
+      -1.3515625,
+      -0.55859375,
+      0.0634765625,
+      -0.416015625,
+      -0.291015625,
+      -0.310546875,
+      0.478515625,
+      -0.474609375,
+      0.0708007812,
+      -1.40625,
+      -0.0137939453,
+      -1.6484375,
+      1.4921875,
+      0.427734375,
+      0.12890625,
+      -0.161132812
+     ]
+    }
+   ]
+  },
+  {
+   "id": "anchor_contrast_period4",
+   "topic": "anchoring",
+   "statement": "the rope part of group g is rotated at position g*ratio (group start); anchoring at the completing token or at the next start gives different rope values for every group except where the angle is zero",
+   "anchors": [
+    {
+     "group": 0,
+     "anchor_position": 0,
+     "completing_position": 3
+    },
+    {
+     "group": 1,
+     "anchor_position": 4,
+     "completing_position": 7
+    },
+    {
+     "group": 2,
+     "anchor_position": 8,
+     "completing_position": 11
+    },
+    {
+     "group": 3,
+     "anchor_position": 12,
+     "completing_position": 15
+    },
+    {
+     "group": 4,
+     "anchor_position": 16,
+     "completing_position": 19
+    }
+   ],
+   "differs_when_anchored_at_end": [true, true, true, true, true],
+   "differs_when_anchored_at_next_start": [true, true, true, true, true],
+   "rope_bf16_by_group": [
+    [0.6015625, -0.6875, -0.91796875, 0.184570312],
+    [0.42578125, 0.58203125, 0.89453125, 0.5078125],
+    [0.361328125, -0.90625, 0.120117188, -0.9375],
+    [-0.32421875, 1.53125, -1.171875, -0.0673828125],
+    [0.141601562, -1.328125, 0.149414062, -0.341796875]
+   ]
+  },
+  {
+   "id": "scale_rule",
+   "topic": "nope_quant",
+   "threshold_absmax": 0.0448,
+   "exponent_differs_at_or_below_absmax": 0.02734375,
+   "rule_a": "CPU kernel and CuTeDSL: scale = max(absmax/448, 1e-4); exponent = ceil(log2(scale)); byte = exponent + 127",
+   "rule_b": "Triton: scale = max(absmax, 1e-4)/448; exponent = ceil(log2(scale))",
+   "rows": [
+    {
+     "absmax_bf16": 0.000999450684,
+     "scale_floor_exponent": -13,
+     "absmax_floor_exponent": -18,
+     "rules_agree": false,
+     "scale_byte": 114
+    },
+    {
+     "absmax_bf16": 0.0100097656,
+     "scale_floor_exponent": -13,
+     "absmax_floor_exponent": -15,
+     "rules_agree": false,
+     "scale_byte": 114
+    },
+    {
+     "absmax_bf16": 0.0200195312,
+     "scale_floor_exponent": -13,
+     "absmax_floor_exponent": -14,
+     "rules_agree": false,
+     "scale_byte": 114
+    },
+    {
+     "absmax_bf16": 0.0300292969,
+     "scale_floor_exponent": -13,
+     "absmax_floor_exponent": -13,
+     "rules_agree": true,
+     "scale_byte": 114
+    },
+    {
+     "absmax_bf16": 0.044921875,
+     "scale_floor_exponent": -13,
+     "absmax_floor_exponent": -13,
+     "rules_agree": true,
+     "scale_byte": 114
+    },
+    {
+     "absmax_bf16": 0.0500488281,
+     "scale_floor_exponent": -13,
+     "absmax_floor_exponent": -13,
+     "rules_agree": true,
+     "scale_byte": 114
+    },
+    {
+     "absmax_bf16": 0.5,
+     "scale_floor_exponent": -9,
+     "absmax_floor_exponent": -9,
+     "rules_agree": true,
+     "scale_byte": 118
+    },
+    {
+     "absmax_bf16": 1.0,
+     "scale_floor_exponent": -8,
+     "absmax_floor_exponent": -8,
+     "rules_agree": true,
+     "scale_byte": 119
+    },
+    {
+     "absmax_bf16": 100.0,
+     "scale_floor_exponent": -2,
+     "absmax_floor_exponent": -2,
+     "rules_agree": true,
+     "scale_byte": 125
+    },
+    {
+     "absmax_bf16": 448.0,
+     "scale_floor_exponent": 0,
+     "absmax_floor_exponent": 0,
+     "rules_agree": true,
+     "scale_byte": 127
+    },
+    {
+     "absmax_bf16": 448.0,
+     "scale_floor_exponent": 0,
+     "absmax_floor_exponent": 0,
+     "rules_agree": true,
+     "scale_byte": 127
+    },
+    {
+     "absmax_bf16": 448.0,
+     "scale_floor_exponent": 0,
+     "absmax_floor_exponent": 0,
+     "rules_agree": true,
+     "scale_byte": 127
+    },
+    {
+     "absmax_bf16": 1000.0,
+     "scale_floor_exponent": 2,
+     "absmax_floor_exponent": 2,
+     "rules_agree": true,
+     "scale_byte": 129
+    }
+   ]
+  },
+  {
+   "id": "fp8_e4m3_rounding",
+   "topic": "nope_quant",
+   "statement": "round to nearest, ties to the even code, subnormals kept, clamp to +-448; code 0x7F (NaN) never produced",
+   "rows": [
+    {
+     "input": 0.0,
+     "code": 0,
+     "decoded": 0.0
+    },
+    {
+     "input": 1.0,
+     "code": 56,
+     "decoded": 1.0
+    },
+    {
+     "input": 1.0625,
+     "code": 56,
+     "decoded": 1.0
+    },
+    {
+     "input": 1.1875,
+     "code": 58,
+     "decoded": 1.25
+    },
+    {
+     "input": 0.001953125,
+     "code": 1,
+     "decoded": 0.001953125
+    },
+    {
+     "input": 0.0009765625,
+     "code": 0,
+     "decoded": 0.0
+    },
+    {
+     "input": 0.0029296875,
+     "code": 2,
+     "decoded": 0.00390625
+    },
+    {
+     "input": 0.015625,
+     "code": 8,
+     "decoded": 0.015625
+    },
+    {
+     "input": 17.0,
+     "code": 88,
+     "decoded": 16.0
+    },
+    {
+     "input": 447.0,
+     "code": 126,
+     "decoded": 448.0
+    },
+    {
+     "input": 448.0,
+     "code": 126,
+     "decoded": 448.0
+    },
+    {
+     "input": 460.0,
+     "code": 126,
+     "decoded": 448.0
+    },
+    {
+     "input": 1000.0,
+     "code": 126,
+     "decoded": 448.0
+    },
+    {
+     "input": -1.0625,
+     "code": 184,
+     "decoded": -1.0
+    },
+    {
+     "input": -448.0,
+     "code": 254,
+     "decoded": -448.0
+    },
+    {
+     "input": -0.3,
+     "code": 170,
+     "decoded": -0.3125
+    }
+   ]
+  },
+  {
+   "id": "layout_error",
+   "topic": "cache_dtype",
+   "rows": 32,
+   "head_dim": 512,
+   "rope_dim": 64,
+   "quant_block": 64,
+   "statement": "relative L2 error against the fp32 normalised row on synthetic unit-RMS rows; the rope channels cost one bf16 rounding in every layout",
+   "rel_l2": {
+    "fp8_nope": 0.0266098793,
+    "bf16_nope": 0.00166745003,
+    "bf16_rope": 0.00170991195
+   },
+   "layouts": {
+    "fp8_ds_mla_nope": 0.0266098793,
+    "bf16_full_nope": 0.00166745003,
+    "rope_bf16": 0.00170991195
+   },
+   "ratio_fp8_over_bf16_nope": 15.9584268,
+   "unmeasured": "per-tensor fp8 full row (needs the fp8_scale of a running model)"
+  }
+ ],
+ "unresolved": [
+  {
+   "id": "k19",
+   "statement": "Bit-level agreement of the CPU reference kernel (the statement of the compressor used here) with the CUDA CuTeDSL kernel that really runs on NVIDIA. This report resolves the ALGORITHM (same window, boundary, per-channel softmax, fp32 state, RMSNorm form, bf16 round of the nope, scale rule, rope anchor, bf16 rope store: k06-k12) but not the numbers: exp2 with fastmath, a different summation and reduction order and fastmath rsqrt make the fp32 normalised row differ in low bits, and a one-ulp difference can flip a bf16 rounding or an FP8 code at a tie.",
+   "why": "Needs the CuTeDSL kernel to run (NVIDIA, CUTLASS DSL) next to the CPU kernel on the same state rows; neither is available in the reference environment or on the AMD node.",
+   "impact": "Tolerances for the Radiance compressor op must be measured against a stage-rounded reference (this report's fixtures) not against bit-exact CUDA output; the number of FP8 code mismatches versus CUDA stays unknown.",
+   "resolver": {
+    "kind": "runtime-probe",
+    "action": "On an NVIDIA machine run vLLM v0.32.0 _SPARSE_ATTN_COMPRESSOR_CUTEDSL_KERNEL and compress_norm_rope_store_cpu on identical state rows (a synthetic stream of fp32 kv/score rows through save_partial_states at periods 4 and 128) and record the largest relative difference of the pre-quant normalised row and the number of differing FP8 codes and scale bytes; keep the receipt next to this report."
+   }
+  },
+  {
+   "id": "k20",
+   "statement": "Which cache layout Radiance should store for HCA compressed rows (k13: fp8_ds_mla 584 B, full bf16 1024 B, per-tensor fp8). The report measures the synthetic rounding cost of each layout against the fp32 normalised row (see fixtures, scale rule and layout error) and records bf16 full rows as the proposed default for the implementation story, but the accuracy on real compressed rows cannot be measured without activations from the first layers.",
+   "why": "Real compressed rows need hidden states from a running model (kv/score projections of real layers); only weights are available for reading, bounded.",
+   "impact": "Fixes the compressed-row KV group dtype and row width (and whether the 3-4 attention op needs an fp8 dequantiser).",
+   "resolver": {
+    "kind": "design-decision",
+    "action": "Decide in the implementation story 3-3b: default to full bf16 rows (no FP8 error beyond one bf16 rounding), keep fp8_ds_mla behind a layout parameter, and compare both against the fp32 reference on a bounded real-weight group once a hidden-state source for layer 0 exists (3-6)."
+   }
+  },
+  {
+   "id": "k21",
+   "statement": "Which FP8 scale-floor rule an AMD or generic target should follow when a nope block's bf16 absmax is at or below 0.02734375 (where the stored exponent byte differs; the scale already differs below 0.0448): the CPU/CuTeDSL rule (scale floored at 1e-4) or the Triton rule (absmax floored at 1e-4). The pinned CUDA path (CuTeDSL) and the CPU kernel agree, so this report's reference uses that rule; the Triton rule is recorded as a variant (k10). Whether any real compressed block falls below the threshold is unmeasured.",
+   "why": "Real compressed rows need hidden states from a running model. A bounded probe of compressor.norm.weight of layers 0, 1 and 41 (1 KiB each, no other tensor data) gives a per-block minimum |weight| of 0.71 to 1.20 over the seven nope blocks, so a unit-RMS row falls to or below 0.02734375 in a block only if it is nearly zero there; this is a plausibility bound, not a measurement.",
+   "impact": "Only matters when the FP8 (fp8_ds_mla) layout is chosen; with the full bf16 row (k20 default) there is no scale at all.",
+   "resolver": {
+    "kind": "runtime-probe",
+    "action": "With real hidden states (a short prompt through the first HCA layers once the checkpoint runs, story 3-6) form compressed rows and count nope blocks whose bf16 absmax is at or below 0.02734375 and below 0.0448; if none occurs on real rows the two scale rules coincide for this checkpoint and the Triton variant needs no separate parity fixture."
+   }
+  },
+  {
+   "id": "k22",
+   "statement": "Inherited from the attention audit (h12): whether the YaRN branch of the rope scaling is taken for the pinned config (its rope_scaling object uses the key 'type', the vLLM reader looks for 'rope_type'). The compressed rows' rope uses the cos/sin cache of the HCA layer, so the absolute rotation angles of compressed rows inherit this open item; this report's fixtures use plain RoPE and prove only the anchoring (group start), not the angle values.",
+   "why": "Depends on the transformers version's handling of rope_scaling outside the pinned files.",
+   "impact": "Compressed-row rope angles (theta 160000, factor 16) could differ from the YaRN-scaled ones; the anchor positions do not change.",
+   "resolver": {
+    "kind": "source-read",
+    "action": "Resolve h12 of docs/ernie55/attention-reference.json: probe Ernie5_5Config rope_parameters under the transformers version pinned by vLLM v0.32.0 and record whether rope_type resolves to deepseek_yarn; then the cos/sin cache of the compressed rows follows."
+   }
+  }
+ ]
+}

@@ -1,0 +1,99 @@
+{
+ "schema": "ernie55-iqr-v4-memory-plan/1",
+ "model": {
+  "total_bytes": 155270193428,
+  "total_gib": 144.6066363044083,
+  "experts_bytes": 143387037696,
+  "experts_gib": 133.5395851135254,
+  "nonexpert_bytes": 11883155732,
+  "nonexpert_gib": 11.067051190882921,
+  "per_expert_mib": 6.211143493652344,
+  "source": "docs/ernie55/iqr-v4-layers.json (measured per-class bytes x checkpoint counts)"
+ },
+ "kv": {
+  "per_token_bytes": 9284.0,
+  "mla_layers": 7,
+  "hca_layers": 37,
+  "gib_one_sequence_by_context": {
+   "131072": 1.138,
+   "262144": 2.271,
+   "1048576": 9.071
+  }
+ },
+ "scenarios": [
+  {
+   "id": "tp8_all_cards",
+   "cards": 8,
+   "vram_per_card_gib": 32.0,
+   "vram_total_gib": 256.0,
+   "weights_per_card_gib": 18.07582953805104,
+   "reserve_per_card_gib": 3.4241930535063148,
+   "runtime_reserve_gib": 3.0,
+   "replicated_overhead_per_card_gib": 0.42419305350631475,
+   "free_per_card_gib": 10.499977408442646,
+   "fits_weights_resident": true,
+   "host_ram_for_experts_gib": 0.0,
+   "kv_gib_per_sequence": {
+    "131072": 1.138,
+    "262144": 2.271,
+    "1048576": 9.071
+   },
+   "kv_replicated_per_card_gib_at_1m": 9.071,
+   "note": "TP8, the latent and index caches replicated on every rank (as glm5next does: one latent head); with DCP (story 6) they shard 1/8. free_per_card is what is left for KV, speculative buffers and prefill arena.",
+   "kv_fits_1m_one_sequence": true,
+   "socket_note": "all eight cards means a production model already on the other socket's cards must be unloaded first: a planned maintenance window"
+  },
+  {
+   "id": "four_card_expert_streaming",
+   "cards": 4,
+   "max_cards_busy": 4,
+   "vram_per_card_gib": 32.0,
+   "vram_total_gib": 128.0,
+   "reserve_gib": 13.454376183450222,
+   "kv_context_tokens": 131072,
+   "kv_gib_all_ranks": 4.552,
+   "nonexpert_resident_gib": 11.067051190882921,
+   "expert_resident_gib": 98.92657262566686,
+   "expert_streamed_gib": 34.613012487858526,
+   "experts_total_gib": 133.5395851135254,
+   "streamed_fraction": 0.2591966453874567,
+   "active_expert_gib_per_decode_token_if_all_streamed": 2.547539323568344,
+   "expected_streamed_gib_per_decode_token_uniform_routing": 0.6603136466615454,
+   "traffic_bound_gib_per_decode_token_all_streamed": 2.547539323568344,
+   "link_note": "CONDITIONAL ESTIMATE, not a bound: it assumes routing spreads uniformly over the experts and a link throughput that is NOT measured here (25 and 50 GB/s are stated assumptions); a token can pick more streamed experts than the expectation. The only hard bound is the all-streamed traffic figure (10 experts a layer, every one from host); the hot-expert profile (expert-tiered placement) is what would tighten it, and no routing distribution of the real model has been measured",
+   "ms_per_token_at_25_gbs": 28.35915049682005,
+   "ms_per_token_at_50_gbs": 14.179575248410025,
+   "note": "the four cards of one socket are free and at most 4 cards may be busy: this variant fits such a window and is the CHEAPEST way to run ERNIE for a first real-weight measurement"
+  },
+  {
+   "id": "host_ram_budget",
+   "memguard": {
+    "host_total_gib": 251.6,
+    "host_available_gib": 91.4,
+    "gpu_window_ok_gib": 67.4,
+    "kill_below_gib": 10,
+    "read_at": "2026-11-23T06:20:14+00:00"
+   },
+   "other_host_use_gib": 16.0,
+   "streamed_gib": 34.613012487858526,
+   "fits_gpu_window": true,
+   "host_cap_gib": 96,
+   "host_pool_rule_gib": 32,
+   "exceeds_host_pool_rule": true,
+   "tp8_all_cards_host_gib": 0.0,
+   "note": "the host pool is capped at 32 GiB unless the machine's free memory says otherwise; the GPU window allowance is memguard's gpu_window_ok_gib. At TP8 on all cards no expert is streamed and host RAM is not on the path."
+  }
+ ],
+ "fp8_baseline": {
+  "total_gib": 268.60897382348776,
+  "vram_total_gib": 256.0,
+  "vram_overflow_gib": 12.608973823487759,
+  "note": "the figure of the earlier plan: block FP8 is not a Radiance 2.x serving format, so this configuration cannot exist; it is kept to show what the target changes"
+ },
+ "assumptions": {
+  "card_gib": 32.0,
+  "runtime_reserve_per_card_gib": 3.0,
+  "host_other_use_gib": 16.0,
+  "kv_formula": "7 MLA layers x ((512+64) x 2 + 132) bytes + 37 HCA layers x 1024/128 bytes, per token, plus a fixed 128-token window a sequence in each HCA layer; bf16 cache; replicated tensors counted: routers, mHC, indexer wk and weights_proj, latent norm, compressor APE (the compressor kv/gate projections are treated as sharded)"
+ }
+}

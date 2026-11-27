@@ -197,6 +197,9 @@ at once. Run it before adding a kernel plugin; the loader names only the first c
 | `rmsnorm_add` | `M`(range) `n` `eps`:f64 `dtype` `wadd`:f64/opt | `x`, `residual`, `w`w → `y`, `residual_out` |
 | `hc_enter` | `M`(range) `n` `hc` `dtype` | `x` → `h` |
 | `mhc_pre` | `M`(range) `n` `hc` `iterations` `eps`:f64 `hc_eps`:f64 `dtype` | `h`, `fn`w, `scale`w, `base`w → `x`, `post`, `comb` |
+| `ernie_mhc_pre` | `M`(range) `n` `hc` `iterations` `eps`:f64 `pre_eps`:f64 `sinkhorn_eps`:f64 `post_mult`:f64 `dtype` | `h`, `fn`w, `scale`w, `base`w → `x`, `post`, `comb` |
+| `ernie_mhc_pre_rms` | `M`(range) `n` `hc` `iterations` `eps`:f64 `pre_eps`:f64 `sinkhorn_eps`:f64 `post_mult`:f64 `rms_eps`:f64 `dtype`=bf16 | `h`, `fn`w, `scale`w, `base`w, `gain`w[n] → `x`, `post`, `comb` (fused pre-norm; bf16 only) |
+| `ernie_mhc_head` | `M`(range) `n` `hc` `eps`:f64 `gate_eps`:f64 | `h`, `fn`w, `scale`w, `base`w → `x` (bf16; learned collapse, one rounding) |
 | `mhc_pre_partial` | `M`(range) `n` `hc` `chunk` `first` `chunks` `dtype` | `h`, `fn`w → `part` |
 | `mhc_pre_finish` | `M`(range) `n` `hc` `iterations` `eps`:f64 `hc_eps`:f64 `chunk` `dtype` | `part`, `h`, `scale`w, `base`w → `x`, `post`, `comb` |
 | `mhc_post` | `M`(range) `n` `hc` `dtype` | `x`, `h`, `post`, `comb` → `out` |
@@ -230,6 +233,8 @@ at once. Run it before adding a kernel plugin; the loader names only the first c
 | `conv1d_dw` | `M`(range) `n` `k` `cu_div`/opt `dtype` | `x`, `w`w, `cu_seqlens` → `y`; `b`w? |
 | `rel_sinusoid` | `M`(range) `n` `max_timescale`:f64/opt `dtype` | → `y` |
 | `gelu_mul` | `M`(range) `n` `dtype` | `gate_up` → `y` (splits `[M,2n]` into gelu·up, tanh approx) |
+| `situ_mul` | `M`(range) `n` `dtype` `beta`:f64 `linear_beta`:f64 | `gate_up` → `y` (splits `[M,2n]` into gate·up, both clipped) |
+| `ernie_multimax` | `M`(range) `n` `dtype` | `x`, `ranges`w, `coefficients`w → `y` (four learned hinge terms, all f32) |
 | `seg_sinusoid` | `M`(range) `n` `period` `max_timescale`:f64/opt `cu_div`/opt `dtype` | `cu_seqlens` → `y` |
 | `gelu` / `silu` | `M`(range) `n` `dtype` | `x` → `y` |
 | `gelu_quick` | `M`(range) `n` `dtype` | `x` → `y` |
@@ -263,6 +268,26 @@ does it. A plugin asks for it first and falls back to `add` + `rmsnorm` (`spec.m
 **`gelu_mul`** is `silu_mul` with the tanh GELU: Gemma's gated FFN is trained with
 `gelu_pytorch_tanh`, while the unary `gelu` is the exact erf form. Both split the fused `gate_up`
 with the gate in the first half.
+
+**`situ_mul`** is `silu_mul`'s layout (the fused `[M, 2n]` `gate_up`, gate first, up second) with
+ERNIE's SiTU activation in place of the SiLU: `beta * tanh(gate / beta) * sigmoid(gate) *
+linear_beta * tanh(up / linear_beta)` in f32, rounded once to `y`'s dtype. Each side is soft-clipped
+before it is combined -- the gate to `+-beta`, with the logistic sigmoid gating the clipped value,
+and the up projection to `+-linear_beta`. `beta` and `linear_beta` are both finite and strictly
+positive (ERNIE uses 4 and 25); a non-positive or non-finite clip is refused. A large finite gate is
+stable: `tanh` saturates to `+-1` and the sigmoid to `0` or `1`, so the product stays within
+`+-beta * linear_beta` and the bf16 path rounds only the final value.
+
+**`ernie_multimax`** is ERNIE's learned transform of the logits, the pinned Baidu reference's
+`Ernie5_5ParallelLMHead.multimax` (commit b8414da6). With learned thresholds `r` = `ranges` [4] and
+learned coefficients `t` = `coefficients` [4] it computes, in float32,
+`y = x + t[0]*max(r[0]-x,0) + t[1]*max(x-r[1],0) + t[2]*max(r[2]-x,0)^2 + t[3]*max(x-r[3],0)^2`:
+four hinge terms, two linear and two quadratic. Inside the learned ranges every hinge is zero, so
+the transform is the identity and the thresholds are exact boundaries, **not a temperature** -- the
+quadratic tails below `r[2]` and above `r[3]` are the shape the model learned and are never folded
+into a linear cap. All four operands are float32 (the logits and the learned tensors alike); a
+non-float32 operand, or a learned tensor that is not four elements long, is refused. The whole term
+is f32 with one rounding to `y`.
 
 `swiglu_clamped` splits `[M, 2n]` as gate then up, as `silu_mul` does, and computes
 `silu(min(gate, limit)) * clamp(up, -limit, limit)` in f32, rounded once to `y`'s dtype. `limit`
@@ -438,6 +463,34 @@ streams weighted by the pre gates, rounded once to `dtype`; `post` `[M, hc]` and
 `mhc_post` writes `out[dst, i] = post[dst]*x[i] + sum_src comb[src, dst]*h[src, i]` into a
 separate buffer (`out` must not alias `h`), with no normalization of the stream. `mhc_contract` is
 the mean over the streams, rounded once.
+
+`ernie_mhc_pre_rms` is `ernie_mhc_pre` plus the weighted RMSNorm that ERNIE's fused branch applies to
+the collapsed `x` (the ordinary branch). Gates, `post` and `comb` are computed exactly as in
+`ernie_mhc_pre`, including the projection's own `eps` outside its root. Only the collapse changes:
+with `c[i] = sum_s pre[s] * h[s, i]` kept in f32 (never rounded), the variance is `mean_i(c[i]^2)`
+from that unrounded `c`; the numerator is `bf16(c[i]) * gain[i]` -- the collapse after the bf16
+narrowing a stored collapse has -- and `x[i] = bf16(numerator * rsqrt(variance + rms_eps))`, rounded
+once. `gain` is a bf16 `[n]` weight operand between `base` and `x`; `rms_eps` is a separate
+parameter, finite and positive, with the epsilon INSIDE the root. Only bf16 `h`/`x` are accepted: f32
+has no rounding boundary to preserve. Three equations are therefore wrong and are pinned apart by the
+sealed contract: variance from `bf16(c)`, an unrounded numerator, and rounding the normalized value
+before the gain. The first layer's residual is the embedding broadcast into `hc` identical streams;
+its collapse is `sum(pre) * h` and the same fused equation then applies over that input (graph
+wiring materialises the broadcast; this is derived from the equations, not read from the Baidu
+source).
+
+`rms_eps` is a double parameter narrowed to float; it must narrow to a positive finite float (1.4e-45 .. 3.4e38), anything else refuses. The shape query refuses `hc * n` beyond int64 (`n > INT64_MAX / hc`). `ernie_hca_gather_slots` refuses a page only when `page * block_size + offset` does not fit int32 (judged per offset, so the last representable page is accepted).
+
+The YaRN parameter set of `ernie_rope_tail`, `ernie_hca_compress` and `ernie_hca_q_prep` needs `yarn_factor`: any `yarn_beta_fast`, `yarn_beta_slow` or `yarn_original_max` without it refuses (it used to run plain RoPE and ignore them); `yarn_factor` 0 is plain.
+
+`ernie_mhc_head` is ERNIE's learned collapse of the `hc` streams into one `x` `[M, n]`, the head
+that follows `ernie_mhc_pre` and the post updates. Each row of the `[hc, hc*n]` matrix `fn` is dotted
+with the whole `hc*n` residual and multiplied by `rsqrt(sum(h^2)/(hc*n) + eps)` -- the epsilon INSIDE
+the root, as in the GLM `mhc_pre` and unlike `ernie_mhc_pre`, which puts it outside -- then by the
+scalar `scale` plus its `base` bias, sigmoided and given `gate_eps` after. Those `hc` gates weight the
+streams, which are summed into `x` with one bf16 rounding; the final RMSNorm stays in the graph. `h`
+and `x` are bf16; `fn`, `scale` and `base` are f32. It is the asymmetric, learned counterpart to
+`mhc_contract`'s unweighted mean.
 
 `mhc_pre_partial` and `mhc_pre_finish` are `mhc_pre` split by residual columns, so
 tensor-parallel ranks share its projection instead of each computing it whole. Chunk `c` covers
@@ -786,10 +839,10 @@ may not have arrived.
 
 | op | params | operands |
 |---|---|---|
-| `gemm_nt` | `M`(range) `N` `K` `dtype` | `a`, `b`w → `y` |
+| `gemm_nt` | `M`(range) `N` `K` `dtype` `row_identity`/opt | `a`, `b`w → `y` |
 | `gemm_nt_f32` | `M`(range) `N` `K` `dtype` | `a`, `b`w → `y` |
 | `gemm_nt_bias` | `M`(range) `N` `K` `dtype` `act`/opt | `a`, `b`w, `bias`w, `res`? → `y` |
-| `gemm_nt_q` | `M`(range) `N` `K` `group` `dtype` `pb1`/opt `pb2`/opt `split_n`/opt `w_rb`/opt | `a`, `a_scale`?, `b`w, `b_scale`w → `y`; `a_sum`?, `b_ref`w? |
+| `gemm_nt_q` | `M`(range) `N` `K` `group` `dtype` `pb1`/opt `pb2`/opt `split_n`/opt `w_rb`/opt `mvm_max`/opt | `a`, `a_scale`?, `b`w, `b_scale`w → `y`; `a_sum`?, `b_ref`w? |
 | `gemm_nt_q_bias` | `M`(range) `N` `K` `group` `dtype` | `a`, `a_scale`, `b`w, `b_scale`w, `bias`w → `y` |
 
 `nt` is A row-major `[M,K]` times B transposed `[N,K]`, giving `[M,N]`: the layout every weight in
@@ -847,6 +900,15 @@ per-128 scale and take the row's in the epilogue.
 A kernel may then fold one scale a block of rows: libr4d's `gemm_iqr_tiled` does (its form says
 how many), as do `gemm_i8a8_rb8_tiled` and `gemm_i8a8_rb32_tiled` for an int8 weight whose
 per-row scale plane holds each block's one value in each row.
+
+`mvm_max` is the largest row count libr4d's fp8a8f32 dense GEMM serves with its matvec form, which sums each output in a different order from the WMMA forms
+that serve every other row count. Absent, libr4d's generic bound (the variable `R4D_F8A8_MVM_MAX`, else 8). A model that needs a row's output independent of how many rows share its
+step declares 0: every step then takes the WMMA forms, equal per row. The value belongs to the op, so it is per launch and per model, with no process state. libref, libavx,
+libr3d and libhalo have one order and ignore it.
+
+`row_identity` (`gemm_nt`) 1 asks libr4d's bf16 GEMM rows (M <= 16, M <= 64, tiled) to take the axis defaults of their tunable split instead of the tuned point, so every row
+count sums a row in the same order whatever tune cache is loaded (the tuned point is chosen per kernel row and geometry, and the split fixes the summation order).
+Absent or 0, the tuned point stands. The other libraries ignore it.
 
 `split_n` is the output width whose K split the call takes, when it is a row slice of a wider
 linear (a rank's share of a weight whose rows do not divide among the ranks, issued as two slices).
@@ -2141,6 +2203,7 @@ The VAEs' convolutions are `conv3d_ndhwc` with `tpad` and the audio VAE's `conv2
 | op | params | operands |
 |---|---|---|
 | `router_topk` | `M`(range) `n_expert` `top_k` `norm` `dtype` | `logits` → `expert_ids`, `expert_w` |
+| `ernie_router_topk` | `M`(range) `experts` `topk` `renormalize` | `logits`, `bias`w, `scale`w → `ids`, `weights` |
 | `moe_scatter` | `M`(range) `n_expert` `top_k` `expert_base`/opt `protect`:str/opt | `expert_ids` → `sorted_tok`, `expert_offset`, `expert_count` |
 | `router_topk_scatter` | `M`(range) `n_expert` `n_local`/opt `top_k` `norm` `dtype` `expert_base`/opt `protect`:str/opt | `logits` → `expert_ids`, `expert_w`, `sorted_tok`, `expert_offset`, `expert_count` |
 | `router_gemm_topk_scatter` | `M`(range) `K` `n_expert` `n_local`/opt `top_k` `norm` `dtype` `expert_base`/opt `protect`:str/opt | `a`, `b`w, `gate_b`w? → `logits`, `expert_ids`, `expert_w`, `sorted_tok`, `expert_offset`, `expert_count`, `gate`? |
@@ -3150,6 +3213,24 @@ order, not a slow one.
 | `qsa_block_key` | `M`(range) `n` `ratio` `rotary_dim` `pos0`/opt `block_size`/opt `eps`:f64 `theta`:f64 `scale`:f64/opt `wadd`:f64/opt `dtype` `mode`/opt `sections`/opt `yarn_factor`:f64/opt `yarn_low`:f64/opt `yarn_high`:f64/opt `yarn_magnitude`:f64/opt | `k`, `w`w, `page`?, `pos`? → `out` |
 | `dsa_pool` | `M`(range) `n` `ratio` `dtype` `block_size`/opt | `kg`, `ape`w → `q`, `scale`; `page`?, `cache`:inout? |
 | `dsa_query` | `M`(range) `n` `dtype` | `x` → `q`, `scale` |
+| `ernie_dsa_select` | `M`(range) `topk` `window` `block_size` `num_pages`/opt `tokens`/opt `seqs`/opt `blocks`/opt | `scores`, `positions`, `req`, `block_table` → `ids`, `slots` |
+| `ernie_dsa_topk_tiled` | `M`(range) `heads` `head_dim` `topk` `window` `block_size` `num_pages`/opt `tokens`/opt `tile`/opt `seqs`/opt `blocks`/opt | `qf`, `qs`, `w`, `cache`, `block_table_idx`, `req`, `positions`, `block_table_sel`, `seqused`/opt → `scores` (scratch, [M, tile] or flat), `ids`, `slots`, `kept` (scratch, flat i32, at least M·(2·topk+3): the device op's running top-k and verdicts; libref only checks its size) |
+| `ernie_rope_tail` | `M`(range) `heads` `width` `rope_dim` `theta`:f64 `rope_table`/opt `inverse`/opt `yarn_factor`:f64/opt `yarn_beta_fast`:f64/opt `yarn_beta_slow`:f64/opt `yarn_original_max`:f64/opt | `x`:inout, `positions` |
+| `ernie_row_req` | `M`(range) | `cu_seqlens` → `req` |
+| `ernie_head_slice` | `M`(range) `heads` `width` `offset` `count` | `x` → `y` |
+| `ernie_idx_query` | `M`(range) `heads` `head_dim` `rope_dim` `theta`:f64 `rope_table`/opt | `q`, `positions` → `qf`, `qs` |
+| `ernie_idx_key` | `M`(range) `head_dim` `rope_dim` `theta`:f64 `eps`:f64/opt `rope_table`/opt `block_size`/opt `num_pages`/opt | `k`, `gamma`w, `beta`w, `positions`, `slots`, `cache`:inout |
+| `ernie_idx_logits` | `M`(range) `heads` `head_dim` `window`/opt `tokens`/opt `seqs`/opt `blocks`/opt `block_size`/opt `num_pages`/opt `col_start`/opt | `qf`, `qs`, `w`, `cache`, `block_table`, `req`, `positions` → `scores` |
+| `ernie_mla_project` | `M`(range) `heads` `k_dim` `v_dim` `latent_dim` `mode` `q_width`/opt | `x`, `w`w → `y` |
+| `ernie_vha_mix` | `M`(range) `heads` `dim` `rank` `fold`/opt | `o`, `u`w, `v`w → `out` |
+| `ernie_mla_sparse_attn` | `M`(range) `heads` `latent_dim` `rope_dim` `block_size` `num_pages`/opt `width` `scale`:f64 `kv_layout`/opt `quant_block`/opt | `q`, `q_rope`, `kv`, `slots`, `sink`w → `out` |
+| `ernie_mla_latent_store` | `M`(range) `latent_dim` `rope_dim` `block_size` `quant_block`/opt | `kv`, `slot_mapping`, `cache`:inout |
+| `ernie_hca_state_write` | `M`(range) `ratio` `head_dim` `block_size`/opt | `kv`, `score`, `ape`w, `positions`, `slots`, `state`:inout |
+| `ernie_hca_compress` | `M`(range) `ratio` `head_dim` `rope_dim` `eps`:f64 `theta`:f64 `layout`/opt `quant_block`/opt `yarn_factor`:f64/opt `yarn_beta_fast`:f64/opt `yarn_beta_slow`:f64/opt `yarn_original_max`:f64/opt `out_layout`/opt | `state`, `gather_slots`, `positions`, `out_slots`, `norm_weight`w, `out`:inout |
+| `ernie_hca_q_prep` | `M`(range) `heads` `head_dim` `rope_dim` `eps`:f64 `theta`:f64 `yarn_factor`:f64/opt `yarn_beta_fast`:f64/opt `yarn_beta_slow`:f64/opt `yarn_original_max`:f64/opt | `x`:inout, `positions` |
+| `ernie_hca_union_attn` | `M`(range) `heads` `head_dim` `ratio` `window`/opt `scale`:f64 `cmp_layout`/opt `seqs`/opt `win_block`/opt `win_pages`/opt `win_blocks`/opt `cmp_block`/opt `cmp_pages`/opt `cmp_blocks`/opt `block_size`/opt | `q`, `win_kv`, `cmp_kv`, `positions`, `req`, `win_table`, `cmp_table`, `sink`w → `out` |
+| `ernie_hca_gather_slots` | `M`(range) `ratio` `block_size` `seqs`/opt `blocks`/opt | `positions`, `req`, `block_table` → `gather_slots` |
+| `ernie_hca_wo_a` | `M`(range) `heads` `head_dim` `rope_dim` `groups` `rank` `theta`:f64 `yarn_factor`:f64/opt `yarn_beta_fast`:f64/opt `yarn_beta_slow`:f64/opt `yarn_original_max`:f64/opt | `o`, `positions`, `wo_a`w → `out` |
 | `dsa_score` | `M`(range) `n` `heads` `blocks` `seqs` `dtype` `row_part`/opt | `q`, `q_scale`, `gate`, `k`, `k_scale`?, `bt`, `cu`, `nc` → `score`, `cu_part`? |
 | `mla_attn` | `M`(range) `latent_dim` `heads` `blocks` `block_size` `scale`:f64 `dtype` `kv_dtype`/opt | `q`, `kv`, `bt`, `length` → `out` |
 | `mla_attn_paged` | `M`(range) `heads` `latent_dim` `rope_dim` `block_size` `scale`:f64 `dtype` | `q`, `q_rope`?, `kv`, `block_table`, `seqused`, `cu_seqlens`, `gate`? → `out` |
@@ -3464,6 +3545,126 @@ which lets every rank's run be the same length whatever the step's. `cu_part`, `
 and only with `row_part`, receives `cu - p * R`: the bounds rebased to the run's first row, under
 which an op that reads `cu` over the run's own rows (`qsa_select`, with `pos` offset by `p * R`)
 finds each row's sequence unchanged.
+
+`ernie_dsa_select` is ERNIE's single-rank MLA-DSA selection row (pinned Baidu `merge_swa_topk` fed by
+the indexer's top-k). Row `r` is the query at `positions[r]` (`seq = p + 1`) of request `req[r]`;
+`scores [rows, L]` f32 is indexed by logical token (what `dsa_score` writes when one table entry is
+one key). The candidates are the ids in `[0, max(seq - window, 0))` whose score is not `-inf` and
+whose page is initialised (`0 <= table entry < num_pages`, block inside the table); at most `topk`
+are kept (all, ascending ids, when they fit; otherwise the best `topk`, descending score, ties to the
+lower id); then the window `seq - min(seq, window) .. seq - 1` ascending (ids on an uninitialised
+page dropped), then `-1`: `ids` is `[rows, >= topk + window]`, 2176 wide for ERNIE (2048 + 128).
+`slots` is the same row translated through `block_table [seqs, blocks]` only after selection
+(`table[id / block_size] * block_size + id % block_size`, `-1` for `-1`). Columns at or past the
+candidate end are never read; a NaN or `+inf` score inside the range, a negative position, a request
+outside the table or scores narrower than the candidate range refuse the launch before any store.
+`M` is the row band's ceiling: live rows come from `scores`, and every operand must carry them.
+See `docs/ernie55/mla-selection.md` for the provenance and the m06 tie decision.
+
+The ERNIE DSA indexer score ops (`libref/ref_ernie_attn.cpp`; the numerics, choices and measurements are in
+`docs/ernie55/indexer-scores.md`) produce the per-token score row `ernie_dsa_select` reads. `ernie_idx_query` takes the
+`wq_b` output `q [M, heads * head_dim]` bf16 and absolute `positions`, splits each head rope first
+(`[rope_dim | rest]`), rotates the rope part NeoX split-half (pair `i` is `(i, i + rope_dim/2)`, angle
+`position * theta^(-2i / rope_dim)`, cos/sin in the `rope_table` dtype: `bf16` default, or `f32`), applies the
+orthonormal Hadamard over `head_dim` and quantises each head to E4M3 with the power-of-two scale
+`2^ceil(log2(max(absmax, 1e-10) / 448))`: `qf [M, heads * head_dim]` (f8e4m3) and `qs [M, heads]` f32. Between the bf16
+boundaries (after the rotary, the Hadamard) the arithmetic is double. `ernie_idx_key` takes `k [M, head_dim]` bf16,
+the `k_norm` `gamma` and `beta` (bf16), `positions` and physical `slots` (`page * block + offset`, negative is
+padding), applies LayerNorm (`eps` default 1e-6, bf16 out) and then the same transform and quantiser, and stores
+the row (`head_dim` code bytes, then the fp32 scale little endian) in `cache [pages, block, head_dim + 4]` u8
+(132 bytes a token for ERNIE); rows apply in order, a repeated slot keeps the last. `ernie_idx_logits` computes for
+query row `m` (position `p`, request `req[m]`) and every logical token `j < max(p + 1 - window, 0)` (`window`
+default 128) `sum_h relu((qf_h . key_j) * key_scale_j) * (w_h * qs_h * head_dim^-1/2 * heads^-1/2)`, the key read
+through `block_table[req][j / block]`: `scores [M, L]` f32 indexed by logical token, `-inf` from the window start and
+on an uninitialised page. A negative position or slot below -1, a slot past the pool, a request outside the
+table, scores narrower than the candidate range, a head dim that is not a power of two in 4..256, an odd or
+oversized `rope_dim`, a non-positive `theta` or `eps`, an unknown `rope_table`, or the wrong dtype or stride refuses
+before any store.
+
+The ERNIE MLA-DSA attention operations (`libref/ref_ernie_attn.cpp`; the choices behind them
+are in `docs/ernie55/mla-attention-ops.md`). All take bf16 activations, accumulate in f32 and round to
+bf16 once at the store, and validate every operand and index before the first store. `M` is the row
+band; the live rows are the operands' leading extent.
+
+Later amendments (docs/ernie55/attention-forward.md): `num_pages` is optional on `ernie_dsa_select` (absent: any
+non-negative table entry is a page; the consumers check slots against the real pool) and on `ernie_mla_sparse_attn`
+(absent: the cache operand's page count; a given value must match it); `ernie_rope_tail` takes `rope_table` `f32`
+(default) or `bf16` (cos and sin rounded to bf16, the table of vLLM's default RotaryEmbedding that DSA layers use);
+`ernie_vha_mix` refuses an `out` whose bytes overlap `o` (extents; no in-place call); `ernie_idx_key` and
+`ernie_idx_logits` accept the engine's `[pages, 1, block, row]` cache layout as the same bytes as `[pages, block, row]`.
+`ernie_row_req` writes `req[r] = s` for `cu_seqlens[s] <= r < cu_seqlens[s + 1]` (cu starts at 0, never decreases, ends at the row
+count); `ernie_head_slice` copies `y[m, h, j] = x[m, h, offset + j]` (bf16, `y [M, heads * count]`, overlapping operands refuse).
+
+`ernie_rope_tail` rotates, in place, the trailing `rope_dim` values of each `width`-wide head of
+`x [M, heads * width]` with GPT-J interleaved pairs `(2i, 2i + 1)` at angle
+`positions[r] * theta^(-2i / rope_dim)`; the leading values stay bit-identical. The q heads are
+`heads 64 width 256 rope_dim 64`, the `kv_a` row `heads 1 width 576 rope_dim 64` (the latent is
+untouched). A negative position, an odd or oversized `rope_dim` or a non-positive `theta` refuses.
+
+`ernie_mla_project` is `kv_b_proj` with unequal widths: `w [heads * (k_dim + v_dim), latent_dim]`, per
+head `k_dim` key rows then `v_dim` value rows. `mode` `absorb` maps the first `k_dim` columns of each
+`q_width`-wide head of `x` (default `k_dim`, no rope columns) to `[M, heads * latent_dim]`; `expand` maps
+`[M, heads * latent_dim]` to `[M, heads * v_dim]` through the value rows. `q_width` with `expand`, a
+matrix of `heads * 2 * k_dim` rows and a width below `k_dim` refuse.
+
+`ernie_vha_mix` computes `out[t,h,c] = sum_g m[h,g] o[t,g,c]` with `m = I + V U^T` folded from the
+`[heads, rank]` matrices `u` and `v` (bf16 or f32); `fold` is `f32` (default) or `bf16`.
+
+`ernie_mla_sparse_attn` attends the cache rows named in `slots [M, width]` (physical slot `page *
+block_size + offset`, `-1` pads) of `kv [num_pages, 1, block_size, latent_dim + rope_dim]`: score
+`scale * (q . latent + q_rope . rope)`, value the latent, and the per-head f32 `sink` logit in the max
+and the denominator only. `-inf` is no sink; no key with a finite sink gives zeros; a slot outside the
+pool, a NaN or `+inf` sink or a non-positive `scale` refuses.
+
+`kv_layout` (optional, kv-fp8-latent) is `bf16` (default, the row above) or `fp8_ds_mla`: `kv` is then a `u8` cache of rows of `latent_dim +
+4 * (latent_dim / quant_block) + 2 * rope_dim` bytes (656 at 512 / 64 / 128): `latent_dim` E4M3 codes, `latent_dim / quant_block`
+little-endian f32 scales (`quant_block`, default 128), then the `rope_dim` rope values as bf16, bit for bit. A latent value reads as
+`code * scale`; a scale is a power of two, so that product is exact in f32 and in bf16 and the op's arithmetic past the load is the bf16
+form's on a cache holding the decoded values (bit-identical to the bf16 reader that takes the same kernel; tested. An fp8 row is eligible for libr4d's fast kernels only with `quant_block % 8 == 0` and a row of a multiple of 16 bytes; at 256 / 64 / 128 (392 bytes) it takes the general kernel and agrees with an aligned bf16 cache, which takes a fast one, within one bf16 ulp, not bit for bit). `ernie_mla_latent_store` writes that row: `kv [M, latent_dim +
+rope_dim]` bf16 to the cache row at `slot_mapping[m]` (`-1` skips; libref refuses a slot outside the cache, and a NaN or infinity in the latent
+part of a named row, before any store; libr4d stores nothing for such a row and latches it, `r4d_ernie_mla_take_error()`, on a card, and
+refuses like libref where its operands are host memory): per `quant_block` tile the scale is the smallest power of two `s` with `absmax <= 448 * s`
+(absmax floored at 1e-30, scale 2^-108 there; a value of at most 2^-10 times its scale, 2^-118 under the floor, decodes to a signed zero), the codes `E4M3(x / s)` (round to nearest even, saturating at 448); at scale
+2^120 the code magnitude is clamped to 240 (0x77) because a code of 256 and up times 2^120 is not finite in f32 or bf16 (a finite bf16 is at most 255 * 2^120),
+so every stored value decodes finite and the bytes of every tile below that scale are unchanged. The rope values are copied bit for bit and not inspected. Selected by `--kv-cache-dtype fp8` for the `kv_latent` group of ernie55 only; the default and `bf16` do not use either.
+
+`ernie_hca_state_write` and `ernie_hca_compress` are the HCA compressor of the 37 HCA layers
+(`docs/ernie55/hca-compressor-ops.md`). `ratio` is 4 or 128 only. The first stores the f32 state row `[kv | score +
+ape[position % ratio]]` (width `2 * coff * head_dim`, `coff` 2 at ratio 4) at `state[slots[m]]`; slot `-1` skips. The second,
+for every row with `out_slots[m] >= 0` and `(positions[m] + 1) % ratio == 0`, pools the `coff * ratio` state rows named
+oldest first in `gather_slots[m]` (`-1` masked) per channel (ratio 4: previous rows read channels `[0, D)`, current rows `[D, 2D)`),
+RMS-normalises with the bf16 `norm_weight`, rotates the trailing `rope_dim` channels at the group start from the
+un-rounded row (plain RoPE at `theta`) and stores one row at `out[out_slots[m]]`: `layout` `bf16_full` (default, bf16 `[R, D]`) or `fp8_ds_mla`
+(u8 `[R, nope + 2 * rope_dim + nope / quant_block + 1]`: E4M3 codes, bf16 rope, UE8M0 scale bytes with the scale floored at 1e-4, one pad byte).
+Slots are never derived by the ops. Rows with out slot `-1` are ignored; every other row is validated before any store.
+`ernie_hca_compress` and `ernie_rope_tail` take the optional YaRN set (`yarn_factor` >= 1, 0 or absent = plain; `yarn_beta_fast` 32, `yarn_beta_slow` 1,
+`yarn_original_max` required with a factor; beta_fast < beta_slow or a non-finite value refuses); `ernie_rope_tail` also `inverse` 0 or 1.
+
+`ernie_hca_q_prep`, `ernie_hca_union_attn` and `ernie_hca_wo_a` are the attention branch of an HCA layer (`docs/ernie55/hca-attention-ops.md`).
+`ernie_hca_q_prep` rewrites `x [M, heads * head_dim]` (bf16) in place: weightless per-head RMS `x * rsqrt(mean(x^2) + eps)` in f32, then GPT-J rope on the trailing `rope_dim`
+values at the row position (f32 table, YaRN optional), one bf16 rounding. `ernie_hca_union_attn` runs one softmax per row and head over the complete compressed rows
+`0 .. (p + 1) / ratio - 1` of `cmp_kv [pages, 1, block, head_dim]` (through `cmp_table[req]`) and the window tokens `p - window + 1 .. p` of `win_kv` (through `win_table[req]`)
+with the f32 `sink` in the max and denominator only; key and value are the same cache row, score `scale * q . row`; the window and the newest group overlap and are not
+de-duplicated; a table entry of -1 skips its keys, an entry past the pool or a block index past the table refuses. `ernie_hca_wo_a` rotates the trailing `rope_dim` values of
+every head of `o` by the inverse rotary at the row position (bf16 result) and applies the grouped `wo_a [groups * rank, heads / groups * head_dim]` (group g reads its
+contiguous heads and weight rows `g * rank ..`): `out [M, groups * rank]`.
+
+Later amendments (additive): `ernie_hca_state_write` and `ernie_hca_compress` accept the engine's pools `[pages, 1, block, W]` for `state` and `out` (page axis contiguous; slot = `page * block + offset`),
+`ernie_hca_state_write` an optional `block_size` naming the pool's block (the schema of `ernie_hca_compress` is unchanged: the sealed 3-3b test pins its parameter list); `ernie_hca_union_attn` takes `cmp_layout` `dense` (default: compressed row `j` at logical id `j` of `cmp_table`) or `token` (row `j` at the logical id of
+the token that completed its group, `(j + 1) * ratio - 1`, i.e. a per-token KV group). `ernie_hca_gather_slots` lists, for a row whose position completes a group, the state slots of the `coff * ratio` rows
+ending at it through the state group's block table (`-1` before position 0; every other row all `-1`; an unallocated page for a needed row refuses).
+
+kv-cmpblock amendment (additive, optional parameters; absent = the 3-4b behaviour): `ernie_hca_compress` takes `out_layout` `token` (default) or `block` (named so it sorts after `head_dim`: the sealed 3-3b test pins the first three sorted parameter names of the op). With `block` the pool `out` is `[pages, 1, B, e]`
+with `B == ratio` and is addressed as `[pages, B * e]` rows: the completing token's slot `page * B + B - 1` stores row `page`, a live row at any other offset refuses, and the rows
+of one block are one KV page, so the compressed group holds one row per `ratio` tokens instead of one slot per token. `ernie_hca_union_attn` and `_origin` take `cmp_layout` `block` as well, and an optional `block_size` (the compressed group's block; the engine's builder reads a group's block size off the first op after it that carries one; when given it must equal the pool's page rows): `cmp_kv` is `[pages, 1, ratio, head_dim / ratio]`,
+row `j` is page `cmp_table[req][j]` (a page is `head_dim` contiguous elements; `ratio` rows of `head_dim / ratio`). Only addresses move: rows and outputs are bit-identical to the `token` layout (ref_test
+`op_ernie_hca_block_layout_*`). The shape descriptions of `ernie_hca_compress` do not describe `block` (a random fixture cannot draw out slots at a block's last row).
+On a card the live-row offset refusal is not a return code: the host scan that returns `RAD_E_SHAPE` (host builds and the emulator) is compiled out of a HIP build, since the slot is device
+data and reading it would need a stream synchronisation. The kernel stores nothing for such a row and raises an event (bit 256 of the HCA log, `r4d_ernie_hca_take_error()`; the integration's
+event log `r4d_ernie_verdict.h`: monotonic, never cleared by a take), as for a state or out slot outside `[-1, pool)` (bit 1), a negative position of a live row (bit 2), a gather entry outside
+`[-1, pool)` (bit 4) and a completing row whose gather list is all masked (bit 8); the other rows of the launch are stored (detection after the fact, not a refusal before the first store). The
+engine polls the log through `rad_kernel_poll_error` where it already waits for the step, before it commits the step's tokens, and fails the step with RAD_E_SHAPE.
+`r4d_emu_ernie_hca_block` drives the card form with `R4D_ERNIE_CARD_FORM=1`; the union attention's host scan indexes the compressed table with `(tok_rows || blk_rows)` (entry `j` in the block layout).
 
 libr4d's `dsa_score_fp8` serves `n` 128 and 32 heads, `M` up to 65535, both key forms, both
 query forms and `row_part`. A block of two waves covers the 32 heads of one query row against one
