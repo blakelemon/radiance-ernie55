@@ -277,4 +277,4 @@ async function genFull(srv, prompt, n) {
     top: c.map(x => (x.top_logprobs || []).map(t => t.id + "@" + t.logprob).join(",")),
     drafted: T.draft_n || 0, accepted: T.draft_n_accepted || 0};
 }
-module.exports = {selfCheckBf16, f2bf, bf2f, h, VOCAB, BLOCK, MAIN, NDRAFT, TAPS, GEO, HGEO, MAXLEN, buildCheckpoint, convertDspark, serveX, genFull, rnd};
+module.exports = {selfCheckBf16, f2bf, bf2f, h, VOCAB, BLOCK, MAIN, NDRAFT, TAPS, GEO, HGEO, MAXLEN, DSPARK_RULES, buildCheckpoint, convertDspark, serveX, genFull, rnd};

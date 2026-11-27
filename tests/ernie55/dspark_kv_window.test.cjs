@@ -53,6 +53,18 @@ function debugGraph(spec, env = {}) {
   return out;
 }
 
+// The declared graph only, with the engine's interleaved log lines dropped. debugGraph returns
+// stdout+stderr merged, and an engine log line (e.g. the "I kernel libraries on the search path ...
+// not loaded" note) is emitted at a slightly different position between two identical runs, so the raw
+// text of two runs differs by line order even when the declared program is byte-identical -- the flake
+// this helper removes. The engine prefixes every log line with a single capital letter and a space
+// (`I `, `W `, `E `, `D `); dropping those lines leaves the `==== declared graph:` section and only it,
+// which is what "the program is unchanged" means. Assertions that read a log line (the window-group
+// note, the pool line, a warning) stay on the raw text and are not passed through here.
+function graphText(text) {
+  return text.split('\n').filter(l => !/^[IWED] /.test(l)).join('\n');
+}
+
 // The geometry serveGroups serves every group report with. The pool is sized against the WORST CASE:
 // SG_SEQS sequences each at the model's max-model-len (serveX's default len, ck.MAXLEN). The full
 // groups' block counts are checked against SG_SEQS * ck.MAXLEN in the ON case below.
@@ -80,7 +92,7 @@ test('off: kv_dspark is a full group and the program is unchanged', async () => 
   const b = debugGraph(7, {[WIN]: '0'});
   assert.equal(a.status, 0, a.text.slice(-800));
   assert.equal(b.status, 0, b.text.slice(-800));
-  assert.equal(a.text, b.text, 'the declared program changed with the switch off');
+  assert.equal(graphText(a.text), graphText(b.text), 'the declared program changed with the switch off');
   const g = await serveGroups(7, {});
   assert.ok(g.kv_dspark, 'no kv_dspark group in the allocator report');
   assert.equal(g.kv_dspark.kind, 'full');
@@ -122,7 +134,7 @@ test('on: kv_dspark is a window group of the drafter window, nothing else change
   for (const [tag, grp] of [['off', goff], ['on', gon]])
     assert.ok(grp.log.includes('kv: the pool backs 100% of the worst case'),
       `${tag}: the pool does not back 100% of the worst case, so the full groups' slack above ${worst} tokens is unjustified`);
-  const boff = blocks(off.text), bon = blocks(on.text);
+  const boff = blocks(graphText(off.text)), bon = blocks(graphText(on.text));
   assert.equal(bon.length, boff.length, 'the op-block count changed');
   for (let i = 0; i < boff.length; i++) assert.equal(bon[i][0], boff[i][0], `op block ${i} header changed`);
   const decl = /drafter window (\d+)/.exec(on.text);
