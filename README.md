@@ -16,6 +16,41 @@ slowly than a card.
 
 To support the development of radiance: [Patreon](https://patreon.com/StillDeadCode).
 
+## This fork: ERNIE 5.5 Flash
+
+This branch (`ernie55-port`) is upstream radiance v2.2.0 plus an unofficial community port of
+ERNIE 5.5 Flash (`arch/ernie55`), with its block-diffusion drafter (DSpark), a 1,048,576-token
+context and an fp8 latent KV cache. Everything else in this README is upstream's and unchanged.
+Status, layout, conversion, serving configuration and known gaps: [`docs/ERNIE55.md`](docs/ERNIE55.md).
+Model weights are not included.
+
+Measured on one machine: eight 32 GB `gfx1201` cards, tensor-parallel 8, drafter depth 7 (adaptive),
+8 sequences, prefill batch 2,048. Medians of 5 runs; one set of runs, so read them as indicative.
+
+| prefill, one request, nothing cached | 1.6K-token prompt | 8K | 30K |
+|---|---|---|---|
+| tokens/s | 2,770 | 2,491 | 2,153 |
+
+| decode, tokens/s | 1 stream | 8 streams (total) |
+|---|---|---|
+| counting (highly predictable text) | 203 | 808 |
+| prose | 83 (38% of drafted tokens accepted) | 306 |
+
+| long agent session (8 tools, 140K-155K tokens of context) | |
+|---|---|
+| first request, nothing cached (139,863 tokens) | 104.5 s to first token |
+| later turns, prefix cached | 1.3-3.8 s to first token |
+| decode with reasoning and tool calls | 70-81 tokens/s |
+
+| memory per card | |
+|---|---|
+| routed experts, resident | 17.96 GiB |
+| KV pool | 7.67 GiB = 1,483,008 tokens |
+| drafter KV, stored as a window (`RADIANCE_ERNIE55_DSPARK_KV_WINDOW=1`) | 12 MiB (3.09 GiB as a full-context group) |
+
+Known limit: while one request prefills, the other streams pause for each prefill batch (about 1 s at
+batch 2,048), so concurrent streams look bursty. Prose throughput varies 5-10% between launches.
+
 ## Models
 
 | model | container | get it | fleet file |

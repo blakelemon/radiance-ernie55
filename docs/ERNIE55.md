@@ -127,6 +127,8 @@ buffers held per card, with the configuration above.
 - Prefill, single stream: about 2,770 tokens/s at a 1.6K prompt, 2,490 at 8K, 2,150 at 30K.
 - Decode, single stream: about 70-80 tokens/s on prose, about 130 on code, about 220 on highly
   predictable text. The drafter's acceptance on prose is about 35-50%.
+- Decode, 8 concurrent streams (total): about 810 tokens/s on highly predictable text, about 305 on
+  prose.
 - A cold 140K-token prompt takes about 105 s to first token; the next turn with the prefix cached
   starts in 2-4 s.
 - The KV pool with these settings holds 1,483,008 tokens per card.
