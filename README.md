@@ -50,19 +50,19 @@ Measured on one machine: eight 32 GB `gfx1201` cards, tensor-parallel 8, drafter
 
 ### Limits
 
-- While one request prefills, the other streams pause for each prefill batch (about 1 s at batch
-  2,048), so concurrent streams look bursty. `prefill-interleave` and a smaller batch trade prefill
-  speed for smoother streams.
-- A first request with a very long prompt is slow (about 105 s for 140K tokens); later turns reuse the
+- Only eight `gfx1201` cards at tensor-parallel 8 have been run. Other card counts, other GPU families
+  and the CPU backend at full model size are untried.
+- Prefill slows with depth: about 1,260 tokens/s at 150K tokens of context against about 2,800 near
+  zero, so a fresh 150K prompt takes about two minutes to its first token. Later turns reuse the
   cached prefix.
 - The drafter accepts only about 35-50% of its drafted tokens on prose, so prose decodes at well under
   half the speed of predictable text.
 - Prose throughput varies 5-10% between launches, and the drafter's drafted/accepted counters are not
   bit-stable from run to run. Output tokens were identical in our comparisons.
-- Only eight `gfx1201` cards at tensor-parallel 8 have been run. Other card counts, other GPU families
-  and the CPU backend at full model size are untried.
 - `data/recipes/ernie55-iqr-v4.recipe` is a plan, not a working conversion: the plugin refuses the
   encodings it targets.
+- As in other engines that batch prefill, a request that is prefilling delays the other streams
+  (`prefill-interleave` and the batch size set the balance).
 
 ### Open items
 
@@ -81,8 +81,39 @@ Test status on the build host (CPU-only selection, 247 tests): `device_test`, `f
 node test ("program unchanged with the switch off") failed once and passed on three reruns, cause not
 found.
 
-Ideas not started: decode steps between prefill batches without a full pause, a per-content adaptive
-drafter depth for prose, and a smaller latent KV format to fit more context per card.
+### Roadmap (not started unless marked)
+
+Speed:
+
+- Prefill at depth: indexer scoring dominates at long context. Candidates are a row-split attention
+  for the MLA/DSA layers and recording the tiled prefill passes at the full context length.
+- Collectives are about half of a prefill chunk's time. An overlap of collectives and compute is
+  built (`RADIANCE_ERNIE55_AR_OVERLAP`) but gained only a few percent and costs prose decode, so it is
+  off by default; a profile of where the lanes wait is the next step.
+- Decode floor: about 19 ms a step at short context. Candidates are chained launches (estimated
+  8-15% for one stream), weight prefetch beside the decode collectives (1-4%), and fusing the
+  eight-rank all-reduce into its consumer.
+- Prose acceptance: a per-content adaptive drafter depth (depth 2 wins on prose and loses on
+  predictable text), and two unexamined suspects: the top-32 pruning before the Markov bias, and a
+  confidence-based early stop.
+- Decode without the drafter is about 10% slower on the row-identical bands than before them; the two
+  isolating runs have not been done.
+
+Memory and context:
+
+- The latent KV is now the largest per-token cost (about 3.9 of 5.0 KB per token per card). A
+  partitioned latent layout is designed and costed but not built; integer latent formats
+  (`RADIANCE_ERNIE55_KV_LATENT_FMT=i8gN` and wider) exist and are not yet judged for quality.
+- Routed experts in a four-bit format (the IQR-V4 plan) would free most of a card's memory; it needs
+  plugin support for the encodings and calibration data.
+
+Correctness and tooling:
+
+- A log line or counter when the drafter window is restored after a prefix hit, then the multi-turn
+  check again with that as a positive control.
+- Find which quantiser turns a one-ulp difference into a different token, and the cause of an
+  intermittently slow decoder under mixed load (seen in 2 of 6 runs).
+- Split the port into per-topic patch series against upstream v2.2.0 for possible contribution.
 
 ## Models
 

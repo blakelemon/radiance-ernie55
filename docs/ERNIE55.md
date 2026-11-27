@@ -139,8 +139,8 @@ buffers held per card, with the configuration above.
 
 ## Known behaviour and limits
 
-- While one request prefills, decoding of the other sequences pauses for each prefill batch (about 1 s
-  at batch 2,048), so concurrent streams look bursty.
+- As in other engines that batch prefill, a request that is prefilling delays the other streams;
+  `prefill-interleave` and the batch size set the balance.
 - The drafter's drafted/accepted counters are not bit-stable from run to run.
 - Only eight gfx1201 cards have been tried.
 
