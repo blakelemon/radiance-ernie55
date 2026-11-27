@@ -2530,7 +2530,7 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
             /* Indexer row split: the all_gather that joins the ranks' slot-list runs, declared per
              * MLA layer as the VHA gather is (make_ag_max), moving i32 slot rows as "f32" bytes. */
             if (m.idx_split) {
-                At.idx_ag = make_ag_max(W2, m.idx_rmax, m.sl_part, m.sl_all, "f32");
+                At.idx_ag = make_ag_max(a.topk + a.window, m.idx_rmax, m.sl_part, m.sl_all, "f32");
                 if (!At.idx_ag) return RAD_E_INVAL;
             }
             At.slice = rw(b, RAD_OP(b, "ernie_head_slice",
