@@ -48,8 +48,41 @@ Measured on one machine: eight 32 GB `gfx1201` cards, tensor-parallel 8, drafter
 | KV pool | 7.67 GiB = 1,483,008 tokens |
 | drafter KV, stored as a window (`RADIANCE_ERNIE55_DSPARK_KV_WINDOW=1`) | 12 MiB (3.09 GiB as a full-context group) |
 
-Known limit: while one request prefills, the other streams pause for each prefill batch (about 1 s at
-batch 2,048), so concurrent streams look bursty. Prose throughput varies 5-10% between launches.
+### Limits
+
+- While one request prefills, the other streams pause for each prefill batch (about 1 s at batch
+  2,048), so concurrent streams look bursty. `prefill-interleave` and a smaller batch trade prefill
+  speed for smoother streams.
+- A first request with a very long prompt is slow (about 105 s for 140K tokens); later turns reuse the
+  cached prefix.
+- The drafter accepts only about 35-50% of its drafted tokens on prose, so prose decodes at well under
+  half the speed of predictable text.
+- Prose throughput varies 5-10% between launches, and the drafter's drafted/accepted counters are not
+  bit-stable from run to run. Output tokens were identical in our comparisons.
+- Only eight `gfx1201` cards at tensor-parallel 8 have been run. Other card counts, other GPU families
+  and the CPU backend at full model size are untried.
+- `data/recipes/ernie55-iqr-v4.recipe` is a plan, not a working conversion: the plugin refuses the
+  encodings it targets.
+
+### Open items
+
+Not yet done on the final commit:
+
+- long-context retrieval and perplexity checks at 30K and 150K tokens;
+- out-of-tree plugin loading (`oot` tests) and the GPU-labelled tests in a full run;
+- a KL-divergence / replay audit against the reference implementation;
+- the case where a cached prefix is evicted and then missed, and a positive check that the restored
+  drafter window is read after a prefix hit (the engine logs nothing on restore);
+- an independent deep review of the last drafter-window commits.
+
+Test status on the build host (CPU-only selection, 247 tests): `device_test`, `format_test`,
+`shipped_plugins_test` and `avx_check` fail there with and without this port's last changes;
+`quant_test` passes its checks but can exceed its 10 s CPU budget on a slow host; one drafter-window
+node test ("program unchanged with the switch off") failed once and passed on three reruns, cause not
+found.
+
+Ideas not started: decode steps between prefill batches without a full pause, a per-content adaptive
+drafter depth for prose, and a smaller latent KV format to fit more context per card.
 
 ## Models
 
