@@ -1599,7 +1599,11 @@ static int ov_declare(RadBuilder* b, const RadBuildCtx* ctx, const FfnProgram& m
         if (m.rank == 0) fprintf(stderr, "radiance: ernie55: collectives overlap requested but off: %s\n", why);
         return RAD_OK;
     };
-    if (idx_row_split_from_env()) return off("the indexer row split is on");
+    /* The program state, not the env: the switch can be set and the split still declined (world 1,
+     * no MLA-DSA layer, a slot row that is not whole 16-byte words), and the serial chain then runs
+     * exactly as it does with the switch unset, overlap included. m.idx_split is final here:
+     * declare_ffn sets it while declaring the row buffers, before this call at the end. */
+    if (m.idx_split) return off("the indexer row split is on");
     if (!m.quant_fwd || m.world < 2) return off("it needs the quantised forward at tensor parallel 2 or more");
     if (!m.attn || !m.logits || !m.embed_ar) return off("not a target program with attention");
     for (const FfnLayer& y : m.L) {
@@ -1941,6 +1945,16 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
     };
     auto make_ag = [&](int64_t width, rad_buf src, rad_buf dst) -> rad_op {
         return make_ag_max(width, T, src, dst);
+    };
+    /* rw's read/write lists are initializer lists, so a buffer whose declaration depends on the
+     * program state (here m.idx_split) is appended after the rw() with a second
+     * rad_op_reads/rad_op_writes -- those push onto the op's list (core/build/rad_builder.cpp).
+     * With the split off nothing is appended, so the declared lists are the ones above, unchanged. */
+    auto rw_plus = [&](rad_op h, rad_buf rd, rad_buf wr) -> rad_op {
+        if (!m.idx_split) return h;
+        if (rd) rad_op_reads (b, h, &rd, 1);
+        if (wr) rad_op_writes(b, h, &wr, 1);
+        return h;
     };
     m.embed = rw(b, RAD_OP(b, "embed_lookup",
                            RAD_PARAMS(RAD_RANGE("M", 1, T), RAD_INT("n_embd", H),
@@ -2498,6 +2512,8 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
                                                         RAD_INT("topk", a.topk), RAD_INT("window", a.window),
                                                         RAD_INT("block_size", a.block), RAD_INT("tokens", m.lmax)),
                                              RAD_NOWEIGHTS), {m.qf, m.qs, m.iw, m.req}, {m.sc, m.aids, m.sl, m.topk_state});
+                /* the split step writes this rank's slot run to m.sl_part from here */
+                rw_plus(At.topk_tiled, RAD_NULL_HANDLE, m.sl_part);
                 At.logit = At.topk_tiled;
             } else {
             At.logit = rw(b, RAD_OP(b, "ernie_idx_logits",
@@ -2508,6 +2524,8 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
                                      RAD_PARAMS(RAD_RANGE("M", 1, T), RAD_INT("topk", a.topk), RAD_INT("window", a.window),
                                                 RAD_INT("block_size", a.block)),
                                      RAD_NOWEIGHTS), {m.sc, m.req}, {m.aids, m.sl});
+            /* the split step writes this rank's slot run to m.sl_part from here */
+            rw_plus(At.select, RAD_NULL_HANDLE, m.sl_part);
             }
             /* Indexer row split: the all_gather that joins the ranks' slot-list runs, declared per
              * MLA layer as the VHA gather is (make_ag_max), moving i32 slot rows as "f32" bytes. */
@@ -2537,6 +2555,8 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
                                               RAD_INT("rope_dim", a.rope), RAD_INT("block_size", a.block),
                                               RAD_INT("width", a.topk + a.window), RAD_F64("scale", scale)),
                                    RAD_WEIGHTS(aw.sink)), {m.qabs, m.qr, m.sl}, {m.ol});
+            /* the split step feeds this op the gathered slot list (both variants above) */
+            rw_plus(At.attn, m.sl_all, RAD_NULL_HANDLE);
             At.expand = rw(b, RAD_OP(b, "ernie_mla_project",
                                      RAD_PARAMS(RAD_RANGE("M", 1, T), RAD_INT("heads", ah_loc), RAD_INT("k_dim", a.nope),
                                                 RAD_INT("v_dim", a.vdim), RAD_INT("latent_dim", a.lat),
