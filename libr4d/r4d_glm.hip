@@ -5,6 +5,8 @@
 #include "r4d_moe_sort.h"
 #include <climits>
 #include <cmath>
+#include <cstdlib>
+#include "r4d_ernie_pins.h"
 
 namespace {
 // One wave computes R rows by C columns, so each loaded weight serves R rows and each input
@@ -85,18 +87,453 @@ int gemm_f32_tile(RadStream stream, const RadTensor& x, const RadTensor& w, cons
                     dim3(128), 0, (const uint16_t*)x.data, (const float*)w.data, (float*)y.data,
                     x.stride[0], w.stride[0], y.stride[0], (int)m, (int)n, (int)k);
 }
+// BF16-weight decode / fallback kernel: 4 waves (128 threads), 1 output column per wave, RM rows
+// accumulated simultaneously so each BF16 weight row is read once across up to 8 tokens.
+// With VEC8=true, each lane loads 8 BF16 (16B r4d_u32x4) per step (256 cols/wave/iter) with U
+// weight loads in flight to saturate GDDR6 bandwidth; scalar tail handles non-multiple-of-8 K.
+template <int RM, int U, bool VEC8>
+__global__ void __launch_bounds__(128)
+    gemm_nt_f32_bf16_vec_kernel(const uint16_t* __restrict__ x, const uint16_t* __restrict__ w,
+                                float* __restrict__ y, long xp, long wp, long yp, int m, int n,
+                                int k) {
+    const int lane = (int)(threadIdx.x & 31);
+    const int c = (int)blockIdx.x * 4 + (int)(threadIdx.x >> 5);
+    const int r0 = (int)blockIdx.y * RM;
+    if (c >= n) return;
+    const uint16_t* wr = w + (long)c * wp;
+    const uint16_t* xr[RM];
+#pragma unroll
+    for (int q = 0; q < RM; ++q) xr[q] = x + (long)(r0 + q < m ? r0 + q : m - 1) * xp;
+    float sum[RM];
+#pragma unroll
+    for (int q = 0; q < RM; ++q) sum[q] = 0.0f;
+
+    if constexpr (VEC8) {
+        const int k8 = k & ~7;
+        int j = lane * 8;
+        if constexpr (U > 1) {
+            for (; j + 256 * (U - 1) < k8; j += 256 * U) {
+                r4d_u32x4 wv[U];
+#pragma unroll
+                for (int u = 0; u < U; ++u) wv[u] = *(const r4d_u32x4*)(wr + j + 256 * u);
+                if constexpr (RM == 1) {
+                    r4d_u32x4 xv[U];
+#pragma unroll
+                    for (int u = 0; u < U; ++u) xv[u] = *(const r4d_u32x4*)(xr[0] + j + 256 * u);
+#pragma unroll
+                    for (int u = 0; u < U; ++u) {
+#pragma unroll
+                        for (int t = 0; t < 4; ++t) {
+                            sum[0] = fmaf(__uint_as_float(xv[u][t] << 16),
+                                          __uint_as_float(wv[u][t] << 16), sum[0]);
+                            sum[0] = fmaf(__uint_as_float(xv[u][t] & 0xffff0000u),
+                                          __uint_as_float(wv[u][t] & 0xffff0000u), sum[0]);
+                        }
+                    }
+                } else {
+#pragma unroll
+                    for (int u = 0; u < U; ++u) {
+#pragma unroll
+                        for (int q = 0; q < RM; ++q) {
+                            const r4d_u32x4 xv = *(const r4d_u32x4*)(xr[q] + j + 256 * u);
+#pragma unroll
+                            for (int t = 0; t < 4; ++t) {
+                                sum[q] = fmaf(__uint_as_float(xv[t] << 16),
+                                              __uint_as_float(wv[u][t] << 16), sum[q]);
+                                sum[q] = fmaf(__uint_as_float(xv[t] & 0xffff0000u),
+                                              __uint_as_float(wv[u][t] & 0xffff0000u), sum[q]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for (; j < k8; j += 256) {
+            const r4d_u32x4 wv = *(const r4d_u32x4*)(wr + j);
+#pragma unroll
+            for (int q = 0; q < RM; ++q) {
+                const r4d_u32x4 xv = *(const r4d_u32x4*)(xr[q] + j);
+#pragma unroll
+                for (int t = 0; t < 4; ++t) {
+                    sum[q] = fmaf(__uint_as_float(xv[t] << 16), __uint_as_float(wv[t] << 16),
+                                  sum[q]);
+                    sum[q] = fmaf(__uint_as_float(xv[t] & 0xffff0000u),
+                                  __uint_as_float(wv[t] & 0xffff0000u), sum[q]);
+                }
+            }
+        }
+        const int jt = k8 + lane;
+        if (jt < k) {
+            const float wv = bf16_to_f32(wr[jt]);
+#pragma unroll
+            for (int q = 0; q < RM; ++q) sum[q] = fmaf(bf16_to_f32(xr[q][jt]), wv, sum[q]);
+        }
+    } else {
+        for (int j = lane; j < k; j += 32) {
+            const float wv = bf16_to_f32(wr[j]);
+#pragma unroll
+            for (int q = 0; q < RM; ++q) sum[q] = fmaf(bf16_to_f32(xr[q][j]), wv, sum[q]);
+        }
+    }
+#pragma unroll
+    for (int q = 0; q < RM; ++q) {
+#pragma unroll
+        for (int mask = 16; mask; mask >>= 1) sum[q] += __shfl_xor(sum[q], mask, 32);
+    }
+    if (lane) return;
+#pragma unroll
+    for (int q = 0; q < RM; ++q)
+        if (r0 + q < m) y[(long)(r0 + q) * yp + c] = sum[q];
+}
+
+template <int RM, int U, bool VEC8>
+int gemm_f32_bf16_vec(RadStream stream, const RadTensor& x, const RadTensor& w, const RadTensor& y,
+                      long n, long k) {
+    const long m = x.shape[0];
+    return R4D_EMIT(stream, (gemm_nt_f32_bf16_vec_kernel<RM, U, VEC8>),
+                    dim3((unsigned)((n + 3) / 4), (unsigned)((m + RM - 1) / RM)), dim3(128), 0,
+                    (const uint16_t*)x.data, (const uint16_t*)w.data, (float*)y.data, x.stride[0],
+                    w.stride[0], y.stride[0], (int)m, (int)n, (int)k);
+}
+
+__device__ __forceinline__ void gemm_bf16_rb2_accumulate(r4d_u32x4 x, r4d_u32x4 w0, r4d_u32x4 w1,
+                                                        float& sum0, float& sum1) {
+#pragma unroll
+    for (int t = 0; t < 4; ++t) {
+        const float lo = bf16w_lo(x[t]), hi = bf16w_hi(x[t]);
+        sum0 = fmaf(lo, bf16w_lo(w0[t]), sum0);
+        sum0 = fmaf(hi, bf16w_hi(w0[t]), sum0);
+        sum1 = fmaf(lo, bf16w_lo(w1[t]), sum1);
+        sum1 = fmaf(hi, bf16w_hi(w1[t]), sum1);
+    }
+}
+
+/* Single-token BF16 GEMV. Each wave reuses its input vector across two weight rows. */
+__global__ void __launch_bounds__(64)
+    gemm_nt_f32_bf16_m1_rb2_kernel(const uint16_t* __restrict__ x, const uint16_t* __restrict__ w,
+                                   float* __restrict__ y, long wp, int n, int k) {
+    const int lane = (int)threadIdx.x & 31;
+    const int c0 = (int)blockIdx.x * 4 + ((int)threadIdx.x >> 5) * 2;
+    if (c0 >= n) return;
+    const bool has_second = c0 + 1 < n;
+    const uint16_t* w0 = w + (long)c0 * wp;
+    const uint16_t* w1 = has_second ? w0 + wp : w0;
+    float sum0 = 0.0f, sum1 = 0.0f;
+    const int k8 = k & ~7, full_k = k8 & ~255;
+    int j = lane * 8;
+
+    if (full_k != 0) {
+        r4d_u32x4 a = *reinterpret_cast<const r4d_u32x4*>(x + j);
+        r4d_u32x4 b0 = *reinterpret_cast<const r4d_u32x4*>(w0 + j);
+        r4d_u32x4 b1 = *reinterpret_cast<const r4d_u32x4*>(w1 + j);
+        /* Load the next 256-element wave step while consuming the current one (U=2). */
+        for (; j + 256 < full_k; j += 256) {
+            const r4d_u32x4 next0 = *reinterpret_cast<const r4d_u32x4*>(w0 + j + 256);
+            const r4d_u32x4 next1 = *reinterpret_cast<const r4d_u32x4*>(w1 + j + 256);
+            const r4d_u32x4 next_x = *reinterpret_cast<const r4d_u32x4*>(x + j + 256);
+            gemm_bf16_rb2_accumulate(a, b0, b1, sum0, sum1);
+            a = next_x;
+            b0 = next0;
+            b1 = next1;
+        }
+        gemm_bf16_rb2_accumulate(a, b0, b1, sum0, sum1);
+        j += 256;
+    }
+
+    if (j < k8) {
+        const r4d_u32x4 a = *reinterpret_cast<const r4d_u32x4*>(x + j);
+        const r4d_u32x4 b0 = *reinterpret_cast<const r4d_u32x4*>(w0 + j);
+        const r4d_u32x4 b1 = *reinterpret_cast<const r4d_u32x4*>(w1 + j);
+        gemm_bf16_rb2_accumulate(a, b0, b1, sum0, sum1);
+    }
+    const int jt = k8 + lane;
+    if (jt < k) {
+        const float a = bf16_to_f32(x[jt]);
+        sum0 = fmaf(a, bf16_to_f32(w0[jt]), sum0);
+        sum1 = fmaf(a, bf16_to_f32(w1[jt]), sum1);
+    }
+#pragma unroll
+    for (int mask = 16; mask; mask >>= 1) {
+        sum0 += __shfl_xor(sum0, mask, 32);
+        sum1 += __shfl_xor(sum1, mask, 32);
+    }
+    if (lane == 0) {
+        y[c0] = sum0;
+        if (has_second) y[c0 + 1] = sum1;
+    }
+}
+
+#if defined(__clang__) || defined(__HIP_DEVICE_COMPILE__)
+// BF16-weight prefill kernel: LDS-tiled RDNA4 gfx1201 BF16 WMMA with F32 accumulation and direct
+// coalesced F32 output store to pitched y[m * yp + n].
+// Tile shape: BM = WM * TM * 16, BN = WN * TN * 16, BK = 32, LDS pitch = 40 shorts (80 B: 16B
+// aligned, zero bank conflicts on ds_load_b128).
+// Both A (X) and B (W) load 8 contiguous BF16 per lane at k = s*16 + 8*(lane>>4) + 0..7, which
+// matches both gfx1201 hardware (identical K bijection on A and B) and tests/r4d_emu.
+// Output D[8*(lane>>4) + e, lane & 15] writes two 64B coalesced lines per wave per e.
+// KC > 0 (the row-identity form, gemm_nt_f32_pair): K is summed in chunks of KC. Each chunk is one WMMA chain from zero, and the
+// chunk partials are added in chunk order into a total that starts at zero: y = ((0 + c0) + c1) + ... The small-row kernel
+// (gemm_nt_f32_bf16_kc_small_kernel) computes the same chunks with the same WMMA chain and adds them in the same order, so a row's
+// value does not depend on how many rows share the launch or which kernel served it. KC == 0 is the plain chain over K.
+template <int WM, int WN, int TM, int TN, int KC = 0>
+__global__ void __launch_bounds__(WM * WN * 32)
+    gemm_nt_f32_bf16_wmma_kernel(const uint16_t* __restrict__ x, const uint16_t* __restrict__ w,
+                                 float* __restrict__ y, long xp, long wp, long yp, int m, int n,
+                                 int k) {
+    constexpr int BK = 32;
+    constexpr int PITCH = BK + 8;
+    constexpr int NTH = WM * WN * 32;
+    constexpr int BM = WM * TM * 16;
+    constexpr int BN = WN * TN * 16;
+    constexpr int CPR = BK / 8;
+    constexpr int AL = BM * CPR / NTH;
+    constexpr int WL = BN * CPR / NTH;
+    static_assert(AL >= 1 && WL >= 1 && BM * CPR % NTH == 0 && BN * CPR % NTH == 0,
+                  "WMMA tile must divide cleanly into 16B chunks");
+
+    __shared__ __attribute__((aligned(16))) uint16_t sA[BM * PITCH];
+    __shared__ __attribute__((aligned(16))) uint16_t sW[BN * PITCH];
+
+    const int tid = (int)threadIdx.x;
+    const int wave = tid >> 5, lane = tid & 31;
+    const int wm = wave / WN, wn = wave % WN;
+
+    constexpr unsigned kGroupM = 8;
+    const unsigned per = kGroupM * gridDim.x;
+    const unsigned lin = blockIdx.y * gridDim.x + blockIdx.x;
+    const unsigned first = (lin / per) * kGroupM;
+    const unsigned rem = lin % per;
+    const unsigned gm = gridDim.y - first < kGroupM ? gridDim.y - first : kGroupM;
+    const int m0 = (int)(first + rem % gm) * BM;
+    const int n0 = (int)(rem / gm) * BN;
+
+    const uint16_t* aptr[AL];
+    const uint16_t* wptr[WL];
+    uint16_t* adst[AL];
+    uint16_t* wdst[WL];
+#pragma unroll
+    for (int i = 0; i < AL; ++i) {
+        const int c = tid + NTH * i, r = c / CPR, e = (c % CPR) * 8;
+        const int gr = m0 + r < m ? m0 + r : m - 1;
+        aptr[i] = x + (long)gr * xp + e;
+        adst[i] = sA + r * PITCH + e;
+    }
+#pragma unroll
+    for (int i = 0; i < WL; ++i) {
+        const int c = tid + NTH * i, r = c / CPR, e = (c % CPR) * 8;
+        const int gr = n0 + r < n ? n0 + r : n - 1;
+        wptr[i] = w + (long)gr * wp + e;
+        wdst[i] = sW + r * PITCH + e;
+    }
+
+    const uint16_t* fa = sA + (wm * TM * 16 + (lane & 15)) * PITCH + 8 * (lane >> 4);
+    const uint16_t* fw = sW + (wn * TN * 16 + (lane & 15)) * PITCH + 8 * (lane >> 4);
+
+    v8f acc[TM][TN];
+    v8f tot[TM][TN];
+#pragma unroll
+    for (int i = 0; i < TM; ++i)
+#pragma unroll
+        for (int j = 0; j < TN; ++j) { acc[i][j] = (v8f)(0.0f); tot[i][j] = (v8f)(0.0f); }
+
+    r4d_u32x4 ra[AL], rw[WL];
+#pragma unroll
+    for (int i = 0; i < AL; ++i) ra[i] = *(const r4d_u32x4*)aptr[i];
+#pragma unroll
+    for (int i = 0; i < WL; ++i) rw[i] = *(const r4d_u32x4*)wptr[i];
+
+    const int nk = k / BK;
+    for (int kt = 0; kt < nk; ++kt) {
+        if (kt > 0) __syncthreads();
+#pragma unroll
+        for (int i = 0; i < AL; ++i) *(r4d_u32x4*)adst[i] = ra[i];
+#pragma unroll
+        for (int i = 0; i < WL; ++i) *(r4d_u32x4*)wdst[i] = rw[i];
+        __syncthreads();
+        if (kt + 1 < nk) {
+            const long k1 = (long)(kt + 1) * BK;
+#pragma unroll
+            for (int i = 0; i < AL; ++i) ra[i] = *(const r4d_u32x4*)(aptr[i] + k1);
+#pragma unroll
+            for (int i = 0; i < WL; ++i) rw[i] = *(const r4d_u32x4*)(wptr[i] + k1);
+        }
+#pragma unroll
+        for (int s = 0; s < BK / 16; ++s) {
+            v8s af[TM], bf[TN];
+#pragma unroll
+            for (int i = 0; i < TM; ++i) af[i] = *(const v8s*)(fa + i * 16 * PITCH + s * 16);
+#pragma unroll
+            for (int j = 0; j < TN; ++j) bf[j] = *(const v8s*)(fw + j * 16 * PITCH + s * 16);
+#pragma unroll
+            for (int i = 0; i < TM; ++i)
+#pragma unroll
+                for (int j = 0; j < TN; ++j)
+                    acc[i][j] =
+                        __builtin_amdgcn_wmma_f32_16x16x16_bf16_w32_gfx12(af[i], bf[j], acc[i][j]);
+#if defined(__HIP_DEVICE_COMPILE__)
+            __builtin_amdgcn_sched_group_barrier(0x100, TM + TN, 0);
+            __builtin_amdgcn_sched_group_barrier(0x008, TM * TN, 0);
+#endif
+        }
+        if (KC > 0 && (((kt + 1) * BK) % KC == 0 || kt + 1 == nk)) {
+#pragma unroll
+            for (int i = 0; i < TM; ++i)
+#pragma unroll
+                for (int j = 0; j < TN; ++j) { tot[i][j] = tot[i][j] + acc[i][j]; acc[i][j] = (v8f)(0.0f); }
+        }
+    }
+    if (KC > 0) {
+#pragma unroll
+        for (int i = 0; i < TM; ++i)
+#pragma unroll
+            for (int j = 0; j < TN; ++j) acc[i][j] = tot[i][j];
+    }
+
+#pragma unroll
+    for (int i = 0; i < TM; ++i) {
+        const int mb = m0 + (wm * TM + i) * 16 + 8 * (lane >> 4);
+#pragma unroll
+        for (int j = 0; j < TN; ++j) {
+            const int col = n0 + (wn * TN + j) * 16 + (lane & 15);
+            if (col < n) {
+#pragma unroll
+                for (int e = 0; e < 8; ++e) {
+                    const int row = mb + e;
+                    if (row < m) y[(long)row * yp + col] = acc[i][j][e];
+                }
+            }
+        }
+    }
+}
+
+template <int WM, int WN, int TM, int TN, int KC = 0>
+int gemm_f32_bf16_wmma(RadStream stream, const RadTensor& x, const RadTensor& w, const RadTensor& y,
+                       long n, long k) {
+    constexpr int BM = WM * TM * 16;
+    constexpr int BN = WN * TN * 16;
+    const long m = x.shape[0];
+    return R4D_EMIT(stream, (gemm_nt_f32_bf16_wmma_kernel<WM, WN, TM, TN, KC>),
+                    dim3((unsigned)((n + BN - 1) / BN), (unsigned)((m + BM - 1) / BM)),
+                    dim3(WM * WN * 32), 0, (const uint16_t*)x.data, (const uint16_t*)w.data,
+                    (float*)y.data, x.stride[0], w.stride[0], y.stride[0], (int)m, (int)n, (int)k);
+}
+
+// The chunk of the row-identity form (gemm_nt_f32_pair, bf16 weights, K % 32 == 0).
+constexpr int kPairKC = 256;
+constexpr int kPairSmallWaves = 16;
+
+// Small-row form of the chunked WMMA sum (KC = kPairKC): one block per 16 x 16 output tile, its waves take the K chunks
+// (wave w: chunks w, w + W, ...), each chunk one WMMA chain from zero over the chunk's 16-wide k steps in order, operands loaded
+// straight from global memory in the fragment layout the LDS-tiled kernel reads (A lane l: row l & 15, k = 16 s + 8 (l >> 4) + 0..7;
+// B the same over the columns). Wave 0 adds the chunk partials in chunk order into a total from zero: the tiled kernel's arithmetic,
+// row by row (the rows of a WMMA tile do not mix), with all the chunks of a tile in flight at once instead of one serial chain.
+// Rows past m read row m - 1 (as the tiled kernel does) and are not stored.
+__global__ void __launch_bounds__(kPairSmallWaves * 32)
+    gemm_nt_f32_bf16_kc_small_kernel(const uint16_t* __restrict__ x, const uint16_t* __restrict__ w,
+                                     float* __restrict__ y, long xp, long wp, long yp, int m, int n, int k) {
+    constexpr int KC = kPairKC, W = kPairSmallWaves;
+    __shared__ v8f part[W][32];
+    const int tid = (int)threadIdx.x, wave = tid >> 5, lane = tid & 31;
+    const int n0 = (int)blockIdx.x * 16, m0 = (int)blockIdx.y * 16;
+    const int ar = m0 + (lane & 15) < m ? m0 + (lane & 15) : m - 1;
+    const int br = n0 + (lane & 15) < n ? n0 + (lane & 15) : n - 1;
+    const uint16_t* xa = x + (long)ar * xp + 8 * (lane >> 4);
+    const uint16_t* wb = w + (long)br * wp + 8 * (lane >> 4);
+    const int nch = (k + KC - 1) / KC;
+    v8f tot = (v8f)(0.0f);
+    for (int base = 0; base < nch; base += W) {
+        const int c = base + wave;
+        if (c < nch) {
+            const int k0 = c * KC, k1 = k0 + KC < k ? k0 + KC : k;
+            v8f acc = (v8f)(0.0f);
+            for (int kk = k0; kk < k1; kk += 16) {
+                const v8s af = *(const v8s*)(xa + kk);
+                const v8s bf = *(const v8s*)(wb + kk);
+                acc = __builtin_amdgcn_wmma_f32_16x16x16_bf16_w32_gfx12(af, bf, acc);
+            }
+            part[wave][lane] = acc;
+        }
+        __syncthreads();
+        if (wave == 0) {
+            const int cnt = nch - base < W ? nch - base : W;
+            for (int i = 0; i < cnt; ++i) tot = tot + part[i][lane];
+        }
+        __syncthreads();
+    }
+    if (wave == 0) {
+        const int col = n0 + (lane & 15);
+        if (col < n) {
+#pragma unroll
+            for (int e = 0; e < 8; ++e) {
+                const int row = m0 + 8 * (lane >> 4) + e;
+                if (row < m) y[(long)row * yp + col] = tot[e];
+            }
+        }
+    }
+}
+
+// The row-identity GEMM of gemm_nt_f32_pair: every row count takes the chunked WMMA sum, so a row's f32 output is the same bits
+// alone, in a decode step, a verify step or a prefill chunk. Up to kPairSmallMax rows the small-row kernel (a block per 16 x 16 tile,
+// the chunks in parallel), above it the LDS-tiled kernel with the tile configs of gemm_f32_bf16_dispatch. The bound is speed only.
+constexpr long kPairSmallMax = 64;
+int gemm_f32_bf16_kc(RadStream stream, const RadTensor& x, const RadTensor& w, const RadTensor& y, long n, long k) {
+    const long rows = x.shape[0];
+    if (rows <= kPairSmallMax)
+        return R4D_EMIT(stream, gemm_nt_f32_bf16_kc_small_kernel,
+                        dim3((unsigned)((n + 15) / 16), (unsigned)((rows + 15) / 16)), dim3(kPairSmallWaves * 32), 0,
+                        (const uint16_t*)x.data, (const uint16_t*)w.data, (float*)y.data, x.stride[0], w.stride[0],
+                        y.stride[0], (int)rows, (int)n, (int)k);
+    if (rows >= 1024 && n >= 256) return gemm_f32_bf16_wmma<2, 4, 2, 2, kPairKC>(stream, x, w, y, n, k);
+    return gemm_f32_bf16_wmma<2, 2, 2, 2, kPairKC>(stream, x, w, y, n, k);
+}
+#endif
+
+int gemm_f32_bf16_dispatch(RadStream stream, const RadTensor& x, const RadTensor& w,
+                           const RadTensor& y, long n, long k) {
+    const long rows = x.shape[0];
+    const bool vec8 = (((uintptr_t)x.data & 15u) == 0) && (((uintptr_t)w.data & 15u) == 0) &&
+                      ((x.stride[0] & 7) == 0) && ((w.stride[0] & 7) == 0);
+    if (rows <= 8) {
+        if (vec8) {
+            if (rows == 1 && n >= 256)
+                return R4D_EMIT(stream, (gemm_nt_f32_bf16_m1_rb2_kernel),
+                                dim3((unsigned)((n + 3) / 4)), dim3(64), 0,
+                                (const uint16_t*)x.data, (const uint16_t*)w.data, (float*)y.data,
+                                w.stride[0], (int)n, (int)k);
+            if (rows == 1) return gemm_f32_bf16_vec<1, 4, true>(stream, x, w, y, n, k);
+            if (rows == 2) return gemm_f32_bf16_vec<2, 2, true>(stream, x, w, y, n, k);
+            if (rows <= 4) return gemm_f32_bf16_vec<4, 2, true>(stream, x, w, y, n, k);
+            return gemm_f32_bf16_vec<8, 2, true>(stream, x, w, y, n, k);
+        }
+        return gemm_f32_bf16_vec<8, 1, false>(stream, x, w, y, n, k);
+    }
+#if defined(__clang__) || defined(__HIP_DEVICE_COMPILE__)
+    if (vec8 && k >= 32 && (k & 31) == 0) {
+        if (rows >= 1024 && n >= 256)
+            return gemm_f32_bf16_wmma<2, 4, 2, 2>(stream, x, w, y, n, k);
+        if (rows > 32) return gemm_f32_bf16_wmma<2, 2, 2, 2>(stream, x, w, y, n, k);
+        return gemm_f32_bf16_wmma<2, 2, 1, 2>(stream, x, w, y, n, k);
+    }
+#endif
+    if (vec8) return gemm_f32_bf16_vec<8, 2, true>(stream, x, w, y, n, k);
+    return gemm_f32_bf16_vec<8, 1, false>(stream, x, w, y, n, k);
+}
+
 int gemm_f32_body(const RadArgs* a, RadStream stream) {
     if (!a || a->n_t < 3) return RAD_E_INVAL;
     const auto &x = a->t[0], &w = a->t[1], &y = a->t[2];
     const long n = r4d_geti_or(a, "N", 0), k = r4d_geti_or(a, "K", 0);
-    if (x.dtype != RAD_BF16 || w.dtype != RAD_F32 || y.dtype != RAD_F32) return RAD_E_DTYPE;
+    if (x.dtype != RAD_BF16 || (w.dtype != RAD_F32 && w.dtype != RAD_BF16) || y.dtype != RAD_F32)
+        return RAD_E_DTYPE;
     if (!x.data || !w.data || !y.data) return RAD_E_INVAL;
-    if (n < 1 || n > 512 || k < 1 || k > 16384 || x.rank != 2 || w.rank != 2 || y.rank != 2 ||
+    const long max_n = w.dtype == RAD_BF16 ? 1024 : 512;
+    if (n < 1 || n > max_n || k < 1 || k > 16384 || x.rank != 2 || w.rank != 2 || y.rank != 2 ||
         x.shape[0] < 1 || x.shape[0] > 65535 || x.shape[1] != k || w.shape[0] != n ||
         w.shape[1] != k || y.shape[0] != x.shape[0] || y.shape[1] != n || x.stride[1] != 1 ||
         w.stride[1] != 1 || y.stride[1] != 1 || x.stride[0] < k || w.stride[0] < k ||
         y.stride[0] < n)
         return RAD_E_SHAPE;
+    if (w.dtype == RAD_BF16) return gemm_f32_bf16_dispatch(stream, x, w, y, n, k);
     /* The tile form, rows x columns per wave and steps of k in flight, by M; all forms are
      * byte-identical, so the choice is speed only. Measured on gfx1201 (r4d_selftest --perff32,
      * cold) at N 4/32/36/288, K 4096: 16x4 gains 3-5 % at N 288/32 above 64 rows but loses 16 % at
@@ -109,6 +546,200 @@ int gemm_f32_body(const RadArgs* a, RadStream stream) {
     if (rows <= 16 || (rows < 64 && n < 128)) return gemm_f32_tile<2, 2, 16>(stream, x, w, y, n, k);
     if (rows < 64) return gemm_f32_tile<8, 1, 8>(stream, x, w, y, n, k);
     return gemm_f32_tile<8, 4>(stream, x, w, y, n, k);
+}
+
+/* Single-token paired BF16 GEMV: each wave computes y0[c] = x . w0[c] and y1[c] = x . w1[c]
+ * sharing every uint4 activation load with U=2 prefetch. 2 waves/block -> 256 blocks at N=512. */
+__global__ void __launch_bounds__(64)
+    gemm_nt_f32_bf16_pair_m1_kernel(const uint16_t* __restrict__ x,
+                                    const uint16_t* __restrict__ w0,
+                                    const uint16_t* __restrict__ w1,
+                                    float* __restrict__ y0, float* __restrict__ y1,
+                                    long w0p, long w1p, int n, int k) {
+    const int lane = (int)threadIdx.x & 31;
+    const int c = (int)blockIdx.x * 2 + ((int)threadIdx.x >> 5);
+    if (c >= n) return;
+    const uint16_t* r0 = w0 + (long)c * w0p;
+    const uint16_t* r1 = w1 + (long)c * w1p;
+    float sum0 = 0.0f, sum1 = 0.0f;
+    const int k8 = k & ~7, full_k = k8 & ~255;
+    int j = lane * 8;
+
+    if (full_k != 0) {
+        r4d_u32x4 a = *reinterpret_cast<const r4d_u32x4*>(x + j);
+        r4d_u32x4 b0 = *reinterpret_cast<const r4d_u32x4*>(r0 + j);
+        r4d_u32x4 b1 = *reinterpret_cast<const r4d_u32x4*>(r1 + j);
+        for (; j + 256 < full_k; j += 256) {
+            const r4d_u32x4 next0 = *reinterpret_cast<const r4d_u32x4*>(r0 + j + 256);
+            const r4d_u32x4 next1 = *reinterpret_cast<const r4d_u32x4*>(r1 + j + 256);
+            const r4d_u32x4 next_x = *reinterpret_cast<const r4d_u32x4*>(x + j + 256);
+            gemm_bf16_rb2_accumulate(a, b0, b1, sum0, sum1);
+            a = next_x;
+            b0 = next0;
+            b1 = next1;
+        }
+        gemm_bf16_rb2_accumulate(a, b0, b1, sum0, sum1);
+        j += 256;
+    }
+    if (j < k8) {
+        const r4d_u32x4 a = *reinterpret_cast<const r4d_u32x4*>(x + j);
+        const r4d_u32x4 b0 = *reinterpret_cast<const r4d_u32x4*>(r0 + j);
+        const r4d_u32x4 b1 = *reinterpret_cast<const r4d_u32x4*>(r1 + j);
+        gemm_bf16_rb2_accumulate(a, b0, b1, sum0, sum1);
+    }
+    const int jt = k8 + lane;
+    if (jt < k) {
+        const float a = bf16_to_f32(x[jt]);
+        sum0 = fmaf(a, bf16_to_f32(r0[jt]), sum0);
+        sum1 = fmaf(a, bf16_to_f32(r1[jt]), sum1);
+    }
+#pragma unroll
+    for (int mask = 16; mask; mask >>= 1) {
+        sum0 += __shfl_xor(sum0, mask, 32);
+        sum1 += __shfl_xor(sum1, mask, 32);
+    }
+    if (lane == 0) {
+        y0[c] = sum0;
+        y1[c] = sum1;
+    }
+}
+
+template <int RM, int U, bool VEC8>
+__global__ void __launch_bounds__(128)
+    gemm_nt_f32_bf16_pair_vec_kernel(const uint16_t* __restrict__ x,
+                                     const uint16_t* __restrict__ w0,
+                                     const uint16_t* __restrict__ w1,
+                                     float* __restrict__ y0, float* __restrict__ y1,
+                                     long xp, long w0p, long w1p, long y0p, long y1p,
+                                     int m, int n, int k) {
+    const int lane = (int)threadIdx.x & 31;
+    const int c = (int)blockIdx.x * 4 + ((int)threadIdx.x >> 5);
+    const int r0 = (int)blockIdx.y * RM;
+    const int half = (int)blockIdx.z;
+    if (c >= n || r0 >= m) return;
+    const uint16_t* wrow = (half ? w1 : w0) + (long)c * (half ? w1p : w0p);
+    float* yout = half ? y1 : y0;
+    const long yp = half ? y1p : y0p;
+    float sum[RM] = {};
+    if constexpr (VEC8) {
+        const int k8 = k & ~7;
+        for (int j = lane * 8; j < k8; j += 32 * 8 * U) {
+#pragma unroll
+            for (int u = 0; u < U; ++u) {
+                const int jj = j + u * 256;
+                if (jj < k8) {
+                    const r4d_u32x4 bw = *reinterpret_cast<const r4d_u32x4*>(wrow + jj);
+                    float wf[8];
+#pragma unroll
+                    for (int t = 0; t < 4; ++t) {
+                        wf[2 * t]     = bf16w_lo(bw[t]);
+                        wf[2 * t + 1] = bf16w_hi(bw[t]);
+                    }
+#pragma unroll
+                    for (int r = 0; r < RM; ++r) {
+                        if (r0 + r < m) {
+                            const r4d_u32x4 aw =
+                                *reinterpret_cast<const r4d_u32x4*>(x + (long)(r0 + r) * xp + jj);
+#pragma unroll
+                            for (int t = 0; t < 4; ++t) {
+                                sum[r] = fmaf(bf16w_lo(aw[t]), wf[2 * t], sum[r]);
+                                sum[r] = fmaf(bf16w_hi(aw[t]), wf[2 * t + 1], sum[r]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        const int jt = k8 + lane;
+        if (jt < k) {
+            const float wf = bf16_to_f32(wrow[jt]);
+#pragma unroll
+            for (int r = 0; r < RM; ++r)
+                if (r0 + r < m) sum[r] = fmaf(bf16_to_f32(x[(long)(r0 + r) * xp + jt]), wf, sum[r]);
+        }
+    } else {
+        for (int j = lane; j < k; j += 32) {
+            const float wf = bf16_to_f32(wrow[j]);
+#pragma unroll
+            for (int r = 0; r < RM; ++r)
+                if (r0 + r < m) sum[r] = fmaf(bf16_to_f32(x[(long)(r0 + r) * xp + j]), wf, sum[r]);
+        }
+    }
+#pragma unroll
+    for (int r = 0; r < RM; ++r) {
+        if (r0 + r < m) {
+            float s = sum[r];
+#pragma unroll
+            for (int mask = 16; mask; mask >>= 1) s += __shfl_xor(s, mask, 32);
+            if (lane == 0) yout[(long)(r0 + r) * yp + c] = s;
+        }
+    }
+}
+
+template <int RM, int U, bool VEC8>
+int gemm_f32_bf16_pair_vec(RadStream stream, const RadTensor& x, const RadTensor& w0,
+                           const RadTensor& w1, const RadTensor& y0, const RadTensor& y1,
+                           long n, long k) {
+    const long m = x.shape[0];
+    return R4D_EMIT(stream, (gemm_nt_f32_bf16_pair_vec_kernel<RM, U, VEC8>),
+                    dim3((unsigned)((n + 3) / 4), (unsigned)((m + RM - 1) / RM), 2u), dim3(128), 0,
+                    (const uint16_t*)x.data, (const uint16_t*)w0.data, (const uint16_t*)w1.data,
+                    (float*)y0.data, (float*)y1.data, x.stride[0], w0.stride[0], w1.stride[0],
+                    y0.stride[0], y1.stride[0], (int)m, (int)n, (int)k);
+}
+
+int gemm_f32_pair_body(const RadArgs* a, RadStream stream) {
+    if (!a || a->n_t < 5) return RAD_E_INVAL;
+    const auto &x = a->t[0], &w0 = a->t[1], &w1 = a->t[2], &y0 = a->t[3], &y1 = a->t[4];
+    const long n = r4d_geti_or(a, "N", 0), k = r4d_geti_or(a, "K", 0);
+    if (x.dtype != RAD_BF16 || (w0.dtype != RAD_F32 && w0.dtype != RAD_BF16) ||
+        w1.dtype != w0.dtype || y0.dtype != RAD_F32 || y1.dtype != RAD_F32)
+        return RAD_E_DTYPE;
+    if (!x.data || !w0.data || !w1.data || !y0.data || !y1.data) return RAD_E_INVAL;
+    const long max_n = w0.dtype == RAD_BF16 ? 1024 : 512;
+    if (n < 1 || n > max_n || k < 1 || k > 16384 || x.rank != 2 || w0.rank != 2 || w1.rank != 2 ||
+        y0.rank != 2 || y1.rank != 2 || x.shape[0] < 1 || x.shape[0] > 65535 || x.shape[1] != k ||
+        w0.shape[0] != n || w0.shape[1] != k || w1.shape[0] != n || w1.shape[1] != k ||
+        y0.shape[0] != x.shape[0] || y0.shape[1] != n || y1.shape[0] != x.shape[0] ||
+        y1.shape[1] != n || x.stride[1] != 1 || w0.stride[1] != 1 || w1.stride[1] != 1 ||
+        y0.stride[1] != 1 || y1.stride[1] != 1 || x.stride[0] < k || w0.stride[0] < k ||
+        w1.stride[0] < k || y0.stride[0] < n || y1.stride[0] < n)
+        return RAD_E_SHAPE;
+    if (w0.dtype == RAD_BF16) {
+        const long rows = x.shape[0];
+        const bool vec8 = (((uintptr_t)x.data & 15u) == 0) && (((uintptr_t)w0.data & 15u) == 0) &&
+                          (((uintptr_t)w1.data & 15u) == 0) && ((x.stride[0] & 7) == 0) &&
+                          ((w0.stride[0] & 7) == 0) && ((w1.stride[0] & 7) == 0);
+#if defined(__clang__) || defined(__HIP_DEVICE_COMPILE__)
+        /* Row identity (the row-identity checks): with 16-byte rows and K % 32 == 0 (every ERNIE use) every row count takes the
+         * chunked WMMA sum (gemm_f32_bf16_kc), so a row's f32 logits (the router's) and kv/score projection (the HCA compressor's, which
+         * enters persistent state) do not depend on how many rows share its step. The vector kernels and the plain WMMA chain sum K in other
+         * orders; they served 1..8 rows and more than 8 rows before, which made the value depend on the step's row count (R4D_PAIR_VEC_MAX
+         * pinned the vector form for every count, at the cost of the tensor cores at prefill). */
+        if (vec8 && k >= 32 && (k & 31) == 0) {
+            int rc = gemm_f32_bf16_kc(stream, x, w0, y0, n, k);
+            if (rc < 0) return rc;
+            return gemm_f32_bf16_kc(stream, x, w1, y1, n, k);
+        }
+#endif
+        /* Other layouts: the vector kernels for every row count (they agree with each other bit for bit, emu band_pair). */
+        if (vec8) {
+            if (rows == 2) return gemm_f32_bf16_pair_vec<2, 2, true>(stream, x, w0, w1, y0, y1, n, k);
+            if (rows <= 4) return gemm_f32_bf16_pair_vec<4, 2, true>(stream, x, w0, w1, y0, y1, n, k);
+            return gemm_f32_bf16_pair_vec<8, 2, true>(stream, x, w0, w1, y0, y1, n, k);
+        }
+        return gemm_f32_bf16_pair_vec<8, 1, false>(stream, x, w0, w1, y0, y1, n, k);
+    }
+    const long rows = x.shape[0];
+    auto run_f32 = [&](const RadTensor& w, const RadTensor& y) {
+        if (n <= 8) return gemm_f32_tile<4, 1>(stream, x, w, y, n, k);
+        if (rows <= 16 || (rows < 64 && n < 128)) return gemm_f32_tile<2, 2, 16>(stream, x, w, y, n, k);
+        if (rows < 64) return gemm_f32_tile<8, 1, 8>(stream, x, w, y, n, k);
+        return gemm_f32_tile<8, 4>(stream, x, w, y, n, k);
+    };
+    int rc = run_f32(w0, y0);
+    if (rc < 0) return rc;
+    return run_f32(w1, y1);
 }
 // router_sigmoid_topk in one wave per row: p = sigmoid(logit), the top_k largest ranks p + bias
 // in descending order, equal ranks to the lower expert, as a serial scan with a strict `>` takes
@@ -544,6 +1175,9 @@ extern "C" int r4d_rad_router_sigmoid_group_topk(const RadArgs* a, RadStream str
 }
 extern "C" int r4d_rad_gemm_nt_f32(const RadArgs* a, RadStream stream) {
     return gemm_f32_body(a, stream);
+}
+extern "C" int r4d_rad_gemm_nt_f32_pair(const RadArgs* a, RadStream stream) {
+    return gemm_f32_pair_body(a, stream);
 }
 extern "C" int r4d_rad_router_sigmoid_topk(const RadArgs* a, RadStream stream) {
     return router_body(a, stream);

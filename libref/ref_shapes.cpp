@@ -395,6 +395,51 @@ int ref_mhc_pre_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) 
     return o.finish("mhc_pre", operand, out);
 }
 
+int ref_ernie_mhc_pre_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const uint32_t D = act_dt(p, n_p);
+    if (D != (uint32_t)RAD_F32 && D != (uint32_t)RAD_BF16) return RAD_E_UNSUPPORTED;
+    const int64_t M = gi(p, n_p, "M", 0), n = gi(p, n_p, "n", 0), hc = gi(p, n_p, "hc", 0);
+    if (M <= 0 || n <= 0 || hc < 2 || hc > 8) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t(D, {M, hc * n});
+    o.t((uint32_t)RAD_F32, {hc * (hc + 2), hc * n});
+    o.t((uint32_t)RAD_F32, {3});
+    o.t((uint32_t)RAD_F32, {hc * (hc + 2)});
+    o.t(D, {M, n});
+    o.t((uint32_t)RAD_F32, {M, hc});
+    o.t((uint32_t)RAD_F32, {M, hc * hc});
+    return o.finish("ernie_mhc_pre", operand, out);
+}
+
+int ref_ernie_mhc_pre_rms_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    if (act_dt(p, n_p) != (uint32_t)RAD_BF16) return RAD_E_UNSUPPORTED;
+    const int64_t M = gi(p, n_p, "M", 0), n = gi(p, n_p, "n", 0), hc = gi(p, n_p, "hc", 0);
+    if (M <= 0 || n <= 0 || hc < 2 || hc > 8) return RAD_E_UNSUPPORTED;
+    if (n > INT64_MAX / hc) return RAD_E_UNSUPPORTED;   /* story 3-4c: hc * n is evaluated below; a signed overflow (or a wrap to a small shape) is a refusal */
+    Opd o;
+    o.t((uint32_t)RAD_BF16, {M, hc * n});
+    o.t((uint32_t)RAD_F32, {hc * (hc + 2), hc * n});
+    o.t((uint32_t)RAD_F32, {3});
+    o.t((uint32_t)RAD_F32, {hc * (hc + 2)});
+    o.t((uint32_t)RAD_BF16, {n});
+    o.t((uint32_t)RAD_BF16, {M, n});
+    o.t((uint32_t)RAD_F32, {M, hc});
+    o.t((uint32_t)RAD_F32, {M, hc * hc});
+    return o.finish("ernie_mhc_pre_rms", operand, out);
+}
+
+int ref_ernie_mhc_head_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), n = gi(p, n_p, "n", 0), hc = gi(p, n_p, "hc", 0);
+    if (M <= 0 || n <= 0 || hc < 2 || hc > 8) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_BF16, {M, hc * n});   /* M is the band ceiling for h's and x's rows */
+    o.t((uint32_t)RAD_F32, {hc, hc * n});
+    o.t((uint32_t)RAD_F32, {1});
+    o.t((uint32_t)RAD_F32, {hc});
+    o.t((uint32_t)RAD_BF16, {M, n});
+    return o.finish("ernie_mhc_head", operand, out);
+}
+
 static int64_t mhc_part_stride(int64_t hc) { return (hc * (hc + 2) + 1 + 3) / 4 * 4; }
 
 int ref_mhc_pre_partial_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
@@ -436,6 +481,17 @@ int ref_mhc_post_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out)
     o.t((uint32_t)RAD_F32, {M, hc}); o.t((uint32_t)RAD_F32, {M, hc * hc});
     o.t(D, {M, hc * n});
     return o.finish("mhc_post", operand, out);
+}
+
+int ref_ernie_add_mhc_post_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const uint32_t D = act_dt(p, n_p);
+    const int64_t M = gi(p, n_p, "M", 0), n = gi(p, n_p, "n", 0), hc = gi(p, n_p, "hc", 0);
+    if (M <= 0 || n <= 0 || hc < 2 || hc > 8) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t(D, {M, n}); o.t(D, {M, n}); o.t(D, {M, hc * n});
+    o.t((uint32_t)RAD_F32, {M, hc}); o.t((uint32_t)RAD_F32, {M, hc * hc});
+    o.t(D, {M, hc * n});
+    return o.finish("ernie_add_mhc_post", operand, out);
 }
 
 int ref_mhc_contract_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
@@ -996,6 +1052,36 @@ int ref_gelu_mul_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out)
     o.t(D, { M, n });          /* y */
     return o.finish("gelu_mul", operand, out);
 }
+int ref_situ_mul_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const uint32_t D = act_dt(p, n_p);
+    const int64_t M = gi(p, n_p, "M", 0), n = gi(p, n_p, "n", 0);
+    Opd o;
+    o.t(D, { M, 2 * n });      /* gate_up -- the gate is the FIRST half, up the second */
+    o.t(D, { M, n });          /* y */
+    return o.finish("situ_mul", operand, out);
+}
+
+int ref_situ_mul_quant_fp8_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), n = gi(p, n_p, "n", 0), g = gi(p, n_p, "group", 128);
+    if (M <= 0 || n < 4 || (n % 4) != 0 || g != 128) return RAD_E_UNSUPPORTED;
+    const int64_t nkb = (n + 127) / 128;
+    Opd o;
+    o.t((uint32_t)RAD_BF16, { M, 2 * n });
+    o.t((uint32_t)RAD_F8E4M3, { M, n });
+    o.t((uint32_t)RAD_F32, { M, nkb });
+    return o.finish("situ_mul_quant_fp8", operand, out);
+}
+
+int ref_ernie_multimax_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), n = gi(p, n_p, "n", 0);
+    const uint32_t F = (uint32_t)RAD_F32;   /* every operand is float32, whatever `dtype` says */
+    Opd o;
+    o.t(F, { M, n });          /* x -- the logits */
+    o.t(F, { 4 });             /* ranges -- the four learned thresholds */
+    o.t(F, { 4 });             /* coefficients -- the four learned hinge weights */
+    o.t(F, { M, n });          /* y */
+    return o.finish("ernie_multimax", operand, out);
+}
 
 static int unary_shape(const RadParam* p, int n_p, int operand, const char* op, RadOpdDesc* out) {
     const uint32_t D = act_dt(p, n_p);
@@ -1354,6 +1440,18 @@ int ref_gemm_nt_f32_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* o
     o.t(RAD_F32, { M, N });
     return o.finish("gemm_nt_f32", operand, out);
 }
+
+int ref_gemm_nt_f32_pair_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), N = gi(p, n_p, "N", 0), K = gi(p, n_p, "K", 0);
+    if (M < 1 || N < 1 || K < 1) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t(RAD_BF16, { M, K });
+    o.t(RAD_F32, { N, K });
+    o.t(RAD_F32, { N, K });
+    o.t(RAD_F32, { M, N });
+    o.t(RAD_F32, { M, N });
+    return o.finish("gemm_nt_f32_pair", operand, out);
+}
 int ref_gemm_nt_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
     const uint32_t D = act_dt(p, n_p);
     const int64_t M = gi(p, n_p, "M", 0), N = gi(p, n_p, "N", 0), K = gi(p, n_p, "K", 0);
@@ -1394,8 +1492,8 @@ static int gemm_q_shape(const RadParam* p, int n_p, int operand, bool bias, RadO
     const int64_t group = gi(p, n_p, "group", 0);
     const char* q = gs(p, n_p, "dtype");
     auto is = [&](const char* s) { return q && std::strcmp(q, s) == 0; };
-    const bool f32s = is("fp8a8f32");
-    const bool a8 = is("fp8a8") || f32s, a16 = is("fp8a16"), w4 = is("w4a8"), w8 = is("w8a8");
+    const bool f32s = is("fp8a8f32") || is("fp8a16f32");
+    const bool a8 = is("fp8a8") || is("fp8a8f32"), a16 = is("fp8a16") || is("fp8a16f32"), w4 = is("w4a8"), w8 = is("w8a8");
     /* i8a8h is i8a8's operands; its rotation is in the values. */
     const bool i8 = is("i8a8") || is("i8a8h"), mx = is("mxfp4a8");
     if ((!a8 && !a16 && !w4 && !w8 && !i8 && !mx) || N <= 0 || K <= 0 || group <= 0)
@@ -2008,6 +2106,383 @@ int ref_router_topk_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* o
     return o.finish("router_topk", operand, out);
 }
 
+/* ERNIE's routing: the logits are the TWO sigmoid projections side by side, so `logits` is
+ * [M, 2*experts]; the correction bias and the per-expert output scale are weights; the ids draw
+ * over [0, experts) and the weights are f32. renormalize is 0 or 1. */
+int ref_ernie_router_topk_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M      = gi(p, n_p, "M", 0);
+    const int64_t ne     = gi(p, n_p, "experts", 0);
+    const int64_t k      = gi(p, n_p, "topk", 0);
+    const int64_t renorm = gi(p, n_p, "renormalize", 0);
+    if (M <= 0 || ne <= 0 || ne > INT32_MAX || k < 1 || k > ne || (renorm != 0 && renorm != 1))
+        return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_F32, { M, 2 * ne });             /* logits */
+    o.t((uint32_t)RAD_F32, { ne });                    /* bias   (w) */
+    o.t((uint32_t)RAD_F32, { ne });                    /* scale  (w) */
+    o.t_idx({ M, k }, ne, -1, 0);                      /* ids */
+    o.t((uint32_t)RAD_F32, { M, k });                  /* weights */
+    return o.finish("ernie_router_topk", operand, out);
+}
+
+int ref_ernie_router_topk_scatter_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), ne = gi(p, n_p, "experts", 0),
+                  k = gi(p, n_p, "topk", 0), renorm = gi(p, n_p, "renormalize", 0);
+    if (M <= 0 || ne <= 0 || ne > INT32_MAX || k < 1 || k > ne || (renorm != 0 && renorm != 1))
+        return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_F32, { M, 2 * ne });
+    o.t((uint32_t)RAD_F32, { ne });
+    o.t((uint32_t)RAD_F32, { ne });
+    o.t_idx({ M, k }, ne, -1, 0);
+    o.t((uint32_t)RAD_F32, { M, k });
+    o.t_idx({ M * k }, M * k, -1, 0);
+    o.t_idx({ ne + 1 }, M * k + 1, -1, 0);
+    o.t_idx({ ne }, M * k + 1, -1, 0);
+    return o.finish("ernie_router_topk_scatter", operand, out);
+}
+
+/* The selection row: scores [M, tokens] f32, one position and one request per row, a block table
+ * [seqs, blocks], and two [M, topk + window] i32 planes. Positions draw over [0, tokens) so a
+ * candidate range always fits the scores; requests over [0, seqs); table entries over [0, pages). */
+int ref_ernie_dsa_select_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), k = gi(p, n_p, "topk", 0), w = gi(p, n_p, "window", 0);
+    const int64_t bs = gi(p, n_p, "block_size", 0), L = gi(p, n_p, "tokens", 0), S = gi(p, n_p, "seqs", 0),
+                  B = gi(p, n_p, "blocks", 0);
+    const int64_t pages = gi(p, n_p, "num_pages", 0) > 0 ? gi(p, n_p, "num_pages", 0) : std::max<int64_t>(B, 1);
+    if (M <= 0 || k < 1 || w < 1 || bs < 1 || pages < 1 || L < 1 || S < 1 || B < 1 ||
+        k > INT32_MAX / 2 || w > INT32_MAX / 2 || pages > INT32_MAX / bs)
+        return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_F32, { M, L });                  /* scores */
+    o.t_idx({ M }, L, -1, 0);                          /* positions */
+    o.t_idx({ M }, S, -1, 0);                          /* req */
+    o.t_idx({ S, B }, pages, -1, 0);                   /* block_table */
+    o.t_idx({ M, k + w }, 0, -1, 0);                   /* ids */
+    o.t_idx({ M, k + w }, 0, -1, 0);                   /* slots */
+    return o.finish("ernie_dsa_select", operand, out);
+}
+
+/* ERNIE MLA-DSA attention ops (ref_ernie_attn.cpp): bf16 rows, i32 positions and slots, f32 sink. */
+int ref_ernie_rope_tail_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), H = gi(p, n_p, "heads", 0), W = gi(p, n_p, "width", 0),
+                  R = gi(p, n_p, "rope_dim", 0);
+    if (M < 1 || H < 1 || W < 1 || R < 2 || (R & 1) || R > W) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_BF16, { M, H * W });             /* x, INOUT */
+    o.t_idx({ M }, 0, -1, 0);                          /* positions */
+    return o.finish("ernie_rope_tail", operand, out);
+}
+
+/* The DSA indexer ops (ref_ernie_attn.cpp). Positions draw below 1024; the logits description sizes the
+ * scores [M, tokens] so that every drawn position's candidate range fits (tokens default 256 with window
+ * 128 => positions draw below 256). */
+int ref_ernie_row_req_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0);
+    if (M < 1) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t_idx({ 2 }, M, -1, (uint32_t)RAD_OPD_F_IDX_CU);   /* cu_seqlens: [0, M], one sequence */
+    o.t_idx({ M }, 0, -1, 0);                            /* req */
+    return o.finish("ernie_row_req", operand, out);
+}
+int ref_ernie_head_slice_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), H = gi(p, n_p, "heads", 0), W = gi(p, n_p, "width", 0),
+                  n = gi(p, n_p, "count", 0);
+    if (M < 1 || H < 1 || W < 1 || n < 1 || n > W) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_BF16, { M, H * W });
+    o.t((uint32_t)RAD_BF16, { M, H * n });
+    return o.finish("ernie_head_slice", operand, out);
+}
+int ref_ernie_idx_query_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), H = gi(p, n_p, "heads", 0), D = gi(p, n_p, "head_dim", 0);
+    const int64_t R = gi(p, n_p, "rope_dim", 0);
+    if (M < 1 || H < 1 || D < 4 || R < 2 || (R & 1) || R > D) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_BF16, { M, H * D });             /* q */
+    o.t_idx({ M }, 1024, -1, 0);                       /* positions */
+    o.t((uint32_t)RAD_F8E4M3, { M, H * D });           /* qf */
+    o.t((uint32_t)RAD_F32, { M, H });                  /* qs */
+    return o.finish("ernie_idx_query", operand, out);
+}
+int ref_ernie_idx_key_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), D = gi(p, n_p, "head_dim", 0), R = gi(p, n_p, "rope_dim", 0);
+    const int64_t bs = gi(p, n_p, "block_size", 8), np = gi(p, n_p, "num_pages", 0), pages = np > 0 ? np : (M + bs - 1) / bs + 1;
+    if (M < 1 || D < 4 || R < 2 || (R & 1) || R > D || bs < 1 || pages < 1) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_BF16, { M, D });                 /* k */
+    o.t((uint32_t)RAD_BF16, { D });                    /* gamma (w) */
+    o.t((uint32_t)RAD_BF16, { D });                    /* beta  (w) */
+    o.t_idx({ M }, 1024, -1, 0);                       /* positions */
+    o.t_idx({ M }, pages * bs, -1, 0);                 /* slots */
+    o.t_idx_dt((uint32_t)RAD_U8, { pages, bs, D + 4 }, 256, -1, 0);   /* cache, INOUT */
+    return o.finish("ernie_idx_key", operand, out);
+}
+int ref_ernie_idx_logits_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), H = gi(p, n_p, "heads", 0), D = gi(p, n_p, "head_dim", 0);
+    const int64_t L = gi(p, n_p, "tokens", 256), S = gi(p, n_p, "seqs", 2), bs = gi(p, n_p, "block_size", 8);
+    const int64_t B = std::max<int64_t>(gi(p, n_p, "blocks", 0), (L + bs - 1) / bs), pages = std::max<int64_t>(gi(p, n_p, "num_pages", 0), S * B);
+    if (M < 1 || H < 1 || D < 4 || L < 1 || S < 1 || bs < 1) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_F8E4M3, { M, H * D });           /* qf */
+    o.t_fill((uint32_t)RAD_F32, { M, H }, (uint32_t)RAD_FILL_SIGMOID, 0);   /* qs */
+    o.t((uint32_t)RAD_BF16, { M, H });                 /* w */
+    o.t_idx_dt((uint32_t)RAD_U8, { pages, bs, D + 4 }, 256, -1, 0);   /* cache */
+    o.t_idx({ S, B }, pages, -1, 0);                   /* block_table */
+    o.t_idx({ M }, S, -1, 0);                          /* req */
+    o.t_idx({ M }, L, -1, 0);                          /* positions */
+    o.t((uint32_t)RAD_F32, { M, L });                  /* scores */
+    return o.finish("ernie_idx_logits", operand, out);
+}
+/* ernie_dsa_topk_tiled: the logits operands plus the selection's second table and two [M, topk + window] planes; the scratch tile is
+ * [M, tile] (tile defaults to 64). Positions draw below `tokens` (default 256) so every candidate range fits. */
+int ref_ernie_dsa_topk_tiled_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), H = gi(p, n_p, "heads", 0), D = gi(p, n_p, "head_dim", 0), k = gi(p, n_p, "topk", 0),
+                  w = gi(p, n_p, "window", 0);
+    const int64_t L = gi(p, n_p, "tokens", 256), S = gi(p, n_p, "seqs", 2), bs = gi(p, n_p, "block_size", 8), tile = gi(p, n_p, "tile", 64);
+    /* every parameter is validated before any arithmetic on it: block_size divides the token count below */
+    if (M < 1 || H < 1 || D < 4 || k < 1 || w < 1 || L < 1 || S < 1 || bs < 1 || tile < 1 || k > INT32_MAX / 2 || w > INT32_MAX / 2)
+        return RAD_E_UNSUPPORTED;
+    const int64_t B = std::max<int64_t>(gi(p, n_p, "blocks", 0), (L + bs - 1) / bs), pages = std::max<int64_t>(gi(p, n_p, "num_pages", 0), S * B);
+    if (pages > INT32_MAX / bs) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_F8E4M3, { M, H * D });           /* qf */
+    o.t_fill((uint32_t)RAD_F32, { M, H }, (uint32_t)RAD_FILL_SIGMOID, 0);   /* qs */
+    o.t((uint32_t)RAD_BF16, { M, H });                 /* w */
+    o.t_idx_dt((uint32_t)RAD_U8, { pages, bs, D + 4 }, 256, -1, 0);   /* cache */
+    o.t_idx({ S, B }, pages, -1, 0);                   /* block_table_idx */
+    o.t_idx({ M }, S, -1, 0);                          /* req */
+    o.t_idx({ M }, L, -1, 0);                          /* positions */
+    o.t_idx({ S, B }, pages, -1, 0);                   /* block_table_sel */
+    o.t((uint32_t)RAD_F32, { M, tile });              /* scores (scratch tile) */
+    o.t_idx({ M, k + w }, 0, -1, 0);                   /* ids */
+    o.t_idx({ M, k + w }, 0, -1, 0);                   /* slots */
+    o.t_idx({ M * (2 * k + 3) }, 0, -1, 0);            /* kept (scratch) */
+    return o.finish("ernie_dsa_topk_tiled", operand, out);
+}
+int ref_ernie_mla_project_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), H = gi(p, n_p, "heads", 0), kd = gi(p, n_p, "k_dim", 0),
+                  vd = gi(p, n_p, "v_dim", 0), L = gi(p, n_p, "latent_dim", 0);
+    const int64_t qw = gi(p, n_p, "q_width", kd);
+    const char* mode = gs(p, n_p, "mode");
+    const bool absorb = mode && !std::strcmp(mode, "absorb"), expand = mode && !std::strcmp(mode, "expand");
+    if (M < 1 || H < 1 || kd < 1 || vd < 1 || L < 1 || (!absorb && !expand) || qw < kd ||
+        (expand && qw != kd))
+        return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_BF16, { M, H * (absorb ? qw : L) });
+    o.t((uint32_t)RAD_BF16, { H * (kd + vd), L });
+    o.t((uint32_t)RAD_BF16, { M, H * (absorb ? L : vd) });
+    return o.finish("ernie_mla_project", operand, out);
+}
+int ref_ernie_vha_mix_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), H = gi(p, n_p, "heads", 0), D = gi(p, n_p, "dim", 0),
+                  R = gi(p, n_p, "rank", 0);
+    if (M < 1 || H < 1 || D < 1 || R < 1) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_BF16, { M, H * D });
+    o.t((uint32_t)RAD_BF16, { H, R });
+    o.t((uint32_t)RAD_BF16, { H, R });
+    o.t((uint32_t)RAD_BF16, { M, H * D });
+    return o.finish("ernie_vha_mix", operand, out);
+}
+int ref_ernie_vha_proj_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), H = gi(p, n_p, "heads", 0), D = gi(p, n_p, "dim", 0),
+                  R = gi(p, n_p, "rank", 0), W = gi(p, n_p, "world_size", 1);
+    if (M < 1 || H < 1 || D < 1 || R < 1 || W < 1 || (H % W) != 0) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_BF16, { M, (H / W) * D });
+    o.t((uint32_t)RAD_BF16, { H, R });
+    o.t((uint32_t)RAD_BF16, { M, R * D });
+    return o.finish("ernie_vha_proj", operand, out);
+}
+int ref_ernie_vha_apply_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), H = gi(p, n_p, "heads", 0), D = gi(p, n_p, "dim", 0),
+                  R = gi(p, n_p, "rank", 0), W = gi(p, n_p, "world_size", 1);
+    if (M < 1 || H < 1 || D < 1 || R < 1 || W < 1 || (H % W) != 0) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_BF16, { M, (H / W) * D });
+    o.t((uint32_t)RAD_BF16, { M, R * D });
+    o.t((uint32_t)RAD_BF16, { H, R });
+    o.t((uint32_t)RAD_BF16, { M, (H / W) * D });
+    return o.finish("ernie_vha_apply", operand, out);
+}
+/* ernie_mla_latent_store: kv rows [M, L + R] bf16, slots a unique draw over the whole cache (a scatter destination, as kv_store's), the u8
+ * cache [pages, 1, bs, row bytes] INOUT. */
+int ref_ernie_mla_latent_store_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), L = gi(p, n_p, "latent_dim", 0), R = gi(p, n_p, "rope_dim", 0),
+                  bs = gi(p, n_p, "block_size", 0), qb = gi(p, n_p, "quant_block", 128);
+    const char* lay = gs(p, n_p, "kv_layout");
+    const int lb = lay && !std::strcmp(lay, "i10_ds_mla") ? 2 : lay && !std::strcmp(lay, "i12_ds_mla") ? 4 : lay && !std::strcmp(lay, "bf16_ds_mla") ? 8 : 0;   /* low bits of the integer rows */
+    const int64_t lob = lb ? L * lb / 8 : 0;   /* packed low-bit bytes */
+    if (M < 1 || L < 1 || R < 1 || bs < 1 || qb < 1 || L % qb || (lb && (qb * lb) % 8)) return RAD_E_UNSUPPORTED;
+    const int64_t nb = (M + bs - 1) / bs + 2;
+    Opd o;
+    o.t((uint32_t)RAD_BF16, { M, L + R });
+    o.t_idx({ M }, nb * bs, -1, (uint32_t)RAD_OPD_F_IDX_UNIQUE);
+    o.t((uint32_t)RAD_U8, { nb, 1, bs, L + lob + 4 * (L / qb) + 2 * R });
+    return o.finish("ernie_mla_latent_store", operand, out);
+}
+int ref_ernie_mla_sparse_attn_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), H = gi(p, n_p, "heads", 0), L = gi(p, n_p, "latent_dim", 0),
+                  R = gi(p, n_p, "rope_dim", 0), bs = gi(p, n_p, "block_size", 0),
+                  W = gi(p, n_p, "width", 0);
+    const int64_t pages = gi(p, n_p, "num_pages", 0) > 0 ? gi(p, n_p, "num_pages", 0) : (W + bs - 1) / std::max<int64_t>(bs, 1) + 1;
+    if (M < 1 || H < 1 || L < 1 || R < 1 || bs < 1 || pages < 1 || W < 1 || pages > INT32_MAX / bs)
+        return RAD_E_UNSUPPORTED;
+    const char* lay = gs(p, n_p, "kv_layout");
+    const bool fp8 = lay && (!std::strcmp(lay, "fp8_ds_mla") || !std::strcmp(lay, "i8_ds_mla") || !std::strcmp(lay, "i10_ds_mla") || !std::strcmp(lay, "i12_ds_mla") || !std::strcmp(lay, "bf16_ds_mla"));
+    const int lb = lay && !std::strcmp(lay, "i10_ds_mla") ? 2 : lay && !std::strcmp(lay, "i12_ds_mla") ? 4 : lay && !std::strcmp(lay, "bf16_ds_mla") ? 8 : 0;   /* low bits of the integer rows */
+    const int64_t lob = lb ? L * lb / 8 : 0;   /* packed low-bit bytes */
+    const int64_t qb = gi(p, n_p, "quant_block", 128);
+    if (fp8 && (qb < 1 || L % qb || (lb && (qb * lb) % 8))) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_BF16, { M, H * L });             /* q */
+    o.t((uint32_t)RAD_BF16, { M, H * R });             /* q_rope */
+    if (fp8) o.t((uint32_t)RAD_U8, { pages, 1, bs, L + lob + 4 * (L / qb) + 2 * R });   /* kv, the fp8_ds_mla / integer row */
+    else     o.t((uint32_t)RAD_BF16, { pages, 1, bs, L + R });                     /* kv */
+    o.t_idx({ M, W }, pages * bs, -1, 0);              /* slots */
+    o.t((uint32_t)RAD_F32, { H });                     /* sink */
+    o.t((uint32_t)RAD_BF16, { M, H * L });             /* out */
+    return o.finish("ernie_mla_sparse_attn", operand, out);
+}
+
+/* The HCA compressor ops (ref_ernie_hca.cpp): a state pool of M + 8 rows, positions below 1024, a compressed pool of M rows. */
+int ref_ernie_hca_state_write_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), r = gi(p, n_p, "ratio", 0), D = gi(p, n_p, "head_dim", 0);
+    if (M < 1 || (r != 4 && r != 128) || D < 1 || D > 4096) return RAD_E_UNSUPPORTED;
+    const int64_t W = (r == 4 ? 2 : 1) * D, S = M + 8;
+    Opd o;
+    o.t((uint32_t)RAD_F32, { M, W });                  /* kv */
+    o.t((uint32_t)RAD_F32, { M, W });                  /* score */
+    o.t((uint32_t)RAD_F32, { r, W });                  /* ape (w) */
+    o.t_idx({ M }, 1024, -1, 0);                       /* positions */
+    o.t_idx({ M }, S, -1, 0);                          /* slots */
+    o.t((uint32_t)RAD_F32, { S, 2 * W });              /* state, INOUT */
+    return o.finish("ernie_hca_state_write", operand, out);
+}
+int ref_ernie_hca_compress_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), r = gi(p, n_p, "ratio", 0), D = gi(p, n_p, "head_dim", 0), R = gi(p, n_p, "rope_dim", 0);
+    const int64_t qb = gi(p, n_p, "quant_block", 64);
+    const char* layout = gs(p, n_p, "layout");
+    const bool packed = layout && !std::strcmp(layout, "fp8_ds_mla");
+    if (layout && !packed && std::strcmp(layout, "bf16_full")) return RAD_E_UNSUPPORTED;
+    /* the block layout (kv-cmpblock) needs out slots that sit at the last row of a block; a random fixture cannot draw them, so it has no description here
+     * (ref_test op_ernie_hca_block_layout_* carry it) */
+    const char* cl = gs(p, n_p, "out_layout");
+    if (cl && std::strcmp(cl, "token")) return RAD_E_UNSUPPORTED;
+    if (M < 1 || (r != 4 && r != 128) || D < 2 || D > 4096 || R < 2 || (R & 1) || R > D || (packed && (qb < 1 || (D - R) < 1 || (D - R) % qb)))
+        return RAD_E_UNSUPPORTED;
+    const int64_t coff = r == 4 ? 2 : 1, W = coff * D, Wn = coff * r, S = M + Wn;
+    Opd o;
+    o.t((uint32_t)RAD_F32, { S, 2 * W });              /* state */
+    o.t_idx({ M, Wn }, S, -1, 0);                      /* gather_slots */
+    o.t_idx({ M }, 1024, -1, 0);                       /* positions */
+    o.t_idx({ M }, M, -1, 0);                          /* out_slots */
+    o.t((uint32_t)RAD_BF16, { D });                    /* norm_weight (w) */
+    if (packed) o.t_idx_dt((uint32_t)RAD_U8, { M, (D - R) + 2 * R + (D - R) / qb + 1 }, 256, -1, 0);   /* out, INOUT */
+    else o.t((uint32_t)RAD_BF16, { M, D });
+    return o.finish("ernie_hca_compress", operand, out);
+}
+
+/* The HCA attention ops (ref_ernie_hca.cpp, story 3-4a). The union description draws positions below min(window pool, compressed pool * ratio)
+ * with random block tables (-1 = uninitialised pages are legal). */
+int ref_ernie_hca_q_prep_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), H = gi(p, n_p, "heads", 0), D = gi(p, n_p, "head_dim", 0), R = gi(p, n_p, "rope_dim", 0);
+    if (M < 1 || H < 1 || D < 2 || D > 4096 || R < 2 || (R & 1) || R > D) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_BF16, { M, H * D });             /* x, INOUT */
+    o.t_idx({ M }, 1024, -1, 0);                       /* positions */
+    return o.finish("ernie_hca_q_prep", operand, out);
+}
+static int hca_union_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out, bool with_origin) {
+    const int64_t M = gi(p, n_p, "M", 0), H = gi(p, n_p, "heads", 0), D = gi(p, n_p, "head_dim", 0), ratio = gi(p, n_p, "ratio", 0);
+    const char* layout = gs(p, n_p, "cmp_layout");
+    const bool blk = layout && !std::strcmp(layout, "block");
+    const int64_t S = gi(p, n_p, "seqs", 2), bw = gi(p, n_p, "win_block", 4), Bw = gi(p, n_p, "win_blocks", 8), bc = blk ? ratio : gi(p, n_p, "cmp_block", 2),
+                  Bc = gi(p, n_p, "cmp_blocks", 8);
+    if (blk && (ratio < 1 || D % ratio)) return RAD_E_UNSUPPORTED;   /* a block page is `ratio` rows of D / ratio */
+    const int64_t Pw = gi(p, n_p, "win_pages", 0) > 0 ? gi(p, n_p, "win_pages", 0) : S * Bw + 1,
+                  Pc = gi(p, n_p, "cmp_pages", 0) > 0 ? gi(p, n_p, "cmp_pages", 0) : S * Bc + 1;
+    if (M < 1 || H < 1 || D < 1 || D > 4096 || (ratio != 4 && ratio != 128) || S < 1 || bw < 1 || Bw < 1 || bc < 1 || Bc < 1 || Pw < 1 || Pc < 1 ||
+        Pw > INT32_MAX / bw || Pc > INT32_MAX / bc)
+        return RAD_E_UNSUPPORTED;
+    const int64_t L = std::min<int64_t>(Bw * bw, Bc * bc * (blk || (with_origin && layout && !std::strcmp(layout, "token")) ? 1 : ratio));
+    Opd o;
+    o.t((uint32_t)RAD_BF16, { M, H * D });             /* q */
+    o.t((uint32_t)RAD_BF16, { Pw, 1, bw, D });         /* win_kv */
+    o.t((uint32_t)RAD_BF16, { Pc, 1, bc, blk ? D / ratio : D });   /* cmp_kv */
+    o.t_idx({ M }, L, -1, 0);                          /* positions */
+    o.t_idx({ M }, S, -1, 0);                          /* req */
+    o.t_idx({ S, Bw }, Pw, -1, 0);                     /* win_table */
+    o.t_idx({ S, Bc }, Pc, -1, 0);                     /* cmp_table */
+    if (with_origin) o.t_idx({ S }, 0, 0, 0);          /* win_origin */
+    o.t((uint32_t)RAD_F32, { H });                     /* sink (w) */
+    o.t((uint32_t)RAD_BF16, { M, H * D });             /* out */
+    return o.finish(with_origin ? "ernie_hca_union_attn_origin" : "ernie_hca_union_attn", operand, out);
+}
+int ref_ernie_hca_union_attn_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    return hca_union_shape(p, n_p, operand, out, false);
+}
+int ref_ernie_hca_union_attn_origin_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    return hca_union_shape(p, n_p, operand, out, true);
+}
+static int hca_gather_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out, bool with_origin) {
+    const int64_t M = gi(p, n_p, "M", 0), r = gi(p, n_p, "ratio", 0), bs = gi(p, n_p, "block_size", 0), S = gi(p, n_p, "seqs", 2), B = gi(p, n_p, "blocks", 8);
+    if (M < 1 || (r != 4 && r != 128) || bs < 1 || S < 1 || B < 1 || B > INT32_MAX / bs) return RAD_E_UNSUPPORTED;
+    const int64_t Wn = (r == 4 ? 2 : 1) * r;
+    Opd o;
+    o.t_idx({ M }, B * bs, -1, 0);                     /* positions */
+    o.t_idx({ M }, S, -1, 0);                          /* req */
+    o.t_idx({ S, B }, S * B, -1, 0);                   /* block_table: pages, -1 = unallocated */
+    if (with_origin) o.t_idx({ S }, 0, 0, 0);          /* state_origin */
+    o.t_idx({ M, Wn }, 0, -1, 0);                      /* gather_slots (out) */
+    return o.finish(with_origin ? "ernie_hca_gather_slots_origin" : "ernie_hca_gather_slots", operand, out);
+}
+int ref_ernie_hca_gather_slots_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    return hca_gather_shape(p, n_p, operand, out, false);
+}
+int ref_ernie_hca_gather_slots_origin_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    return hca_gather_shape(p, n_p, operand, out, true);
+}
+
+int ref_ernie_mhc_stream_mean_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), H = gi(p, n_p, "hidden", 0), mult = gi(p, n_p, "mult", 0);
+    if (M < 1 || H < 1 || mult < 1 || mult > 16) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_BF16, { M, mult * H });
+    o.t((uint32_t)RAD_BF16, { M, H });
+    return o.finish("ernie_mhc_stream_mean", operand, out);
+}
+int ref_ernie_hca_dspark_attn_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), H = gi(p, n_p, "heads", 0), D = gi(p, n_p, "head_dim", 0);
+    const int64_t S = gi(p, n_p, "seqs", 1), bs = gi(p, n_p, "block_size", 4), B = gi(p, n_p, "blocks", 8);
+    const int64_t P = gi(p, n_p, "pages", 0) > 0 ? gi(p, n_p, "pages", 0) : S * B + 1;
+    if (M < 1 || H < 1 || D < 1 || D > 4096 || S < 1 || bs < 1 || B < 1 || P < 1 || P > INT32_MAX / bs)
+        return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_BF16, { M, H * D });             /* q */
+    o.t((uint32_t)RAD_BF16, { P, 1, bs, D });          /* kv */
+    o.t_idx({ S, B }, P, -1, 0);                       /* block_table */
+    o.t_idx({ S }, 0, std::min<int64_t>(B * bs, std::max<int64_t>(M, bs)), 0); /* seqused */
+    o.t_idx({ S + 1 }, M, -1, (uint32_t)RAD_OPD_F_IDX_CU);                     /* cu_seqlens */
+    o.t((uint32_t)RAD_F32, { H });                     /* sink */
+    o.t((uint32_t)RAD_BF16, { M, H * D });             /* out */
+    return o.finish("ernie_hca_dspark_attn", operand, out);
+}
+
+int ref_ernie_hca_wo_a_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = gi(p, n_p, "M", 0), H = gi(p, n_p, "heads", 0), D = gi(p, n_p, "head_dim", 0), R = gi(p, n_p, "rope_dim", 0),
+                  G = gi(p, n_p, "groups", 0), K = gi(p, n_p, "rank", 0);
+    if (M < 1 || H < 1 || D < 2 || D > 4096 || R < 2 || (R & 1) || R > D || G < 1 || H % G || K < 1) return RAD_E_UNSUPPORTED;
+    Opd o;
+    o.t((uint32_t)RAD_BF16, { M, H * D });             /* o */
+    o.t_idx({ M }, 1024, -1, 0);                       /* positions */
+    o.t((uint32_t)RAD_BF16, { G * K, (H / G) * D });   /* wo_a (w) */
+    o.t((uint32_t)RAD_BF16, { M, G * K });             /* out */
+    return o.finish("ernie_hca_wo_a", operand, out);
+}
+
 int ref_moe_scatter_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
     const int64_t M  = gi(p, n_p, "M", 0);
     const int64_t ne = gi(p, n_p, "n_expert", 0);
@@ -2114,7 +2589,7 @@ struct MoeScaleGrid { int64_t rows, k; };
 static MoeScaleGrid moe_scale_grid(const RadParam* p, int n_p, int64_t g) {
     const char* d = gs(p, n_p, "dtype");
     auto is = [&](const char* s) { return d && std::strcmp(d, s) == 0; };
-    if (is("fp8a8") || is("fp8a8f32")) return { g, g };
+    if (is("fp8a8") || is("fp8a8f32") || is("fp8a16f32")) return { g, g };
     if (is("mxfp4a8")) return { 1, 32 };
     if (is("w4a8") || is("w4a8h") || is("w4nla8h")) return { 1, g };
     if (is("w4nl64a8h") || is("w5nl64a8h") || is("w6nl64a8h")) return { 1, g / 2 };
@@ -2166,7 +2641,7 @@ int ref_moe_gemm_q_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* ou
     const int64_t AR = sorted_a_order(p, n_p) ? M * k : M;
     const char* kind = gs(p, n_p, "dtype");
     const bool mx = kind && !std::strcmp(kind, "mxfp4a8");
-    const auto SD = kind && !std::strcmp(kind, "fp8a8f32") ? (uint32_t)RAD_F32 : D;
+    const auto SD = kind && (!std::strcmp(kind, "fp8a8f32") || !std::strcmp(kind, "fp8a16f32")) ? (uint32_t)RAD_F32 : D;
     const MoeCodes cd = moe_codes(p, n_p);
     /* The K one activation scale covers: `a_group` where stated, else `group`. */
     const int64_t ag = gi(p, n_p, "a_group", g) > 0 ? gi(p, n_p, "a_group", g) : g;

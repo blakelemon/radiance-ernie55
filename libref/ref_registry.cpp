@@ -135,6 +135,20 @@ static const RadParamSpec pMhcPre[] = { P_INT("M"), P_INT("n"), P_INT("hc"),
     P_INT("iterations"), P_F64("eps"), P_F64("hc_eps"), P_STR("dtype") };
 static const RadOperandSpec oMhcPre[] = { OPD("h"), WGT("fn"), WGT("scale"), WGT("base"),
     OUT("x"), OUT("post"), OUT("comb") };
+static const RadParamSpec pErnieMhcPre[] = { P_INT("M"), P_INT("n"), P_INT("hc"),
+    P_INT("iterations"), P_F64("eps"), P_F64("pre_eps"), P_F64("sinkhorn_eps"),
+    P_F64("post_mult"), P_STR("dtype") };
+static const RadOperandSpec oErnieMhcPre[] = { OPD("h"), WGT("fn"), WGT("scale"), WGT("base"),
+    OUT("x"), OUT("post"), OUT("comb") };
+static const RadParamSpec pErnieMhcPreRms[] = { P_INT("M"), P_INT("n"), P_INT("hc"),
+    P_INT("iterations"), P_F64("eps"), P_F64("pre_eps"), P_F64("sinkhorn_eps"),
+    P_F64("post_mult"), P_F64("rms_eps"), P_STR("dtype") };
+static const RadOperandSpec oErnieMhcPreRms[] = { OPD("h"), WGT("fn"), WGT("scale"), WGT("base"),
+    WGT("gain"), OUT("x"), OUT("post"), OUT("comb") };
+static const RadParamSpec pErnieMhcHead[] = { P_INT("M"), P_INT("n"), P_INT("hc"),
+    P_F64("eps"), P_F64("gate_eps") };
+static const RadOperandSpec oErnieMhcHead[] = { OPD("h"), WGT("fn"), WGT("scale"), WGT("base"),
+    OUT("x") };
 static const RadParamSpec pMhcPrePartial[] = { P_INT("M"), P_INT("n"), P_INT("hc"),
     P_INT("chunk"), P_INT("first"), P_INT("chunks"), P_STR("dtype") };
 static const RadOperandSpec oMhcPrePartial[] = { OPD("h"), WGT("fn"), OUT("part") };
@@ -231,8 +245,19 @@ static const RadParamSpec pAdd[] = { P_INT("M"), P_INT("n"), P_STR("dtype"), P_F
 static const RadParamSpec pMulWeight[] = { P_INT("M"), P_INT("n"), P_STR("dtype"), P_INTO("scalar") };
 /* `cap` is required: the one model that issues this op (Gemma 4) has a value for it. */
 static const RadParamSpec pMnCap[] = { P_INT("M"), P_INT("n"), P_F64("cap"), P_STR("dtype") };
+/* `beta` and `linear_beta` are the two SiTU clipping constants, both required and strictly
+ * positive (ERNIE uses 4 and 25); the launch refuses a non-positive or non-finite one. */
+static const RadParamSpec pSituMul[] = { P_INT("M"), P_INT("n"), P_STR("dtype"),
+                                         P_F64("beta"), P_F64("linear_beta") };
+static const RadParamSpec pSituMulQuantFp8[] = { P_INT("M"), P_INT("n"), P_INT("group"), P_STR("dtype"),
+                                                 P_F64("beta"), P_F64("linear_beta") };
+static const RadOperandSpec oSituMulQuantFp8[] = { OPD("gate_up"), OUT("q"), OUT("scale") };
+static const RadOperandSpec oErnieAddMhcPost[] = { OPD("a"), OPD("b"), OPD("h"), OPD("post"), OPD("comb"), OUT("out") };
 static const RadOperandSpec oBinary[]  = { OPD("a"), OPD("b"), OUT("y") };
 static const RadOperandSpec oGateUp[]  = { OPD("gate_up"), OUT("y") };
+/* ERNIE's learned logit transform, on pMnD's {M, n, dtype}: x [M,n], the four learned ranges and
+ * the four learned coefficients, then y [M,n]; the launch enforces that every operand is float32. */
+static const RadOperandSpec oMultimax[] = { OPD("x"), WGT("ranges"), WGT("coefficients"), OUT("y") };
 static const RadOperandSpec oMulWeight[] = { OPD("x"), WGT("w"), OUT("y") };
 static const RadParamSpec pActMul[] = { P_INT("M"), P_INT("n"), P_STR("act"), P_STR("dtype") };
 /* `M` is the step's token count and bands the op; the segment count is cu_seqlens' length. */
@@ -373,7 +398,10 @@ static const RadOperandSpec oDequant[] = { OPD("q"), OPD("scale"), OUT("y") };
 
 /* ---- gemm --------------------------------------------------------------------------------- */
 static const RadParamSpec pGemm[] = { P_INT("M"), P_INT("N"), P_INT("K"), P_STR("dtype") };
+/* gemm_nt alone takes libr4d's `row_identity` (docs/OPS.md): accepted and ignored, ref has one order. */
+static const RadParamSpec pGemmRI[] = { P_INT("M"), P_INT("N"), P_INT("K"), P_STR("dtype"), P_INTO("row_identity") };
 static const RadOperandSpec oGemm[]     = { OPD("a"), WGT("b"), OUT("y") };
+static const RadOperandSpec oGemmPair[] = { OPD("a"), WGT("b0"), WGT("b1"), OUT("y0"), OUT("y1") };
 /* The bias form carries an optional epilogue: an activation of the biased product, then a residual
  * add, each rounded to the output dtype as separate tensors would be. */
 static const RadParamSpec pGemmBias[] = { P_INT("M"), P_INT("N"), P_INT("K"), P_STR("dtype"),
@@ -385,7 +413,7 @@ static const RadOperandSpec oGemmBias[] = { OPD("a"), WGT("b"), WGT("bias"), OPD
  * scale plane as it is, so it accepts and ignores both. */
 static const RadParamSpec pGemmQ[] = { P_INT("M"), P_INT("N"), P_INT("K"), P_INT("group"),
                                        P_STR("dtype"), P_INTO("pb1"), P_INTO("pb2"),
-                                       P_INTO("split_n"), P_INTO("w_rb") };
+                                       P_INTO("split_n"), P_INTO("w_rb"), P_INTO("mvm_max") };
 /* The bias form has no parts (`pb1`/`pb2`); only the plain product supports them. */
 static const RadParamSpec pGemmQBias[] = { P_INT("M"), P_INT("N"), P_INT("K"), P_INT("group"),
                                            P_STR("dtype") };
@@ -593,6 +621,125 @@ static const RadOperandSpec oScaleRows[] = { OPD("x"), OPD("s"), OPD_O("add"), O
 static const RadParamSpec pRouter[] = { P_INT("M"), P_INT("n_expert"), P_INT("top_k"),
                                         P_INT("norm"), P_STR("dtype") };
 static const RadOperandSpec oRouter[] = { OPD("logits"), OUT("expert_ids"), OUT("expert_w") };
+
+/* ERNIE's routing: `experts` is the LOGICAL count and the logits carry BOTH sigmoid projections
+ * ([M, 2*experts]); `renormalize` is 0 or 1. The correction bias and the per-expert output scale are
+ * weights, applied to the selected ids by logical expert index. */
+static const RadParamSpec pErnieRouter[] = { P_INT("M"), P_INT("experts"), P_INT("topk"),
+                                             P_INT("renormalize") };
+static const RadOperandSpec oErnieRouter[] = { OPD("logits"), WGT("bias"), WGT("scale"), OUT("ids"),
+                                               OUT("weights") };
+static const RadOperandSpec oErnieRouterScatter[] = { OPD("logits"), WGT("bias"), WGT("scale"), OUT("ids"),
+                                                      OUT("weights"), OUT("sorted_tok"), OUT("expert_offset"),
+                                                      OUT("expert_count") };
+
+/* ERNIE's DSA selection row (ref_dsa.cpp): `topk` and `window` set the row width topk + window,
+ * `block_size` and `num_pages` the page translation; `tokens`, `seqs`, `blocks` describe the operand
+ * shapes for the shape callback and are checked against them when passed. */
+static const RadParamSpec pErnieDsaSelect[] = { P_INT("M"), P_INT("topk"), P_INT("window"),
+                                                P_INT("block_size"), P_INTO("num_pages"),
+                                                P_INTO("tokens"), P_INTO("seqs"), P_INTO("blocks") };
+static const RadOperandSpec oErnieDsaSelect[] = { OPD("scores"), OPD("positions"), OPD("req"),
+                                                  OPD("block_table"), OUT("ids"), OUT("slots") };
+
+/* ERNIE's MLA-DSA attention operations (ref_ernie_attn.cpp). `M` is the row band; the live rows come
+ * from the operands. `num_pages` and `width` are checked against the cache and slot operands. */
+static const RadParamSpec pErnieRopeTail[] = { P_INT("M"), P_INT("heads"), P_INT("width"),
+                                               P_INT("rope_dim"), P_F64("theta"), P_STRO("rope_table"), P_INTO("inverse"),
+                                               P_F64O("yarn_factor"), P_F64O("yarn_beta_fast"), P_F64O("yarn_beta_slow"), P_F64O("yarn_original_max") };
+/* Story 3-2b helpers: the request id of each row from cu_seqlens, and the per-head column slice. */
+static const RadParamSpec pErnieRowReq[] = { P_INT("M") };
+static const RadOperandSpec oErnieRowReq[] = { OPD("cu_seqlens"), OUT("req") };
+static const RadParamSpec pErnieHeadSlice[] = { P_INT("M"), P_INT("heads"), P_INT("width"), P_INT("offset"),
+                                                P_INT("count") };
+static const RadOperandSpec oErnieHeadSlice[] = { OPD("x"), OUT("y") };
+static const RadOperandSpec oErnieRopeTail[] = { INOUT("x"), OPD("positions") };
+
+/* The DSA indexer score path (ref_ernie_attn.cpp, story 3-2i). `rope_table` is bf16 (default, the model
+ * dtype) or f32; `eps` defaults to 1e-6; `window` to 128. `tokens`, `seqs`, `blocks`, `block_size`,
+ * `num_pages` describe the operand shapes for the shape callback and are checked when passed. */
+static const RadParamSpec pErnieIdxQuery[] = { P_INT("M"), P_INT("heads"), P_INT("head_dim"),
+                                               P_INT("rope_dim"), P_F64("theta"), P_STRO("rope_table"), P_STRO("quant_rule") };
+static const RadOperandSpec oErnieIdxQuery[] = { OPD("q"), OPD("positions"), OUT("qf"), OUT("qs") };
+static const RadParamSpec pErnieIdxKey[] = { P_INT("M"), P_INT("head_dim"), P_INT("rope_dim"), P_F64("theta"),
+                                             P_F64O("eps"), P_STRO("rope_table"), P_INTO("block_size"),
+                                             P_INTO("num_pages"), P_STRO("quant_rule") };
+static const RadOperandSpec oErnieIdxKey[] = { OPD("k"), WGT("gamma"), WGT("beta"), OPD("positions"),
+                                               OPD("slots"), INOUT("cache") };
+static const RadParamSpec pErnieIdxLogits[] = { P_INT("M"), P_INT("heads"), P_INT("head_dim"), P_INTO("window"),
+                                                P_INTO("tokens"), P_INTO("seqs"), P_INTO("blocks"),
+                                                P_INTO("block_size"), P_INTO("num_pages"), P_INTO("col_start") };
+static const RadOperandSpec oErnieIdxLogits[] = { OPD("qf"), OPD("qs"), OPD("w"), OPD("cache"),
+                                                  OPD("block_table"), OPD("req"), OPD("positions"),
+                                                  OUT("scores") };
+/* The tiled form of ernie_idx_logits + ernie_dsa_select (ref_ernie_attn.cpp): the score plane `scores` [M, tile] is a scratch tile, `topk`/`window`/
+ * `block_size`/`num_pages` as ernie_dsa_select, `tokens` an optional bound on the context a row may reach (also the shape callback's hint). */
+static const RadParamSpec pErnieDsaTopkTiled[] = { P_INT("M"), P_INT("heads"), P_INT("head_dim"), P_INT("topk"), P_INT("window"),
+                                                   P_INT("block_size"), P_INTO("num_pages"), P_INTO("tokens"), P_INTO("tile"),
+                                                   P_INTO("seqs"), P_INTO("blocks") };
+static const RadOperandSpec oErnieDsaTopkTiled[] = { OPD("qf"), OPD("qs"), OPD("w"), OPD("cache"), OPD("block_table_idx"),
+                                                     OPD("req"), OPD("positions"), OPD("block_table_sel"), OUT("scores"),
+                                                     OUT("ids"), OUT("slots"), OUT("kept"), OPD_O("seqused") };
+static const RadParamSpec pErnieMlaProject[] = { P_INT("M"), P_INT("heads"), P_INT("k_dim"),
+                                                 P_INT("v_dim"), P_INT("latent_dim"), P_STR("mode"),
+                                                 P_INTO("q_width") };
+static const RadOperandSpec oErnieMlaProject[] = { OPD("x"), WGT("w"), OUT("y") };
+static const RadParamSpec pErnieVhaMix[] = { P_INT("M"), P_INT("heads"), P_INT("dim"), P_INT("rank"),
+                                             P_STRO("fold"), P_INTO("world_size"), P_INTO("tp_rank") };
+static const RadOperandSpec oErnieVhaMix[] = { OPD("o"), WGT("u"), WGT("v"), OUT("out") };
+static const RadParamSpec pErnieVhaFactor[] = { P_INT("M"), P_INT("heads"), P_INT("dim"), P_INT("rank"),
+                                                P_INTO("world_size"), P_INTO("tp_rank") };
+static const RadOperandSpec oErnieVhaProj[] = { OPD("o"), WGT("u"), OUT("z") };
+static const RadOperandSpec oErnieVhaApply[] = { OPD("o"), OPD("z"), WGT("v"), OUT("out") };
+static const RadParamSpec pErnieMlaSparse[] = { P_INT("M"), P_INT("heads"), P_INT("latent_dim"),
+                                                P_INT("rope_dim"), P_INT("block_size"),
+                                                P_INTO("num_pages"), P_INT("width"), P_F64("scale"),
+                                                P_STRO("kv_layout"), P_INTO("quant_block") };
+static const RadOperandSpec oErnieMlaSparse[] = { OPD("q"), OPD("q_rope"), OPD("kv"), OPD("slots"),
+                                                  WGT("sink"), OUT("out") };
+/* The fp8_ds_mla latent writer (ref_ernie_attn.cpp, kv-fp8-latent). */
+static const RadParamSpec pErnieMlaLatentStore[] = { P_INT("M"), P_INT("latent_dim"), P_INT("rope_dim"), P_INT("block_size"),
+                                                     P_INTO("quant_block"), P_STRO("kv_layout") };
+static const RadOperandSpec oErnieMlaLatentStore[] = { OPD("kv"), OPD("slot_mapping"), INOUT("cache") };
+
+/* The HCA compressor (ref_ernie_hca.cpp, story 3-3b): `ratio` is 4 or 128, `layout` bf16_full (default) or
+ * fp8_ds_mla, `quant_block` defaults to 64. `M` is the row band; the live rows come from the operands. */
+static const RadParamSpec pErnieHcaState[] = { P_INT("M"), P_INT("ratio"), P_INT("head_dim"), P_INTO("block_size") };
+static const RadOperandSpec oErnieHcaState[] = { OPD("kv"), OPD("score"), WGT("ape"), OPD("positions"),
+                                                 OPD("slots"), INOUT("state") };
+static const RadParamSpec pErnieHcaCompress[] = { P_INT("M"), P_INT("ratio"), P_INT("head_dim"), P_INT("rope_dim"),
+                                                  P_F64("eps"), P_F64("theta"), P_STRO("layout"), P_INTO("quant_block"),
+                                                  P_F64O("yarn_factor"), P_F64O("yarn_beta_fast"), P_F64O("yarn_beta_slow"), P_F64O("yarn_original_max"),
+                                                  P_STRO("out_layout") };
+static const RadOperandSpec oErnieHcaCompress[] = { OPD("state"), OPD("gather_slots"), OPD("positions"),
+                                                    OPD("out_slots"), WGT("norm_weight"), INOUT("out") };
+
+/* The HCA attention ops (ref_ernie_hca.cpp, story 3-4a). `window` defaults to 128; the yarn_* set (all optional, factor 0 = plain RoPE) selects the
+ * YaRN table of the HCA layers; seqs, win_block, win_pages, win_blocks, cmp_block, cmp_pages, cmp_blocks only describe the operand shapes
+ * for the shape callback and are checked when passed. */
+static const RadParamSpec pErnieHcaQPrep[] = { P_INT("M"), P_INT("heads"), P_INT("head_dim"), P_INT("rope_dim"), P_F64("eps"),
+                                               P_F64("theta"), P_F64O("yarn_factor"), P_F64O("yarn_beta_fast"), P_F64O("yarn_beta_slow"), P_F64O("yarn_original_max") };
+static const RadOperandSpec oErnieHcaQPrep[] = { INOUT("x"), OPD("positions") };
+static const RadParamSpec pErnieHcaUnion[] = { P_INT("M"), P_INT("heads"), P_INT("head_dim"), P_INT("ratio"), P_INTO("window"),
+                                               P_F64("scale"), P_STRO("cmp_layout"), P_INTO("seqs"), P_INTO("win_block"), P_INTO("win_pages"),
+                                               P_INTO("win_blocks"), P_INTO("cmp_block"), P_INTO("cmp_pages"), P_INTO("cmp_blocks"), P_INTO("block_size") };
+static const RadOperandSpec oErnieHcaUnion[] = { OPD("q"), OPD("win_kv"), OPD("cmp_kv"), OPD("positions"), OPD("req"),
+                                                 OPD("win_table"), OPD("cmp_table"), WGT("sink"), OUT("out") };
+static const RadOperandSpec oErnieHcaUnionOrigin[] = { OPD("q"), OPD("win_kv"), OPD("cmp_kv"), OPD("positions"), OPD("req"),
+                                                       OPD("win_table"), OPD("cmp_table"), OPD("win_origin"), WGT("sink"), OUT("out") };
+static const RadParamSpec pErnieHcaWoA[] = { P_INT("M"), P_INT("heads"), P_INT("head_dim"), P_INT("rope_dim"), P_INT("groups"),
+                                             P_INT("rank"), P_F64("theta"), P_F64O("yarn_factor"), P_F64O("yarn_beta_fast"), P_F64O("yarn_beta_slow"), P_F64O("yarn_original_max") };
+static const RadOperandSpec oErnieHcaWoA[] = { OPD("o"), OPD("positions"), WGT("wo_a"), OUT("out") };
+/* Story 3-4b: the state slots of a group completion from the per-token state group's block table. */
+static const RadParamSpec pErnieHcaGather[] = { P_INT("M"), P_INT("ratio"), P_INT("block_size"), P_INTO("seqs"), P_INTO("blocks") };
+static const RadOperandSpec oErnieHcaGather[] = { OPD("positions"), OPD("req"), OPD("block_table"), OUT("gather_slots") };
+static const RadOperandSpec oErnieHcaGatherOrigin[] = { OPD("positions"), OPD("req"), OPD("block_table"), OPD("state_origin"), OUT("gather_slots") };
+static const RadParamSpec pErnieMhcStreamMean[] = { P_INT("M"), P_INT("hidden"), P_INT("mult") };
+static const RadOperandSpec oErnieMhcStreamMean[] = { OPD("x"), OUT("out") };
+static const RadParamSpec pErnieHcaDspark[] = { P_INT("M"), P_INT("heads"), P_INT("head_dim"), P_INTO("window"), P_F64("scale"),
+                                                P_INTO("seqs"), P_INTO("block_size"), P_INTO("pages"), P_INTO("blocks") };
+static const RadOperandSpec oErnieHcaDspark[] = { OPD("q"), OPD("kv"), OPD("block_table"), OPD("seqused"), OPD("cu_seqlens"),
+                                                  WGT("sink"), OUT("out") };
 
 /* `expert_base` is this rank's first expert id, making expert parallelism a parameter rather than
  * a second op; absent (0) is the unsharded case. */
@@ -1170,6 +1317,27 @@ static const RadOpSchema kSchemas[] = {
   "pre/post gates and Sinkhorn mixing. x has dtype, post and comb are f32. comb is indexed "
   "[source,destination]. First pass is row softmax + hc_eps then column normalization; later "
   "passes add hc_eps to both normalization denominators. hc is 2..8; iterations is 1..256." },
+{ "ernie_mhc_pre", ARR(pErnieMhcPre), ARR(oErnieMhcPre),
+  "ERNIE manifold residual read: RMS-scaled projection of the whole hc*n residual with the epsilon "
+  "outside the root, sigmoid pre gates (+pre_eps) and post gates (*post_mult), and a matrix group "
+  "that row-softmaxes (+sinkhorn_eps) then Sinkhorn-normalizes with sinkhorn_eps. x shares h's dtype "
+  "(f32 or bf16); fn, scale, base, post and comb are f32; post and comb are the coefficients mhc_post "
+  "consumes. comb is indexed [source,destination]. The collapsed x omits the optional weighted "
+  "RMSNorm. hc is 2..8; iterations is 1..256." },
+{ "ernie_mhc_pre_rms", ARR(pErnieMhcPreRms), ARR(oErnieMhcPreRms),
+  "ernie_mhc_pre with ERNIE's fused weighted RMSNorm over the collapsed x (ordinary branch). The "
+  "collapse sum is kept in f32: the variance is mean(collapse^2) from that unrounded value, "
+  "x = bf16(bf16(collapse) * gain * rsqrt(variance + rms_eps)) -- the numerator reads the collapse "
+  "after its bf16 narrowing and the output is rounded once. gain is a bf16 [n] weight between base "
+  "and x; h and x are bf16 only; eps, pre_eps, sinkhorn_eps and post_mult keep their ernie_mhc_pre "
+  "meaning and post and comb are unchanged. rms_eps must be finite and positive." },
+{ "ernie_mhc_head", ARR(pErnieMhcHead), ARR(oErnieMhcHead),
+  "ERNIE final residual read: each fn row is dotted with the whole hc*n residual and scaled by "
+  "rsqrt(mean(h*h) + eps) (epsilon inside the root) times the scalar scale plus a per-stream bias, "
+  "sigmoided and added gate_eps to form a gate; the gates weight the hc streams and they are summed "
+  "into x with one BF16 rounding. h and x are bf16; fn, scale and base are f32. The final RMSNorm "
+  "stays in the graph. M is the dispatch band ceiling; the live row count comes from h and x must "
+  "match it. hc is 2..8. The learned counterpart to mhc_contract's unweighted mean." },
 { "mhc_pre_partial", ARR(pMhcPrePartial), ARR(oMhcPrePartial),
   "mhc_pre's projection split by residual columns. Chunk c covers columns [c*chunk, (c+1)*chunk) "
   "of the hc*n row; for chunks [first, first+chunks) part[m, (c-first)*S + j] is the sum over the "
@@ -1181,6 +1349,8 @@ static const RadOpSchema kSchemas[] = {
   "of squares is the sum of its chunks' partials (the order is the implementation's), then "
   "mhc_pre's gates, Sinkhorn mixing and collapse of h. part and mhc_pre_partial over every chunk "
   "together are mhc_pre." },
+{ "ernie_add_mhc_post", ARR(pHcWrite), ARR(oErnieAddMhcPost),
+  "Fused residual add (rounded to output dtype) followed by mhc_post update." },
 { "mhc_post", ARR(pHcWrite), ARR(oMhcPost),
   "out[dst,i] = post[dst]*x[i] + sum_src comb[src,dst]*h[src,i]. post and comb are f32; "
   "out must not alias h. No normalization of the residual stream." },
@@ -1381,6 +1551,23 @@ static const RadOpSchema kSchemas[] = {
   "y[i] = gelu_tanh(gate_up[i]) * gate_up[n + i], the tanh approximation (gemma's "
   "gelu_pytorch_tanh), and the GATE IS THE FIRST HALF as in silu_mul. Its own op, not gelu, because "
   "gated feed-forwards are trained with the tanh form and the unary gelu is the exact erf one." },
+{ "situ_mul_quant_fp8", ARR(pSituMulQuantFp8), ARR(oSituMulQuantFp8),
+  "Fused ERNIE SiTU gated product followed by group-128 E4M3 quantization." },
+{ "situ_mul", ARR(pSituMul), ARR(oGateUp),
+  "y[i] = beta * tanh(gate_up[i] / beta) * sigmoid(gate_up[i]) * linear_beta * "
+  "tanh(gate_up[n + i] / linear_beta), ERNIE's SiTU gated product, on silu_mul's fused [M, 2n] plane "
+  "with the GATE STILL THE FIRST HALF. The gate is soft-clipped to +-beta and the up projection to "
+  "+-linear_beta; both are finite and strictly positive (ERNIE 4 and 25). f32 throughout, one "
+  "rounding to y's dtype." },
+{ "ernie_multimax", ARR(pMnD), ARR(oMultimax),
+  "y = x + t[0]*max(r[0]-x,0) + t[1]*max(x-r[1],0) + t[2]*max(r[2]-x,0)^2 + t[3]*max(x-r[3],0)^2: "
+  "ERNIE's learned piecewise logit transform (the pinned Baidu reference's "
+  "Ernie5_5ParallelLMHead.multimax, commit b8414da6). Four hinge terms -- two linear, two quadratic "
+  "-- each a learned threshold r (operand `ranges` [4]) and a learned coefficient t (`coefficients` "
+  "[4]). Inside the learned ranges every hinge is zero and the transform is the identity, so the "
+  "thresholds are exact boundaries, NOT a temperature: the quadratic tails are the learned shape. "
+  "x [M,n] in, y [M,n] out. ALL FOUR operands are float32 -- logits and learned tensors alike -- so "
+  "a non-f32 operand or a learned tensor not four long is refused. f32 throughout, one rounding." },
 { "gelu", ARR(pMnD), ARR(oUnary),
   "y = 0.5x(1 + erf(x/sqrt(2))). The exact erf form, not the tanh approximation." },
 { "silu", ARR(pMnD), ARR(oUnary), "y = x * sigmoid(x)." },
@@ -1541,7 +1728,9 @@ static const RadOpSchema kSchemas[] = {
 { "dequant", ARR(pDequant), ARR(oDequant),
   "y = q * scale, the inverse of quant_act_i8g. It does NOT undo a rotation." },
 
-{ "gemm_nt", ARR(pGemm), ARR(oGemm), "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate." },
+{ "gemm_nt", ARR(pGemmRI), ARR(oGemm), "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate." },
+{ "gemm_nt_f32_pair", ARR(pGemm), ARR(oGemmPair),
+  "Paired BF16 activations times two weight matrices, F32 accumulation and output." },
 { "gemm_nt_f32", ARR(pGemm), ARR(oGemm),
   "BF16 activations times F32 weights, F32 accumulation and output; preserves routing and index gate precision." },
 { "gemm_nt_bias", ARR(pGemmBias), ARR(oGemmBias),
@@ -1700,6 +1889,153 @@ static const RadOpSchema kSchemas[] = {
 { "router_topk", ARR(pRouter), ARR(oRouter),
   "Softmax over ALL n_expert logits, then the top_k by probability with ties to the lower expert "
   "id, then -- if `norm` -- renormalise the kept weights to sum to one." },
+{ "ernie_router_topk_scatter", ARR(pErnieRouter), ARR(oErnieRouterScatter),
+  "Fused ERNIE two-projection sigmoid routing and moe_scatter." },
+{ "ernie_router_topk", ARR(pErnieRouter), ARR(oErnieRouter),
+  "ERNIE routing between the two router projections and the latent dispatch: each expert's score is "
+  "sigmoid(logits[e]) + sigmoid(logits[experts+e]), so `logits` is [M, 2*experts] and `experts` is "
+  "the LOGICAL count. The correction `bias` SELECTS (descending score + bias, ties to the lower "
+  "expert id); the UNCORRECTED score weights. The per-expert `scale` -- a weight indexed by the "
+  "logical expert id -- is ALWAYS applied, and only after the division. With `renormalize` the kept "
+  "weights are first divided by their own sum, clamped to a minimum of 1e-20; with it off they are "
+  "used as-is. F32 throughout, ids I32." },
+{ "ernie_dsa_select", ARR(pErnieDsaSelect), ARR(oErnieDsaSelect),
+  "Single-rank DSA selection row: for the query at positions[r] (seq = p + 1) of request req[r], the "
+  "indexer's top-k LOGICAL token ids from `scores` [rows, L] restricted to [0, seq - window) with "
+  "-inf (masked) and uninitialised-page tokens excluded, then the window seq - min(seq, window) .. "
+  "seq - 1 ascending, then -1: `ids` is [rows, >= topk + window]. At most topk candidates are all "
+  "listed in ascending id order, more are cut to the topk best by descending score with ties to the "
+  "LOWER id (the pinned kernels leave tie order unspecified). `slots` is the same row translated "
+  "through `block_table` [seqs, blocks] after selection: table[id / block_size] * block_size + "
+  "id % block_size, -1 where the id is -1. A page is initialised when 0 <= entry < num_pages. NaN or "
+  "+inf inside the candidate range, a bad position or request, or scores narrower than the "
+  "candidate range refuses before any store." },
+{ "ernie_rope_tail", ARR(pErnieRopeTail), ARR(oErnieRopeTail),
+  "GPT-J interleaved rotary in place on the TRAILING rope_dim values of each width-wide head of x "
+  "[M, heads * width] (bf16), at the absolute position positions[r] (pair i is (2i, 2i + 1) of the "
+  "slice, angle position * theta^(-2i / rope_dim)); the leading width - rope_dim values are not "
+  "touched. A negative position, an odd or oversized rope_dim or a non-positive theta refuses "
+  "before any store." },
+{ "ernie_row_req", ARR(pErnieRowReq), ARR(oErnieRowReq),
+  "The request index of each live row: req[r] = s for cu_seqlens[s] <= r < cu_seqlens[s + 1] (cu starts at 0, never "
+  "decreases and ends at the row count). The per-row request ids ernie_dsa_select and ernie_idx_logits read." },
+{ "ernie_head_slice", ARR(pErnieHeadSlice), ARR(oErnieHeadSlice),
+  "y[m, h, j] = x[m, h, offset + j] (bf16): the `count` columns from `offset` of each `width`-wide head of x [M, "
+  "heads * width], compacted to y [M, heads * count]. Overlapping operands refuse." },
+{ "ernie_idx_query", ARR(pErnieIdxQuery), ARR(oErnieIdxQuery),
+  "DSA indexer query side: each head_dim-wide head of q [M, heads * head_dim] (bf16) is split rope first "
+  "[rope_dim | rest], the rope part rotated NeoX split-half (pair i is (i, i + rope_dim/2), angle position * "
+  "theta^(-2i / rope_dim), cos/sin in the `rope_table` dtype, bf16 by default) at the absolute position, "
+  "rejoined, Hadamard-transformed over head_dim (orthonormal, bf16) and quantised to E4M3 with a "
+  "power-of-two scale (2^ceil(log2(max(absmax, 1e-10) / 448)); `quant_rule` nvidia (default) | rocm (floor 1e-4) | rocm_fnuz (floor 1e-4, / 224)): qf [M, heads * head_dim], qs [M, heads] f32." },
+{ "ernie_idx_key", ARR(pErnieIdxKey), ARR(oErnieIdxKey),
+  "DSA indexer key side: each row of k [M, head_dim] (bf16) goes through LayerNorm (eps default 1e-6, weight "
+  "`gamma`, bias `beta`, bf16 out) and then the same rope-first NeoX rope, Hadamard and per-row power-of-two "
+  "E4M3 quantiser as ernie_idx_query; the row (head_dim code bytes then the fp32 scale, little endian) is "
+  "stored in cache [pages, block, head_dim + 4] u8 at slot positions[...] = page * block + offset. A "
+  "negative slot is padding; rows apply in order, a repeated slot keeps the last; a slot past the pool, a "
+  "slot below -1 or a negative position refuses before any store." },
+{ "ernie_idx_logits", ARR(pErnieIdxLogits), ARR(oErnieIdxLogits),
+  "DSA indexer logits: for query row m (position p, request req[m]) and every logical token j < max(p + 1 - "
+  "window, 0): sum over heads of relu((qf_h . key_j) * key_scale_j) * (w_h * qs_h * head_dim^-1/2 * "
+  "heads^-1/2), the key read through block_table[req][j / block] from cache [pages, block, head_dim + 4] "
+  "u8. scores [M, L] f32 is indexed by logical token; columns from the window start, and tokens on an "
+  "uninitialised page, are -inf. This is the row ernie_dsa_select reads. Optional `col_start` (default 0): "
+  "column j is logical token col_start + j, so a context can be scored in tiles; a given col_start lifts the "
+  "check that scores cover the candidate range." },
+{ "ernie_dsa_topk_tiled", ARR(pErnieDsaTopkTiled), ARR(oErnieDsaTopkTiled),
+  "ernie_idx_logits followed by ernie_dsa_select with the score plane cut into tiles of scores.shape[1] logical columns: each tile is "
+  "scored exactly as ernie_idx_logits scores it (the key read through block_table_idx) and merged into a running top-k of the "
+  "`topk` best (score descending, ties to the LOWER id; candidates are scores that are not -inf on an initialised page of "
+  "block_table_sel). The result is ernie_dsa_select's over the untiled plane bit for bit: at most topk candidates in ascending id "
+  "order, more cut to the topk best in descending score order, then the window, then -1; `slots` as there. Nothing is stored "
+  "before every tile is scored: NaN or +inf in a candidate range, a bad position or request, or a candidate range past the "
+  "optional `tokens` bound refuses with a shape error. `kept` is the device op's scratch (its running top-k and per-row verdicts, at least "
+  "M * (2 * topk + 3) i32): the reference does not use it and refuses one that is too small." },
+{ "ernie_mla_project", ARR(pErnieMlaProject), ARR(oErnieMlaProject),
+  "kv_b_proj with unequal key and value widths: w is [heads * (k_dim + v_dim), latent_dim], per head "
+  "k_dim key rows then v_dim value rows. mode absorb: y [M, heads * latent] = the nope part (first "
+  "k_dim columns) of each q_width-wide head of x times that head's key rows; mode expand: y [M, "
+  "heads * v_dim] = x [M, heads * latent] times the value rows transposed. bf16, f32 accumulation." },
+{ "ernie_vha_mix", ARR(pErnieVhaMix), ARR(oErnieVhaMix),
+  "Value-head mixing on the head axis: out[t, h, c] = sum_g m[h, g] o[t, g, c] with m = I + V U^T "
+  "folded from the [heads, rank] matrices u and v (m[h, g] = [h == g] + sum_r v[h, r] u[g, r]). "
+  "`fold` f32 (default) keeps m in f32, bf16 rounds each entry to bf16 first (m18 is open in the "
+  "sources). bf16 activations, f32 accumulation." },
+{ "ernie_vha_proj", ARR(pErnieVhaFactor), ARR(oErnieVhaProj),
+  "Factored VHA local projection: z[t, r, c] = sum_hh o_loc[t, hh, c] * u[tp_rank*Hloc + hh, r]. bf16, f32 accumulation." },
+{ "ernie_vha_apply", ARR(pErnieVhaFactor), ARR(oErnieVhaApply),
+  "Factored VHA local apply: out[t, hh, c] = o_loc[t, hh, c] + sum_r z[t, r, c] * v[tp_rank*Hloc + hh, r]. bf16, f32 accumulation." },
+{ "ernie_mla_sparse_attn", ARR(pErnieMlaSparse), ARR(oErnieMlaSparse),
+  "Absorbed latent MQA over the cache rows listed in slots [M, width] (physical slot = page * "
+  "block_size + offset, -1 pads): score = scale * (q . latent + q_rope . rope) over the "
+  "[latent | rope] row of kv [pages, 1, block_size, latent + rope], value = latent. The per-head fp32 "
+  "sink logit joins the max and the denominator only. -inf sink = no sink; no key and a finite sink "
+  "= zero. A slot outside [-1, pages * block_size), a NaN or +inf sink refuses before any store." },
+{ "ernie_mla_latent_store", ARR(pErnieMlaLatentStore), ARR(oErnieMlaLatentStore),
+  "Writes the fp8_ds_mla latent row (ernie_mla_sparse_attn `kv_layout`): kv [M, latent_dim + rope_dim] bf16 -> the u8 cache row at "
+  "slot_mapping[m] (page * block_size + offset; -1 skips): latent_dim E4M3 codes, one little-endian f32 power-of-two scale per quant_block "
+  "(default 128) latent values (the smallest 2^k with tile absmax <= 448 * 2^k), then the rope values as bf16 bit for bit. Only named rows "
+  "are written; a slot outside [-1, pages * block_size), a latent_dim not a multiple of quant_block, or a NaN or infinity in the latent part of a "
+  "named row (it has no scale) refuses before any store (RAD_E_SHAPE; libr4d on a card stores nothing for such a row and latches it). At scale 2^120 "
+  "the code magnitude is clamped to 240 so that every stored value decodes finite in f32 and bf16; the rope values are not inspected. "
+  "kv_layout i8_ds_mla (optional; default fp8_ds_mla) stores int8 codes rint(x / s) clamped to [-127, 127] with the exact f32 scale "
+  "s = max(absmax, 1e-30) / 127 instead (same row size). kv_layout i10_ds_mla / i12_ds_mla store 10 / 12-bit codes (clamped to +-511 / +-2047, "
+  "s = max(absmax, 1e-30) / 511 or 2047) as an int8 high byte per value (code >> 2 or >> 4) followed by the packed low 2 or 4 bits (L / 4 or L / 2 "
+  "bytes, element c at bit (c % (8 / lb)) * lb of byte c / (8 / lb)) before the scales (row L + L / 4 or L / 2 + 4 * L / quant_block + 2 * rope_dim bytes)." },
+{ "ernie_hca_state_write", ARR(pErnieHcaState), ARR(oErnieHcaState),
+  "HCA compressor state write: for each row m with slots[m] >= 0 the fp32 state row [kv | score + ape[positions[m] % "
+  "ratio]] (width 2 * coff * head_dim, coff 2 at ratio 4 and 1 at ratio 128) is stored at state[slots[m]]; slot -1 "
+  "skips the row, a repeated slot keeps the last. The APE row follows the absolute position, so the state does not "
+  "depend on the chunking. A ratio other than 4 or 128, a slot outside [-1, S) or a negative position of a stored row "
+  "refuses before any store." },
+{ "ernie_hca_compress", ARR(pErnieHcaCompress), ARR(oErnieHcaCompress),
+  "HCA group compression: each row whose out_slots[m] >= 0 and (positions[m] + 1) % ratio == 0 pools the coff * ratio "
+  "state rows listed oldest first in gather_slots[m] (-1 masked) with a per-channel softmax (ratio 4: previous rows "
+  "read lane 0, channels [0, D), current rows lane 1, [D, 2D)), RMS-normalises with the bf16 norm_weight, rotates the "
+  "trailing rope_dim channels at the group start (positions / ratio * ratio, plain RoPE at theta) from the "
+  "un-rounded row, and stores one row at out[out_slots[m]]: layout bf16_full (default) bf16 [R, D]; fp8_ds_mla u8 "
+  "[R, nope + 2 * rope + nope / quant_block + 1] = E4M3 nope codes, bf16 rope, UE8M0 scale bytes (scale floored at "
+  "1e-4), a zero pad byte. Rows with out slot -1 are ignored, rows that do not complete a group store nothing. An "
+  "illegal ratio, odd or oversized rope_dim, a slot out of range, a negative position, a stored row whose whole "
+  "window is masked, or a non-finite row refuses before any store. Optional yarn_factor (>= 1; 0 or absent = plain RoPE), "
+  "yarn_beta_fast (32), yarn_beta_slow (1), yarn_original_max (required with a factor) select the YaRN table of the HCA layers "
+  "(story 3-4a). Optional out_layout \"token\" (default) stores at out[out_slots[m]] of a per-token pool; \"block\" (kv-cmpblock) views the "
+  "rank-4 pool [pages, 1, B, e] as [pages, B * e] rows with B = ratio so the group keeps one row per block: a completing token's slot "
+  "page * B + B - 1 stores at row page; a live row at another offset refuses." },
+{ "ernie_hca_q_prep", ARR(pErnieHcaQPrep), ARR(oErnieHcaQPrep),
+  "HCA query preparation in place on x [M, heads * head_dim] (bf16): per head the weightless RMS norm y = x * rsqrt(mean(x^2) + eps) in f32, "
+  "then GPT-J interleaved rope on the trailing rope_dim values at the absolute position (f32 cos/sin table, YaRN with the optional yarn_* "
+  "parameters), rounded once to bf16. A negative position, an odd or oversized rope_dim, a negative eps or a non-positive theta refuses "
+  "before any store." },
+{ "ernie_hca_union_attn", ARR(pErnieHcaUnion), ARR(oErnieHcaUnion),
+  "HCA attention over the union of the complete compressed rows 0 .. (p + 1) / ratio - 1 (cmp_kv [pages, 1, block, head_dim], through "
+  "cmp_table[req]) and the window tokens p - window + 1 .. p (win_kv, through win_table[req]), one softmax with the per-head fp32 sink "
+  "(max and denominator only). Key = value = the cache row, score = scale * q . row. The window and the newest complete group overlap and "
+  "are not de-duplicated. A table entry of -1 is skipped; an entry past the pool, a block index past the table, a negative position or "
+  "request, a NaN or +inf sink or an illegal ratio refuses before any store. cmp_layout dense (default), token (row j at the slot of its completing "
+  "token) or block (kv-cmpblock: cmp_kv is [pages, 1, ratio, head_dim / ratio], a page is one row, row j is page cmp_table[req][j]). Optional block_size names "
+  "the compressed group's block (the page rows of cmp_kv; the builder reads a group's block size off the first op after it that carries one) and must equal it." },
+{ "ernie_hca_union_attn_origin", ARR(pErnieHcaUnion), ARR(oErnieHcaUnionOrigin),
+  "HCA union attention with a block-aligned, per-request absolute token origin win_origin [seqs] (i32) for win_table. "
+  "Window slots use token minus origin; all compressed rows and causal limits still use absolute positions." },
+{ "ernie_mhc_stream_mean", ARR(pErnieMhcStreamMean), ARR(oErnieMhcStreamMean),
+  "Mean-pool mult mHC streams of x [M, mult*hidden] into out [M, hidden] (bf16, f32 accumulate; column-sliced out supported)." },
+{ "ernie_hca_dspark_attn", ARR(pErnieHcaDspark), ARR(oErnieHcaDspark),
+  "Non-causal anchor-window sliding-window MQA K=V attention with per-head fp32 sink for ERNIE 5.5 DSpark draft layers." },
+{ "ernie_hca_gather_slots", ARR(pErnieHcaGather), ARR(oErnieHcaGather),
+  "State slots a HCA group completion reads: for the row at position p of request req whose (p + 1) % ratio == 0, the slots of the "
+  "coff * ratio state rows ending at p (oldest first, logical id q -> block_table[req][q / block_size] * block_size + q % block_size, -1 for q < 0); "
+  "every other row is all -1. An unallocated page (-1) for a needed row, a block index past the table, a negative position or an out-of-range "
+  "request refuses before any store." },
+{ "ernie_hca_gather_slots_origin", ARR(pErnieHcaGather), ARR(oErnieHcaGatherOrigin),
+  "HCA state gather with a block-aligned, per-request absolute token origin state_origin [seqs] (i32) for block_table. "
+  "Group completion uses absolute positions; state slots use token minus origin. A needed state row before the origin refuses." },
+{ "ernie_hca_wo_a", ARR(pErnieHcaWoA), ARR(oErnieHcaWoA),
+  "HCA output transform: o [M, heads * head_dim] (bf16) has the trailing rope_dim values of every head rotated by the INVERSE rotary at the "
+  "row position (f32 table, YaRN optional, rounded to bf16) and goes through the grouped wo_a [groups * rank, heads / groups * head_dim]: "
+  "group g reads its heads/groups contiguous heads and weight rows g * rank .. (g + 1) * rank - 1; out [M, groups * rank]. A negative "
+  "position, groups not dividing heads, an odd or oversized rope_dim or a bad YaRN set refuses before any store." },
 { "moe_scatter", ARR(pScatter), ARR(oScatter),
   "Stable counting sort of the (token, slot) pairs by expert. sorted_tok holds the FLATTENED "
   "index token*top_k + slot, not the bare token id; a slot whose expert is outside the range this "
@@ -2355,6 +2691,15 @@ SIMPLE("ref_hc_enter", "hc_enter", "norm", "gated residual entry: hc copies of x
        ref_hc_enter),
 SIMPLE("ref_mhc_pre", "mhc_pre", "norm", "manifold residual gates and Sinkhorn mixing", DT_FLOAT,
        ref_mhc_pre),
+SIMPLE("ref_ernie_mhc_pre", "ernie_mhc_pre", "norm",
+       "ERNIE residual gates and Sinkhorn mixing (epsilon outside the RMS root)", DT_FLOAT,
+       ref_ernie_mhc_pre),
+SIMPLE("ref_ernie_mhc_pre_rms", "ernie_mhc_pre_rms", "norm",
+       "ERNIE residual gates and Sinkhorn mixing with the fused weighted RMSNorm over x (bf16)",
+       DT_FLOAT, ref_ernie_mhc_pre_rms),
+SIMPLE("ref_ernie_mhc_head", "ernie_mhc_head", "norm",
+       "ERNIE learned residual collapse: rsqrt-scaled sigmoid gates over the streams", DT_FLOAT,
+       ref_ernie_mhc_head),
 SIMPLE("ref_mhc_pre_partial", "mhc_pre_partial", "norm", "manifold residual projection partials", DT_FLOAT,
        ref_mhc_pre_partial),
 SIMPLE("ref_mhc_pre_finish", "mhc_pre_finish", "norm", "manifold residual gates from projection partials", DT_FLOAT,
@@ -2410,12 +2755,75 @@ SIMPLE("ref_mla_attn", "mla_attn", "attn", "absorbed latent MQA attention", DT_F
        ref_mla_attn),
 SIMPLE("ref_dsa_score", "dsa_score", "attn", "weighted FP8 index scoring", DT_FLOAT,
        ref_dsa_score),
+SIMPLE("ref_ernie_dsa_select", "ernie_dsa_select", "attn",
+       "ERNIE DSA selection row: indexer top-k below the window, then the causal window, then -1",
+       "f32 scores, i32 positions, request ids, block table, row ids and slots", ref_ernie_dsa_select),
+SIMPLE("ref_ernie_rope_tail", "ernie_rope_tail", "attn",
+       "ERNIE MLA trailing-slice GPT-J rotary at absolute positions", "bf16 rows, i32 positions",
+       ref_ernie_rope_tail),
+SIMPLE("ref_ernie_row_req", "ernie_row_req", "attn", "request index of each row from cu_seqlens", "i32",
+       ref_ernie_row_req),
+SIMPLE("ref_ernie_head_slice", "ernie_head_slice", "attn", "per-head column slice into a compact operand", "bf16",
+       ref_ernie_head_slice),
+SIMPLE("ref_ernie_idx_query", "ernie_idx_query", "attn",
+       "ERNIE DSA indexer query: rope-first NeoX rope, Hadamard, ue8m0 FP8", "bf16 q, i32 positions; f8 q, f32 scales",
+       ref_ernie_idx_query),
+SIMPLE("ref_ernie_idx_key", "ernie_idx_key", "attn",
+       "ERNIE DSA indexer key: LayerNorm, rope, Hadamard, FP8 row with scale into the key cache",
+       "bf16 k, gamma, beta; i32 positions and slots; u8 cache", ref_ernie_idx_key),
+SIMPLE("ref_ernie_idx_logits", "ernie_idx_logits", "attn",
+       "ERNIE DSA indexer logits per logical token over the paged FP8 key cache",
+       "f8 q, f32 scales, bf16 weights, u8 cache, i32 table", ref_ernie_idx_logits),
+SIMPLE("ref_ernie_dsa_topk_tiled", "ernie_dsa_topk_tiled", "attn",
+       "ERNIE DSA indexer logits and selection in context tiles with a running top-k (the score plane is {rows, tile})",
+       "f8 q, f32 scales, bf16 weights, u8 cache, i32 tables; f32 scratch tile, i32 ids and slots", ref_ernie_dsa_topk_tiled),
+SIMPLE("ref_ernie_mla_project", "ernie_mla_project", "attn",
+       "MLA absorb/expand through kv_b with unequal key and value widths", "bf16", ref_ernie_mla_project),
+SIMPLE("ref_ernie_vha_mix", "ernie_vha_mix", "attn", "VHA head mix m = I + V U^T", "bf16 rows, bf16 or f32 U and V",
+       ref_ernie_vha_mix),
+SIMPLE("ref_ernie_vha_proj", "ernie_vha_proj", "attn", "Factored VHA projection U_loc^T o_loc", "bf16 rows, bf16 or f32 U",
+       ref_ernie_vha_proj),
+SIMPLE("ref_ernie_vha_apply", "ernie_vha_apply", "attn", "Factored VHA apply o_loc + V_loc z", "bf16 rows, bf16 or f32 V",
+       ref_ernie_vha_apply),
+SIMPLE("ref_ernie_mla_sparse_attn", "ernie_mla_sparse_attn", "attn",
+       "absorbed latent attention over listed slots with a per-head sink",
+       "bf16 q, rope, cache; i32 slots; f32 sink", ref_ernie_mla_sparse_attn),
+SIMPLE("ref_ernie_mla_latent_store", "ernie_mla_latent_store", "attn",
+       "fp8_ds_mla latent row writer: E4M3 codes, f32 power-of-two tile scales, bf16 rope bit for bit",
+       "bf16 rows, i32 slots, u8 cache", ref_ernie_mla_latent_store),
+SIMPLE("ref_ernie_hca_state_write", "ernie_hca_state_write", "attn",
+       "HCA compressor fp32 state rows [kv | score + APE[pos % ratio]] at named slots", "f32 rows and state, i32 positions and slots",
+       ref_ernie_hca_state_write),
+SIMPLE("ref_ernie_hca_compress", "ernie_hca_compress", "attn",
+       "HCA group compression: lane softmax pool, RMSNorm, group-start rope, bf16 or fp8_ds_mla row",
+       "f32 state, i32 slots and positions, bf16 weight, bf16 or u8 rows", ref_ernie_hca_compress),
+SIMPLE("ref_ernie_hca_q_prep", "ernie_hca_q_prep", "attn", "HCA query: weightless per-head RMS, trailing-slice rope (YaRN optional)",
+       "bf16 rows, i32 positions", ref_ernie_hca_q_prep),
+SIMPLE("ref_ernie_hca_union_attn", "ernie_hca_union_attn", "attn",
+       "HCA attention over complete compressed rows and the local window with a per-head sink, K = V",
+       "bf16 q and caches, i32 tables, f32 sink", ref_ernie_hca_union_attn),
+SIMPLE("ref_ernie_hca_union_attn_origin", "ernie_hca_union_attn_origin", "attn",
+       "HCA union attention with a per-request window table origin",
+       "bf16 q and caches, i32 tables and origin, f32 sink", ref_ernie_hca_union_attn_origin),
+SIMPLE("ref_ernie_hca_gather_slots", "ernie_hca_gather_slots", "attn", "state slots of a HCA group completion through the state block table",
+       "i32 positions, request ids, block table, slots", ref_ernie_hca_gather_slots),
+SIMPLE("ref_ernie_hca_gather_slots_origin", "ernie_hca_gather_slots_origin", "attn", "HCA state gather with a per-request table origin",
+       "i32 positions, request ids, block table, origin, slots", ref_ernie_hca_gather_slots_origin),
+SIMPLE("ref_ernie_mhc_stream_mean", "ernie_mhc_stream_mean", "mhc", "mean-pool mult mHC streams into a single hidden stream",
+       "bf16 rows", ref_ernie_mhc_stream_mean),
+SIMPLE("ref_ernie_hca_dspark_attn", "ernie_hca_dspark_attn", "attn",
+       "DSpark non-causal anchor-window MQA K=V attention with per-head fp32 sink",
+       "bf16 q and kv, i32 tables, f32 sink", ref_ernie_hca_dspark_attn),
+SIMPLE("ref_ernie_hca_wo_a", "ernie_hca_wo_a", "attn", "HCA inverse rope at the query position then the grouped wo_a",
+       "bf16 rows and weight, i32 positions", ref_ernie_hca_wo_a),
 SIMPLE("ref_dsa_pool", "dsa_pool", "attn", "learned compressed FP8 index keys", DT_FLOAT,
        ref_dsa_pool),
 SIMPLE("ref_dsa_query", "dsa_query", "attn", "normalized FP8 index queries", DT_FLOAT,
        ref_dsa_query),
 SIMPLE("ref_gemm_nt_f32", "gemm_nt_f32", "gemm", "F32 routing projection", DT_FLOAT,
        ref_gemm_nt_f32),
+SIMPLE("ref_gemm_nt_f32_pair", "gemm_nt_f32_pair", "gemm", "Paired F32 routing/compressor projection", DT_FLOAT,
+       ref_gemm_nt_f32_pair),
 SIMPLE("ref_mla_attn_paged", "mla_attn_paged", "attn", "dense paged latent attention with a rotary part",
        DT_FLOAT, ref_mla_attn_paged),
 SIMPLE("ref_swiglu_step", "swiglu_step", "elem", "SwiGLU clipped after the SiLU", DT_FLOAT,
@@ -2472,6 +2880,17 @@ SIMPLE("ref_fill", "fill", "elem", "constant fill", DT_FLOAT, ref_fill),
 SIMPLE("ref_gelu_mul", "gelu_mul", "elem",
        "tanh-gelu-gated product over a fused gate_up (gemma's gelu_pytorch_tanh)", DT_FLOAT,
        ref_gelu_mul),
+SIMPLE("ref_situ_mul_quant_fp8", "situ_mul_quant_fp8", "elem",
+       "fused SiTU gated product and group-128 E4M3 quantization", DT_FLOAT, ref_situ_mul_quant_fp8),
+SIMPLE("ref_ernie_add_mhc_post", "ernie_add_mhc_post", "norm",
+       "fused residual add and mhc_post update", DT_FLOAT, ref_ernie_add_mhc_post),
+SIMPLE("ref_situ_mul", "situ_mul", "elem",
+       "SiTU gated product over a fused gate_up: beta-clip(gate) * sigmoid(gate) * "
+       "linear_beta-clip(up), ERNIE", DT_FLOAT, ref_situ_mul),
+SIMPLE("ref_ernie_multimax", "ernie_multimax", "elem",
+       "ERNIE's learned piecewise logit transform: four hinge terms, two linear + two quadratic, "
+       "identity inside the learned ranges", "f32 only (logits and the learned ranges and "
+       "coefficients alike)", ref_ernie_multimax),
 SIMPLE("ref_logit_softcap", "logit_softcap", "elem", "final-logit softcap: cap * tanh(x / cap)",
        DT_FLOAT, ref_logit_softcap),
 SIMPLE("ref_scale", "scale", "elem", "per-tensor scalar scale: y = x * s (s a [1] weight)",
@@ -2622,6 +3041,12 @@ SIMPLE("ref_router_sigmoid_topk", "router_sigmoid_topk", "moe", "sigmoid correct
        ref_router_sigmoid_topk),
 SIMPLE("ref_router_topk", "router_topk", "moe", "softmax then exact top-k routing", DT_FLOAT,
        ref_router_topk),
+SIMPLE("ref_ernie_router_topk_scatter", "ernie_router_topk_scatter", "moe",
+       "ERNIE two-projection sigmoid routing + scatter",
+       "f32 projections, bias, scale, weights; i32 ids, sorted, offsets, counts", ref_ernie_router_topk_scatter),
+SIMPLE("ref_ernie_router_topk", "ernie_router_topk", "moe",
+       "ERNIE two-projection sigmoid routing: correction bias selects, uncorrected scores weight",
+       "f32 projections, bias and scale, i32 ids, f32 weights", ref_ernie_router_topk),
 SIMPLE("ref_moe_scatter", "moe_scatter", "moe", "stable counting sort of routing slots by expert",
        "i32 indices", ref_moe_scatter),
 SIMPLE("ref_router_topk_scatter", "router_topk_scatter", "moe",

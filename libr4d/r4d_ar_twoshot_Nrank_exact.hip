@@ -628,3 +628,56 @@ void r4d_ar_twoshot_8rank_exact(long peer_scratch0, long peer_scratch1, long pee
                        dtype, rank, stream, nblocks, nthreads, drain, acq, pub, 0L, 0L,
                        shard_weights, pieces, timeline, form);
 }
+
+/* The eight-rank coded form: the four-rank launcher's checks and launch at WS = 8 (the kernel body
+ * is generic in WS), plus the extent checks the plain launcher makes. Even shards of whole waves
+ * only (r4d_ar_twoshot_coded_ok with world 8: n_elem a multiple of 2048); no weights, no pieces,
+ * no chain. The words, owners and folds are the plain form's, so the bits are too. */
+void r4d_ar_twoshot_8rank_exact_coded(long peer_scratch0, long peer_scratch1, long peer_scratch2,
+                                      long peer_scratch3, long peer_scratch4, long peer_scratch5,
+                                      long peer_scratch6, long peer_flags0, long peer_flags1,
+                                      long peer_flags2, long peer_flags3, long peer_flags4,
+                                      long peer_flags5, long peer_flags6, long my_scratch,
+                                      long my_flags, long seq_ctrs, long slot_stride16, long inp,
+                                      long out, long n_elem, long rank, long stream,
+                                      long nblocks, long nthreads, long drain, long acq, long pub) {
+  constexpr int WS = 8;
+  if (!r4d_ar_twoshot_coded_ok(n_elem, 0, WS, slot_stride16))
+    throw std::runtime_error("all_reduce (coded): message or slot outside the coded form");
+  if (rank < 0 || rank >= WS) throw std::runtime_error("all_reduce (coded): rank out of range");
+  const long n16 = n_elem / 8, SL = n16 / WS;
+  int nb = (int)nblocks;
+  if (nb < 1) nb = 4;
+  if (nb > R4D_AR_WIDE_MAX_BLOCKS) nb = R4D_AR_WIDE_MAX_BLOCKS;
+  if (nb > SL / 32) nb = (int)(SL / 32);
+  int nt = (int)nthreads;
+  if (nt < 256) nt = 256;
+  if (nt > 1024) nt = 1024;
+  nt &= ~31;
+  R4DArWidePeers<int4, WS - 1> peers{};
+  const long ps[7] = {peer_scratch0, peer_scratch1, peer_scratch2, peer_scratch3,
+                      peer_scratch4, peer_scratch5, peer_scratch6};
+  const long pf[7] = {peer_flags0, peer_flags1, peer_flags2, peer_flags3,
+                      peer_flags4, peer_flags5, peer_flags6};
+  for (int i = 0; i < WS - 1; ++i) {
+    if (!ps[i] || !pf[i]) throw std::runtime_error("all_reduce (coded): null peer pointer");
+    peers.scratch[i] = (int4*)ps[i];
+    peers.flags[i] = (unsigned int*)pf[i];
+    peers.rank[i] = (i < (int)rank) ? i : i + 1;
+  }
+  const long slot_bytes = 2L * WS * (long)slot_stride16 * 16;
+  const long flag_bytes = (long)nb * WS * (long)sizeof(unsigned int);
+  r4d_ar_check_extent(my_scratch, slot_bytes, "all_reduce", "my_scratch");
+  r4d_ar_check_extent(my_flags, flag_bytes, "all_reduce", "my_flags");
+  r4d_ar_check_extent(seq_ctrs, 2L * R4D_AR_WIDE_MAX_BLOCKS * (long)sizeof(unsigned int),
+                      "all_reduce", "seq_ctrs");
+  for (int i = 0; i < WS - 1; ++i) {
+    r4d_ar_check_extent(ps[i], slot_bytes, "all_reduce", "peer scratch");
+    r4d_ar_check_extent(pf[i], flag_bytes, "all_reduce", "peer flags");
+  }
+  hipStream_t st = (hipStream_t)stream;
+  r4d_ar_twoshot_coded_kernel<WS><<<nb, nt, 0, st>>>(
+      (const int4*)inp, peers, (const int4*)my_scratch, (unsigned int*)my_flags, (int4*)out,
+      (unsigned int*)seq_ctrs, (int)n16, (int)slot_stride16, (int)rank, (int)drain, (int)acq,
+      (int)pub, (long long*)nullptr, (unsigned int*)nullptr);
+}

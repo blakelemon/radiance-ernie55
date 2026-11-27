@@ -42,6 +42,7 @@
 #include "r4d_chain.h"
 #include "r4d_fp8_wmma.h"
 #include "r4d_plugin.h"
+#include "r4d_launch.h"   // R4D_DYN_LDS
 #include "r4d_emit.h"
 #include "r4d_gemm_args.h"
 #include "r4d_moe_sort.h"
@@ -333,7 +334,7 @@ constexpr uint32_t kScatterTile = 256;
 __global__ __launch_bounds__(kScatterTile) void scatter_hist_kernel(
     const int32_t* __restrict__ ids, int32_t* __restrict__ bcnt, uint32_t T, uint32_t n_expert,
     int32_t base, Protect prot) {
-    extern __shared__ int32_t s_h[];
+    R4D_DYN_LDS(int32_t, s_h);
     const uint32_t tid = threadIdx.x, b = blockIdx.x;
     for (uint32_t e = tid; e < n_expert; e += blockDim.x) s_h[e] = 0;
     __syncthreads();
@@ -3663,7 +3664,7 @@ __global__ __launch_bounds__(NW * kWave) void router_gemm_topk_scatter_kernel(
     /* The GEMM's partial tiles, then (last block only, after two barriers) the sort's LDS; the
      * shim sizes it for the larger. */
     if (CH::on) r4d_chain_wait();
-    extern __shared__ __align__(16) unsigned char rg_smem[];
+    R4D_DYN_LDS_ALIGNED(unsigned char, rg_smem, 16);
     float* const red = (float*)rg_smem;
     const uint32_t tid = threadIdx.x, wave = tid / kWave, lane = tid % kWave;
 

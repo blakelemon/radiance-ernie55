@@ -490,6 +490,17 @@ void r4d_ar_twoshot_4rank_exact_coded(long peer_scratch0, long peer_scratch1, lo
                                       long rank, long stream, long nblocks, long nthreads,
                                       long drain, long acq, long pub, long gate, long gate_ctr,
                                       long chain);
+// The eight-rank exact two-shot with both pushes coded losslessly (the same bytes out, as the
+// four-rank form above; even shards only, a message of whole 2048-value groups). Selected by the
+// plugin only under R4D_AR8_CODED (r4d_ar_entry.hip), or the `coded` launch parameter.
+void r4d_ar_twoshot_8rank_exact_coded(long peer_scratch0, long peer_scratch1, long peer_scratch2,
+                                      long peer_scratch3, long peer_scratch4, long peer_scratch5,
+                                      long peer_scratch6, long peer_flags0, long peer_flags1,
+                                      long peer_flags2, long peer_flags3, long peer_flags4,
+                                      long peer_flags5, long peer_flags6, long my_scratch,
+                                      long my_flags, long seq_ctrs, long slot_stride16, long inp,
+                                      long out, long n_elem, long rank, long stream,
+                                      long nblocks, long nthreads, long drain, long acq, long pub);
 void r4d_ar_twoshot_8rank_exact(long peer_scratch0, long peer_scratch1, long peer_scratch2,
                                 long peer_scratch3, long peer_scratch4, long peer_scratch5,
                                 long peer_scratch6, long peer_flags0, long peer_flags1,

@@ -875,6 +875,14 @@ static const RadParamSpec pGemmNt[] = {
     { "K",     RAD_P_INT, RAD_REQUIRED },
     { "dtype", RAD_P_STR, RAD_REQUIRED },
 };
+/* gemm_nt alone takes `row_identity` (docs/OPS.md): gemm_nt_f32 and gemm_nt_f32_pair keep pGemmNt. */
+static const RadParamSpec pGemmNtRI[] = {
+    { "M",     RAD_P_INT, RAD_REQUIRED },
+    { "N",     RAD_P_INT, RAD_REQUIRED },
+    { "K",     RAD_P_INT, RAD_REQUIRED },
+    { "dtype", RAD_P_STR, RAD_REQUIRED },
+    { "row_identity", RAD_P_INT, RAD_OPTIONAL },
+};
 static const RadOperandSpec oGemmNt[] = {
     { "a", RAD_OPD_IN,     0 },
     { "b", RAD_OPD_WEIGHT, 0 },
@@ -936,6 +944,10 @@ static const RadParamSpec pGemmNtQ[] = {
     /* The weight rows one int8 scale covers, when the weight's form makes it more than one (a
      * trellis on libquant's tcq_rb grid); the rb8 tile reads it (docs/OPS.md). */
     { "w_rb", RAD_P_INT, RAD_OPTIONAL },
+    /* The fp8a8 matvec bound of this op: the largest row count served by the matvec form, which sums in another order than the WMMA forms.
+     * Absent, the generic bound (R4D_F8A8_MVM_MAX, 8); 0 sends every step to the WMMA forms (equal per row). Row-identity models declare 0. The
+     * other libraries accept and ignore it (docs/OPS.md). */
+    { "mvm_max", RAD_P_INT, RAD_OPTIONAL },
 };
 /* docs/OPS.md's `gemm_nt_q` is `a`, `a_scale`, `b`w, `b_scale`w -> `y`. Two of libr4d's six
  * quantised GEMMs need a seventh operand. RadLayout can declare aux streams beside a weight, but
@@ -1915,6 +1927,191 @@ static const RadParamSpec pMnDtype[] = {
     { "n",     RAD_P_INT, RAD_REQUIRED },
     { "dtype", RAD_P_STR, RAD_REQUIRED },
 };
+static const RadParamSpec pErnieRouter[] = { P_INT("M"), P_INT("experts"), P_INT("topk"), P_INT("renormalize") };
+static const RadOperandSpec oErnieRouter[] = {
+    { "logits", RAD_OPD_IN, 0 }, { "bias", RAD_OPD_WEIGHT, 0 }, { "scale", RAD_OPD_WEIGHT, 0 },
+    { "ids", RAD_OPD_OUT, 0 }, { "weights", RAD_OPD_OUT, 0 }
+};
+static const RadOperandSpec oErnieRouterScatter[] = {
+    { "logits", RAD_OPD_IN, 0 }, { "bias", RAD_OPD_WEIGHT, 0 }, { "scale", RAD_OPD_WEIGHT, 0 },
+    { "ids", RAD_OPD_OUT, 0 }, { "weights", RAD_OPD_OUT, 0 },
+    { "sorted_tok", RAD_OPD_OUT, 0 }, { "expert_offset", RAD_OPD_OUT, 0 }, { "expert_count", RAD_OPD_OUT, 0 },
+};
+static const RadParamSpec pSituMulQuantFp8[] = {
+    P_INT("M"), P_INT("n"), P_INT("group"), P_STR("dtype"), P_F64("beta"), P_F64("linear_beta"),
+};
+static const RadOperandSpec oSituMulQuantFp8[] = {
+    { "gate_up", RAD_OPD_IN, 0 }, { "q", RAD_OPD_OUT, 0 }, { "scale", RAD_OPD_OUT, 0 },
+};
+static const RadOperandSpec oGemmNtPair[] = {
+    { "a", RAD_OPD_IN, 0 }, { "b0", RAD_OPD_WEIGHT, 0 }, { "b1", RAD_OPD_WEIGHT, 0 },
+    { "y0", RAD_OPD_OUT, 0 }, { "y1", RAD_OPD_OUT, 0 },
+};
+static const RadOperandSpec oErnieAddMhcPost[] = {
+    { "a", RAD_OPD_IN, 0 }, { "b", RAD_OPD_IN, 0 }, { "h", RAD_OPD_IN, 0 },
+    { "post", RAD_OPD_IN, 0 }, { "comb", RAD_OPD_IN, 0 }, { "out", RAD_OPD_OUT, 0 },
+};
+static const RadOperandSpec oErnieMultimax[] = {
+    { "x", RAD_OPD_IN, 0 }, { "ranges", RAD_OPD_WEIGHT, 0 }, { "coefficients", RAD_OPD_WEIGHT, 0 }, { "y", RAD_OPD_OUT, 0 }
+};
+static const RadParamSpec pErnieRowReq[] = { P_INT("M") };
+static const RadOperandSpec oErnieRowReq[] = { { "cu_seqlens", RAD_OPD_IN, 0 }, { "req", RAD_OPD_OUT, 0 } };
+static const RadParamSpec pErnieHeadSlice[] = { P_INT("M"), P_INT("heads"), P_INT("width"), P_INT("offset"), P_INT("count") };
+static const RadOperandSpec oErnieHeadSlice[] = { { "x", RAD_OPD_IN, 0 }, { "y", RAD_OPD_OUT, 0 } };
+static const RadParamSpec pErnieRopeTail[] = {
+    P_INT("M"), P_INT("heads"), P_INT("width"), P_INT("rope_dim"), P_F64("theta"), P_STRO("rope_table"), P_INTO("inverse"),
+    P_F64O("yarn_factor"), P_F64O("yarn_beta_fast"), P_F64O("yarn_beta_slow"), P_F64O("yarn_original_max")
+};
+static const RadOperandSpec oErnieRopeTail[] = { { "x", RAD_OPD_INOUT, 0 }, { "positions", RAD_OPD_IN, 0 } };
+static const RadParamSpec pErnieHcaQPrep[] = {
+    P_INT("M"), P_INT("heads"), P_INT("head_dim"), P_INT("rope_dim"), P_F64("eps"), P_F64("theta"),
+    P_F64O("yarn_factor"), P_F64O("yarn_beta_fast"), P_F64O("yarn_beta_slow"), P_F64O("yarn_original_max")
+};
+static const RadOperandSpec oErnieHcaQPrep[] = { { "x", RAD_OPD_INOUT, 0 }, { "positions", RAD_OPD_IN, 0 } };
+static const RadParamSpec pErnieVhaMix[] = { P_INT("M"), P_INT("heads"), P_INT("dim"), P_INT("rank"), P_STRO("fold"), P_INTO("world_size"), P_INTO("tp_rank") };
+static const RadOperandSpec oErnieVhaMix[] = {
+    { "o", RAD_OPD_IN, 0 }, { "u", RAD_OPD_WEIGHT, 0 }, { "v", RAD_OPD_WEIGHT, 0 }, { "out", RAD_OPD_OUT, 0 }
+};
+static const RadParamSpec pErnieVhaFactor[] = { P_INT("M"), P_INT("heads"), P_INT("dim"), P_INT("rank"), P_INTO("world_size"), P_INTO("tp_rank") };
+static const RadOperandSpec oErnieVhaProj[] = {
+    { "o", RAD_OPD_IN, 0 }, { "u", RAD_OPD_WEIGHT, 0 }, { "z", RAD_OPD_OUT, 0 }
+};
+static const RadOperandSpec oErnieVhaApply[] = {
+    { "o", RAD_OPD_IN, 0 }, { "z", RAD_OPD_IN, 0 }, { "v", RAD_OPD_WEIGHT, 0 }, { "out", RAD_OPD_OUT, 0 }
+};
+static const RadParamSpec pErnieMhcPre[] = {
+    P_INT("M"), P_INT("n"), P_INT("hc"), P_INT("iterations"), P_F64("eps"), P_F64("pre_eps"),
+    P_F64("sinkhorn_eps"), P_F64("post_mult"), P_STR("dtype")
+};
+static const RadOperandSpec oErnieMhcPre[] = {
+    { "h", RAD_OPD_IN, 0 }, { "fn", RAD_OPD_WEIGHT, 0 }, { "scale", RAD_OPD_WEIGHT, 0 }, { "base", RAD_OPD_WEIGHT, 0 },
+    { "x", RAD_OPD_OUT, 0 }, { "post", RAD_OPD_OUT, 0 }, { "comb", RAD_OPD_OUT, 0 }
+};
+static const RadParamSpec pErnieMhcPreRms[] = {
+    P_INT("M"), P_INT("n"), P_INT("hc"), P_INT("iterations"), P_F64("eps"), P_F64("pre_eps"),
+    P_F64("sinkhorn_eps"), P_F64("post_mult"), P_F64("rms_eps"), P_STR("dtype")
+};
+static const RadOperandSpec oErnieMhcPreRms[] = {
+    { "h", RAD_OPD_IN, 0 }, { "fn", RAD_OPD_WEIGHT, 0 }, { "scale", RAD_OPD_WEIGHT, 0 }, { "base", RAD_OPD_WEIGHT, 0 },
+    { "gain", RAD_OPD_WEIGHT, 0 }, { "x", RAD_OPD_OUT, 0 }, { "post", RAD_OPD_OUT, 0 }, { "comb", RAD_OPD_OUT, 0 }
+};
+static const RadParamSpec pErnieMhcHead[] = { P_INT("M"), P_INT("n"), P_INT("hc"), P_F64("eps"), P_F64("gate_eps") };
+static const RadOperandSpec oErnieMhcHead[] = {
+    { "h", RAD_OPD_IN, 0 }, { "fn", RAD_OPD_WEIGHT, 0 }, { "scale", RAD_OPD_WEIGHT, 0 },
+    { "base", RAD_OPD_WEIGHT, 0 }, { "x", RAD_OPD_OUT, 0 }
+};
+static const RadParamSpec pErnieHcaState[] = { P_INT("M"), P_INT("ratio"), P_INT("head_dim"), P_INTO("block_size") };
+static const RadOperandSpec oErnieHcaState[] = {
+    { "kv", RAD_OPD_IN, 0 }, { "score", RAD_OPD_IN, 0 }, { "ape", RAD_OPD_WEIGHT, 0 },
+    { "positions", RAD_OPD_IN, 0 }, { "slots", RAD_OPD_IN, 0 }, { "state", RAD_OPD_INOUT, 0 }
+};
+static const RadParamSpec pErnieHcaGather[] = { P_INT("M"), P_INT("ratio"), P_INT("block_size"), P_INTO("seqs"), P_INTO("blocks") };
+static const RadOperandSpec oErnieHcaGather[] = {
+    { "positions", RAD_OPD_IN, 0 }, { "req", RAD_OPD_IN, 0 }, { "block_table", RAD_OPD_IN, 0 }, { "gather_slots", RAD_OPD_OUT, 0 }
+};
+static const RadOperandSpec oErnieHcaGatherOrigin[] = {
+    { "positions", RAD_OPD_IN, 0 }, { "req", RAD_OPD_IN, 0 }, { "block_table", RAD_OPD_IN, 0 },
+    { "state_origin", RAD_OPD_IN, 0 }, { "gather_slots", RAD_OPD_OUT, 0 }
+};
+static const RadParamSpec pErnieHcaCompress[] = {
+    P_INT("M"), P_INT("ratio"), P_INT("head_dim"), P_INT("rope_dim"), P_F64("eps"), P_F64("theta"),
+    P_STRO("layout"), P_INTO("quant_block"),
+    P_F64O("yarn_factor"), P_F64O("yarn_beta_fast"), P_F64O("yarn_beta_slow"), P_F64O("yarn_original_max"),
+    P_STRO("out_layout")
+};
+static const RadOperandSpec oErnieHcaCompress[] = {
+    { "state", RAD_OPD_IN, 0 }, { "gather_slots", RAD_OPD_IN, 0 }, { "positions", RAD_OPD_IN, 0 },
+    { "out_slots", RAD_OPD_IN, 0 }, { "norm_weight", RAD_OPD_WEIGHT, 0 }, { "out", RAD_OPD_INOUT, 0 }
+};
+static const RadParamSpec pErnieHcaUnion[] = {
+    P_INT("M"), P_INT("heads"), P_INT("head_dim"), P_INT("ratio"), P_INTO("window"), P_F64("scale"), P_STRO("cmp_layout"),
+    P_INTO("seqs"), P_INTO("win_block"), P_INTO("win_pages"), P_INTO("win_blocks"), P_INTO("cmp_block"), P_INTO("cmp_pages"), P_INTO("cmp_blocks"), P_INTO("block_size")
+};
+static const RadOperandSpec oErnieHcaUnion[] = {
+    { "q", RAD_OPD_IN, 0 }, { "win_kv", RAD_OPD_IN, 0 }, { "cmp_kv", RAD_OPD_IN, 0 }, { "positions", RAD_OPD_IN, 0 },
+    { "req", RAD_OPD_IN, 0 }, { "win_table", RAD_OPD_IN, 0 }, { "cmp_table", RAD_OPD_IN, 0 }, { "sink", RAD_OPD_WEIGHT, 0 }, { "out", RAD_OPD_OUT, 0 }
+};
+static const RadOperandSpec oErnieHcaUnionOrigin[] = {
+    { "q", RAD_OPD_IN, 0 }, { "win_kv", RAD_OPD_IN, 0 }, { "cmp_kv", RAD_OPD_IN, 0 }, { "positions", RAD_OPD_IN, 0 },
+    { "req", RAD_OPD_IN, 0 }, { "win_table", RAD_OPD_IN, 0 }, { "cmp_table", RAD_OPD_IN, 0 },
+    { "win_origin", RAD_OPD_IN, 0 }, { "sink", RAD_OPD_WEIGHT, 0 }, { "out", RAD_OPD_OUT, 0 }
+};
+static const RadParamSpec pErnieMhcStreamMean[] = { P_INT("M"), P_INT("hidden"), P_INT("mult") };
+static const RadOperandSpec oErnieMhcStreamMean[] = { { "x", RAD_OPD_IN, 0 }, { "out", RAD_OPD_OUT, 0 } };
+static const RadParamSpec pErnieHcaDspark[] = {
+    P_INT("M"), P_INT("heads"), P_INT("head_dim"), P_INTO("window"), P_F64("scale"),
+    P_INTO("seqs"), P_INTO("block_size"), P_INTO("pages"), P_INTO("blocks")
+};
+static const RadOperandSpec oErnieHcaDspark[] = {
+    { "q", RAD_OPD_IN, 0 }, { "kv", RAD_OPD_IN, 0 }, { "block_table", RAD_OPD_IN, 0 },
+    { "seqused", RAD_OPD_IN, 0 }, { "cu_seqlens", RAD_OPD_IN, 0 }, { "sink", RAD_OPD_WEIGHT, 0 }, { "out", RAD_OPD_OUT, 0 }
+};
+static const RadParamSpec pErnieHcaWoA[] = {
+    P_INT("M"), P_INT("heads"), P_INT("head_dim"), P_INT("rope_dim"), P_INT("groups"), P_INT("rank"), P_F64("theta"),
+    P_F64O("yarn_factor"), P_F64O("yarn_beta_fast"), P_F64O("yarn_beta_slow"), P_F64O("yarn_original_max")
+};
+static const RadOperandSpec oErnieHcaWoA[] = {
+    { "o", RAD_OPD_IN, 0 }, { "positions", RAD_OPD_IN, 0 }, { "wo_a", RAD_OPD_WEIGHT, 0 }, { "out", RAD_OPD_OUT, 0 }
+};
+static const RadParamSpec pErnieIdxQuery[] = {
+    P_INT("M"), P_INT("heads"), P_INT("head_dim"), P_INT("rope_dim"), P_F64("theta"), P_STRO("rope_table"), P_STRO("quant_rule")
+};
+static const RadOperandSpec oErnieIdxQuery[] = {
+    { "q", RAD_OPD_IN, 0 }, { "positions", RAD_OPD_IN, 0 }, { "qf", RAD_OPD_OUT, 0 }, { "qs", RAD_OPD_OUT, 0 }
+};
+static const RadParamSpec pErnieIdxKey[] = {
+    P_INT("M"), P_INT("head_dim"), P_INT("rope_dim"), P_F64("theta"), P_F64O("eps"), P_STRO("rope_table"),
+    P_INTO("block_size"), P_INTO("num_pages"), P_STRO("quant_rule")
+};
+static const RadOperandSpec oErnieIdxKey[] = {
+    { "k", RAD_OPD_IN, 0 }, { "gamma", RAD_OPD_WEIGHT, 0 }, { "beta", RAD_OPD_WEIGHT, 0 },
+    { "positions", RAD_OPD_IN, 0 }, { "slots", RAD_OPD_IN, 0 }, { "cache", RAD_OPD_INOUT, 0 }
+};
+static const RadParamSpec pErnieIdxLogits[] = {
+    P_INT("M"), P_INT("heads"), P_INT("head_dim"), P_INTO("window"), P_INTO("tokens"), P_INTO("seqs"),
+    P_INTO("blocks"), P_INTO("block_size"), P_INTO("num_pages"), P_INTO("col_start")
+};
+static const RadOperandSpec oErnieIdxLogits[] = {
+    { "qf", RAD_OPD_IN, 0 }, { "qs", RAD_OPD_IN, 0 }, { "w", RAD_OPD_IN, 0 }, { "cache", RAD_OPD_IN, 0 },
+    { "block_table", RAD_OPD_IN, 0 }, { "req", RAD_OPD_IN, 0 }, { "positions", RAD_OPD_IN, 0 }, { "scores", RAD_OPD_OUT, 0 }
+};
+static const RadParamSpec pErnieDsaSelect[] = {
+    P_INT("M"), P_INT("topk"), P_INT("window"), P_INT("block_size"), P_INTO("num_pages"), P_INTO("tokens"), P_INTO("seqs"), P_INTO("blocks")
+};
+static const RadOperandSpec oErnieDsaSelect[] = {
+    { "scores", RAD_OPD_IN, 0 }, { "positions", RAD_OPD_IN, 0 }, { "req", RAD_OPD_IN, 0 },
+    { "block_table", RAD_OPD_IN, 0 }, { "ids", RAD_OPD_OUT, 0 }, { "slots", RAD_OPD_OUT, 0 }
+};
+static const RadParamSpec pErnieDsaTopkTiled[] = {
+    P_INT("M"), P_INT("heads"), P_INT("head_dim"), P_INT("topk"), P_INT("window"), P_INT("block_size"), P_INTO("num_pages"),
+    P_INTO("tokens"), P_INTO("tile"), P_INTO("seqs"), P_INTO("blocks")
+};
+static const RadOperandSpec oErnieDsaTopkTiled[] = {
+    { "qf", RAD_OPD_IN, 0 }, { "qs", RAD_OPD_IN, 0 }, { "w", RAD_OPD_IN, 0 }, { "cache", RAD_OPD_IN, 0 },
+    { "block_table_idx", RAD_OPD_IN, 0 }, { "req", RAD_OPD_IN, 0 }, { "positions", RAD_OPD_IN, 0 },
+    { "block_table_sel", RAD_OPD_IN, 0 }, { "scores", RAD_OPD_OUT, 0 }, { "ids", RAD_OPD_OUT, 0 }, { "slots", RAD_OPD_OUT, 0 },
+    { "kept", RAD_OPD_OUT, 0 }, { "seqused", RAD_OPD_IN, 1 }
+};
+static const RadParamSpec pErnieMlaProject[] = {
+    P_INT("M"), P_INT("heads"), P_INT("k_dim"), P_INT("v_dim"), P_INT("latent_dim"), P_STR("mode"), P_INTO("q_width")
+};
+static const RadOperandSpec oErnieMlaProject[] = { { "x", RAD_OPD_IN, 0 }, { "w", RAD_OPD_WEIGHT, 0 }, { "y", RAD_OPD_OUT, 0 } };
+static const RadParamSpec pErnieMlaSparse[] = {
+    P_INT("M"), P_INT("heads"), P_INT("latent_dim"), P_INT("rope_dim"), P_INT("block_size"),
+    P_INTO("num_pages"), P_INT("width"), P_F64("scale"), P_STRO("kv_layout"), P_INTO("quant_block")
+};
+/* The fp8_ds_mla latent writer (kv-fp8-latent): the latent row [L | R] bf16 -> one u8 cache row. */
+static const RadParamSpec pErnieMlaLatentStore[] = {
+    P_INT("M"), P_INT("latent_dim"), P_INT("rope_dim"), P_INT("block_size"), P_INTO("quant_block"), P_STRO("kv_layout")
+};
+static const RadOperandSpec oErnieMlaLatentStore[] = {
+    { "kv", RAD_OPD_IN, 0 }, { "slot_mapping", RAD_OPD_IN, 0 }, { "cache", RAD_OPD_INOUT, 0 }
+};
+static const RadOperandSpec oErnieMlaSparse[] = {
+    { "q", RAD_OPD_IN, 0 }, { "q_rope", RAD_OPD_IN, 0 }, { "kv", RAD_OPD_IN, 0 },
+    { "slots", RAD_OPD_IN, 0 }, { "sink", RAD_OPD_WEIGHT, 0 }, { "out", RAD_OPD_OUT, 0 }
+};
+static const RadParamSpec pSituMul[] = { P_INT("M"), P_INT("n"), P_STR("dtype"), P_F64("beta"), P_F64("linear_beta") };
 static const RadParamSpec pSwigluClamped[] = { P_INT("M"), P_INT("n"), P_F64("limit"),
                                                P_STR("dtype") };
 static const RadParamSpec pSwigluClampedQuant[] = { P_INT("M"), P_INT("n"), P_F64("limit"),
@@ -3202,10 +3399,50 @@ static const RadOpSchema kSchemas[] = {
            "Normalized Hadamard, BF16 boundary and power-of-two E4M3 quantization per query head."),
     SCHEMA("gemm_nt_f32", pGemmNt, oGemmNt,
            "BF16 activations times F32 weights, F32 accumulation and output; preserves routing and index gate precision."),
+    SCHEMA("gemm_nt_f32_pair", pGemmNt, oGemmNtPair,
+           "Paired BF16 activations times two BF16/F32 weight matrices sharing input loads, F32 output."),
     SCHEMA("swiglu_step", pSwigluClamped, oGateUp,
            "min(silu(gate),limit)*clamp(up,-limit,limit); gate is the first half."),
     SCHEMA("swiglu_clamped", pSwigluClamped, oGateUp,
            "silu(min(gate,limit))*clamp(up,-limit,limit); gate is the first half."),
+    SCHEMA("ernie_router_topk_scatter", pErnieRouter, oErnieRouterScatter,
+           "Fused ERNIE two-sigmoid routing and moe_scatter in one wave32 launch (M == 1)."),
+    SCHEMA("situ_mul_quant_fp8", pSituMulQuantFp8, oSituMulQuantFp8,
+           "Fused ERNIE SiTU gated product + per-128-column E4M3 quantization."),
+    SCHEMA("ernie_add_mhc_post", pHcPlain, oErnieAddMhcPost,
+           "Fused BF16 residual add (with BF16 intermediate rounding) + mhc_post update."),
+    SCHEMA("ernie_router_topk", pErnieRouter, oErnieRouter,
+           "ERNIE routing between the two router projections and the latent dispatch: score = sigmoid(logits[e]) + sigmoid(logits[experts + e]); the correction bias SELECTS (descending score + bias, ties to the lower id); the uncorrected score WEIGHTS; renormalize divides by the kept sum (min 1e-20), the per-expert scale applies after the division; f32."),
+    SCHEMA("ernie_multimax", pMnDtype, oErnieMultimax, "ERNIE piecewise linear+quadratic logit warp (f32)."),
+    SCHEMA("ernie_row_req", pErnieRowReq, oErnieRowReq, "Per-row request index from cu_seqlens (i32)."),
+    SCHEMA("ernie_head_slice", pErnieHeadSlice, oErnieHeadSlice, "Per-head contiguous column slice (bf16)."),
+    SCHEMA("ernie_rope_tail", pErnieRopeTail, oErnieRopeTail, "In-place trailing-slice GPT-J RoPE with optional YaRN/inverse (bf16)."),
+    SCHEMA("ernie_hca_q_prep", pErnieHcaQPrep, oErnieHcaQPrep, "Weightless per-head RMSNorm + trailing GPT-J RoPE (bf16)."),
+    SCHEMA("ernie_vha_mix", pErnieVhaMix, oErnieVhaMix, "Value-head mixing out = (I + V U^T) o across heads (bf16)."),
+    SCHEMA("ernie_vha_proj", pErnieVhaFactor, oErnieVhaProj, "Factored VHA low-rank projection z = U_loc^T o_loc (bf16)."),
+    SCHEMA("ernie_vha_apply", pErnieVhaFactor, oErnieVhaApply, "Factored VHA residual apply out = o_loc + V_loc z (bf16)."),
+    SCHEMA("ernie_mhc_pre", pErnieMhcPre, oErnieMhcPre, "ERNIE mHC pre-collapse, post gates, and Sinkhorn mixing (eps outside sqrt)."),
+    SCHEMA("ernie_mhc_pre_rms", pErnieMhcPreRms, oErnieMhcPreRms, "ERNIE mHC pre-collapse fused with weighted RMSNorm (bf16)."),
+    SCHEMA("ernie_mhc_head", pErnieMhcHead, oErnieMhcHead, "ERNIE mHC final learned stream collapse (eps inside sqrt, bf16)."),
+    SCHEMA("ernie_hca_state_write", pErnieHcaState, oErnieHcaState, "Write HCA compressor state rows [kv | score + ape] (f32)."),
+    SCHEMA("ernie_hca_gather_slots", pErnieHcaGather, oErnieHcaGather, "Resolve HCA compressor window state slots from block table (i32)."),
+    SCHEMA("ernie_hca_gather_slots_origin", pErnieHcaGather, oErnieHcaGatherOrigin, "Resolve HCA compressor state slots with a per-request table origin."),
+    SCHEMA("ernie_hca_compress", pErnieHcaCompress, oErnieHcaCompress, "Pool, RMSNorm, RoPE, and store HCA compressed KV rows."),
+    SCHEMA("ernie_hca_union_attn", pErnieHcaUnion, oErnieHcaUnion, "ERNIE HCA unified softmax over compressed + local window KV with sink."),
+    SCHEMA("ernie_hca_union_attn_origin", pErnieHcaUnion, oErnieHcaUnionOrigin, "ERNIE HCA union attention with a per-request window table origin."),
+    SCHEMA("ernie_mhc_stream_mean", pErnieMhcStreamMean, oErnieMhcStreamMean, "Mean-pool mult mHC streams into a single hidden stream (bf16)."),
+    SCHEMA("ernie_hca_dspark_attn", pErnieHcaDspark, oErnieHcaDspark, "ERNIE HCA DSpark non-causal anchor-window MQA K=V attention with sink."),
+    SCHEMA("ernie_hca_wo_a", pErnieHcaWoA, oErnieHcaWoA, "ERNIE HCA inverse RoPE + grouped wo_a projection (bf16)."),
+    SCHEMA("ernie_idx_query", pErnieIdxQuery, oErnieIdxQuery, "ERNIE DSA indexer query NeoX RoPE + FWHT + E4M3 quantization."),
+    SCHEMA("ernie_idx_key", pErnieIdxKey, oErnieIdxKey, "ERNIE DSA indexer key LayerNorm + NeoX RoPE + FWHT + E4M3 cache write."),
+    SCHEMA("ernie_idx_logits", pErnieIdxLogits, oErnieIdxLogits, "ERNIE DSA indexer per-token ReLU dot-product score logits."),
+    SCHEMA("ernie_dsa_select", pErnieDsaSelect, oErnieDsaSelect, "ERNIE DSA top-k + local window selection and physical slot translation."),
+    SCHEMA("ernie_dsa_topk_tiled", pErnieDsaTopkTiled, oErnieDsaTopkTiled, "ERNIE DSA indexer logits + top-k + window selection in context tiles with a running top-k (the score plane is a tile)."),
+    SCHEMA("ernie_mla_project", pErnieMlaProject, oErnieMlaProject, "ERNIE MLA kv_b_proj absorb/expand projection (bf16)."),
+    SCHEMA("ernie_mla_sparse_attn", pErnieMlaSparse, oErnieMlaSparse, "ERNIE MLA absorbed sparse latent attention with per-head sink (bf16 cache, or kv_layout fp8_ds_mla)."),
+    SCHEMA("ernie_mla_latent_store", pErnieMlaLatentStore, oErnieMlaLatentStore, "ERNIE MLA latent row writer for the fp8_ds_mla cache (E4M3 codes, f32 power-of-two tile scales, bf16 rope)."),
+    SCHEMA("situ_mul", pSituMul, oGateUp,
+           "y[.., i] = beta * tanh(gate / beta) * sigmoid(gate) * linear_beta * tanh(up / linear_beta), ERNIE SiTU gated product; GATE IS THE FIRST HALF of the fused [M, 2n] plane; beta and linear_beta finite and positive (ERNIE 4 and 25); f32 arithmetic, one rounding to y dtype."),
     SCHEMA("silu_mul", pMnDtype, oGateUp,
            "y[.., i] = silu(gate_up[.., i]) * gate_up[.., n + i]. The GATE IS THE FIRST HALF, "
             "which is the order rad-convert fuses gate_proj and up_proj in."),
@@ -3643,7 +3880,7 @@ static const RadOpSchema kSchemas[] = {
            "y is [world_size * numel] with rank r's contribution at offset r * numel. The bytes are "
            "moved and never summed: the vocab-parallel sampler's payload is (u32 token id, f32 "
            "logit) pairs and an id lane read as f32 is a denormal."),
-    SCHEMA("gemm_nt", pGemmNt, oGemmNt,
+    SCHEMA("gemm_nt", pGemmNtRI, oGemmNt,
            "C[M,N] = A[M,K] @ B[N,K]^T, unquantised."),
     SCHEMA("gemm_nt_q", pGemmNtQ, oGemmNtQ,
            "C[M,N] = A[M,K] @ dequant(Bq)[N,K]^T. `dtype` names the operand COMBINATION, so one "
@@ -4975,6 +5212,10 @@ static const RadConstraint cFp8F32Scale[] = {
     C_GE("M", 1),    C_GE("N", 128),     C_DIV("N", 128),          C_GE("K", 128),
     C_DIV("K", 128), C_EQ("group", 128), C_IN("dtype", "fp8a8f32")
 };
+static const RadConstraint cFp8A16F32Scale[] = {
+    C_GE("M", 1),    C_LE("M", 8),       C_GE("N", 128),           C_DIV("N", 128),
+    C_GE("K", 128),  C_DIV("K", 128),    C_EQ("group", 128),       C_IN("dtype", "fp8a16f32")
+};
 static const RadConstraint cGemmNtF32[] = { C_GE("M", 1),         C_LE("M", 65535),
                                             C_GE("N", 1),         C_LE("N", 512),
                                             C_GE("K", 1),         C_LE("K", 16384),
@@ -5065,6 +5306,34 @@ static const RadConstraint cRouterTopK[] = {
     C_GE("M", 1), C_GE("n_expert", 1), C_LE("n_expert", 512), C_GE("top_k", 1),
     C_LE("top_k", 32), C_IN("dtype", "bf16"),
 };
+static const RadConstraint cErnieRouter[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("experts", 1), C_LE("experts", 512), C_GE("topk", 1), C_LE("topk", 32) };
+static const RadConstraint cErnieRouterScatter[] = { C_EQ("M", 1), C_GE("experts", 1), C_LE("experts", 512), C_GE("topk", 1), C_LE("topk", 32) };
+static const RadConstraint cSituMulQuantFp8[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("n", 4), C_DIV("n", 4), C_EQ("group", 128), C_IN("dtype", "bf16") };
+static const RadConstraint cErnieMultimax[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("n", 1), C_IN("dtype", "f32") };
+static const RadConstraint cErnieRowReq[] = { C_GE("M", 1) };
+static const RadConstraint cErnieHeadSlice[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("heads", 1), C_GE("width", 1), C_GE("count", 1) };
+static const RadConstraint cErnieRopeTail[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("heads", 1), C_GE("width", 1), C_GE("rope_dim", 2), C_LE("rope_dim", 512), C_DIV("rope_dim", 2) };
+static const RadConstraint cErnieHcaQPrep[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("heads", 1), C_GE("head_dim", 2), C_LE("head_dim", 4096), C_GE("rope_dim", 2), C_LE("rope_dim", 512), C_DIV("rope_dim", 2) };
+static const RadConstraint cErnieVhaMix[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("heads", 1), C_LE("heads", 4096), C_GE("dim", 1), C_GE("rank", 1) };
+static const RadConstraint cErnieMhcPreBf16[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("n", 1), C_GE("hc", 2), C_LE("hc", 8), C_IN("dtype", "bf16") };
+static const RadConstraint cErnieMhcPreF32[]  = { C_GE("M", 1), C_LE("M", 65535), C_GE("n", 1), C_GE("hc", 2), C_LE("hc", 8), C_IN("dtype", "f32") };
+static const RadConstraint cErnieMhcHead[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("n", 1), C_GE("hc", 2), C_LE("hc", 8) };
+static const RadConstraint cErnieHcaState[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("head_dim", 1), C_LE("head_dim", 4096) };
+static const RadConstraint cErnieHcaGather[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("block_size", 1) };
+static const RadConstraint cErnieHcaCompress[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("head_dim", 2), C_LE("head_dim", 4096), C_GE("rope_dim", 2), C_LE("rope_dim", 512), C_DIV("rope_dim", 2) };
+static const RadConstraint cErnieHcaUnion[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("heads", 1), C_GE("head_dim", 1), C_LE("head_dim", 4096) };
+static const RadConstraint cErnieMhcStreamMean[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("hidden", 1), C_LE("hidden", 65535), C_GE("mult", 1), C_LE("mult", 16) };
+static const RadConstraint cErnieHcaDspark[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("heads", 1), C_GE("head_dim", 1), C_LE("head_dim", 4096) };
+static const RadConstraint cErnieHcaWoA[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("heads", 1), C_GE("head_dim", 2), C_LE("head_dim", 4096), C_GE("rope_dim", 2), C_LE("rope_dim", 512), C_DIV("rope_dim", 2), C_GE("groups", 1), C_GE("rank", 1) };
+static const RadConstraint cErnieIdxQuery[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("heads", 1), C_LE("heads", 256), C_GE("head_dim", 4), C_LE("head_dim", 256), C_GE("rope_dim", 2), C_DIV("rope_dim", 2) };
+static const RadConstraint cErnieIdxKey[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("head_dim", 4), C_LE("head_dim", 256), C_GE("rope_dim", 2), C_DIV("rope_dim", 2) };
+static const RadConstraint cErnieIdxLogits[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("heads", 1), C_LE("heads", 256), C_GE("head_dim", 4), C_LE("head_dim", 256) };
+static const RadConstraint cErnieDsaSelect[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("topk", 1), C_LE("topk", 2048), C_GE("window", 1), C_GE("block_size", 1) };
+static const RadConstraint cErnieDsaTopkTiled[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("heads", 1), C_LE("heads", 256), C_GE("head_dim", 4), C_LE("head_dim", 256),
+                                                    C_GE("topk", 1), C_LE("topk", 2048), C_GE("window", 1), C_GE("block_size", 1) };
+static const RadConstraint cErnieMlaProject[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("heads", 1), C_GE("k_dim", 1), C_GE("v_dim", 1), C_GE("latent_dim", 1) };
+static const RadConstraint cErnieMlaLatentStore[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("latent_dim", 1), C_LE("latent_dim", 2048), C_GE("rope_dim", 1), C_GE("block_size", 1) };
+static const RadConstraint cErnieMlaSparse[] = { C_GE("M", 1), C_LE("M", 65535), C_GE("heads", 1), C_GE("latent_dim", 1), C_LE("latent_dim", 2048), C_GE("rope_dim", 1), C_LE("rope_dim", 512), C_GE("block_size", 1), C_GE("width", 1) };
 static const RadConstraint cRouterSigmoid[] = { C_GE("M", 1),        C_LE("M", 65535),
                                                 C_GE("n_expert", 1), C_LE("n_expert", 512),
                                                 C_GE("top_k", 1),    C_LE("top_k", 32),
@@ -5801,7 +6070,7 @@ static const RadTunable tAttnSplit[] = {
  * On the fp8 fused row only drain and acq apply: it forces `nthreads` to the norm's width for
  * bit-exactness, and pinning `nblocks` would undo r4d_ar_entry.hip's cap. No axis changes the
  * result. */
-static const int64_t kArNblocks[]  = { 0, 2, 4, 8, 16, 24 };
+static const int64_t kArNblocks[]  = { 0, 1, 2, 4, 8, 16, 24 };
 static const int64_t kArNthreads[] = { 256, 512, 1024 };
 static const int64_t kArDrain[]    = { 1, 3 };
 static const int64_t kArAcq[]      = { 0, 1 };
@@ -6753,6 +7022,11 @@ static const RadKernelInfo kKernels[] = {
   RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY, ROW(cGemmNtF32), NOTUNE,
   nullptr, nullptr, r4d_rad_gemm_nt_f32, nullptr, nullptr, nullptr,
   r4d_shape_gemm_nt_f32 },
+{ "gemm_nt_f32_pair_bf16", "gemm_nt_f32_pair", "gemm", "Paired F32 routing/compressor projection",
+  "N<=512, K<=16384; pitched rows", "bf16 input, bf16/f32 weight pair, f32 output pair",
+  RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY, ROW(cGemmNtF32), NOTUNE,
+  nullptr, nullptr, r4d_rad_gemm_nt_f32_pair, nullptr, nullptr, nullptr,
+  r4d_shape_gemm_nt_f32_pair },
 { "dsa_pool_fp8", "dsa_pool", "attn", "learned compressed index keys in wave-local registers",
   "n=128, ratio=4; pitched rows", "bf16 keys/gates, f32 position bias; FP8 codes and f32 scale",
   RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY, ROW(cDsaPool), NOTUNE,
@@ -6769,6 +7043,215 @@ static const RadKernelInfo kKernels[] = {
   "bf16 in and out, fp32 arithmetic", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
   ROW(cBf16Row), NOTUNE,
   nullptr, nullptr, r4d_rad_swiglu_clamped, nullptr, nullptr, nullptr,
+  r4d_shape_silu_mul },
+{ "ernie_router_topk_f32", "ernie_router_topk", "moe",
+  "ERNIE two-sigmoid routing with a correction bias and a per-expert scale", "experts <= 512, topk <= 32; ids and weights per row",
+  "f32 logits, bias, scale and weights; i32 ids", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieRouter), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_router_topk, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_router_topk },
+{ "ernie_router_topk_scatter_f32", "ernie_router_topk_scatter", "moe",
+  "Fused ERNIE two-sigmoid routing + scatter for M == 1", "M == 1, experts <= 512, topk <= 32",
+  "f32 logits/bias/scale/weights; i32 ids/sorted/offsets/counts", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieRouterScatter), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_router_topk_scatter, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_router_topk_scatter },
+{ "situ_mul_quant_fp8_bf16", "situ_mul_quant_fp8", "elem",
+  "Fused ERNIE SiTU gated product + per-128 E4M3 quantization", "n % 4 == 0, group == 128, M <= 65535",
+  "bf16 gate_up in, E4M3 codes + f32 scale out", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cSituMulQuantFp8), NOTUNE,
+  nullptr, nullptr, r4d_rad_situ_mul_quant_fp8, nullptr, nullptr, nullptr,
+  r4d_shape_situ_mul_quant_fp8 },
+{ "ernie_add_mhc_post_bf16", "ernie_add_mhc_post", "norm",
+  "Fused BF16 add + mhc_post residual update", "M 1..65535, n 1..16384, hc 2..8",
+  "bf16 activations, f32 coefficients", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cMhcPlain), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_add_mhc_post, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_add_mhc_post },
+{ "ernie_multimax_f32", "ernie_multimax", "elem",
+  "ERNIE piecewise linear and quadratic logit warp", "M <= 65535, n >= 1",
+  "f32 in and out", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieMultimax), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_multimax, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_multimax },
+{ "ernie_row_req_i32", "ernie_row_req", "attn",
+  "Per-row request index from cu_seqlens", "M >= 1",
+  "i32 cu_seqlens and req", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieRowReq), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_row_req, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_row_req },
+{ "ernie_head_slice_bf16", "ernie_head_slice", "attn",
+  "Per-head contiguous column slice", "M <= 65535, heads >= 1, width >= 1, count >= 1",
+  "bf16 in and out", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieHeadSlice), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_head_slice, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_head_slice },
+{ "ernie_rope_tail_bf16", "ernie_rope_tail", "attn",
+  "In-place trailing-slice GPT-J RoPE with optional YaRN and inverse", "M <= 65535, heads >= 1, rope_dim 2..512 even",
+  "bf16 activations, i32 positions", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieRopeTail), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_rope_tail, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_rope_tail },
+{ "ernie_hca_q_prep_bf16", "ernie_hca_q_prep", "attn",
+  "Weightless per-head RMSNorm and trailing GPT-J RoPE", "M <= 65535, heads >= 1, head_dim 2..4096, rope_dim 2..512 even",
+  "bf16 activations, i32 positions", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieHcaQPrep), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_hca_q_prep, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_hca_q_prep },
+{ "ernie_vha_mix_bf16", "ernie_vha_mix", "attn",
+  "Value-head mixing out = (I + V U^T) o across heads", "M <= 65535, heads 1..4096, dim >= 1, rank >= 1",
+  "bf16 activations, bf16/f32 factors", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieVhaMix), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_vha_mix, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_vha_mix },
+{ "ernie_vha_proj_bf16", "ernie_vha_proj", "attn",
+  "Factored VHA low-rank projection z = U_loc^T o_loc", "M <= 65535, heads 1..4096, dim >= 1, rank >= 1",
+  "bf16 activations, bf16/f32 U", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieVhaMix), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_vha_proj, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_vha_proj },
+{ "ernie_vha_apply_bf16", "ernie_vha_apply", "attn",
+  "Factored VHA residual apply out = o_loc + V_loc z", "M <= 65535, heads 1..4096, dim >= 1, rank >= 1",
+  "bf16 activations, bf16/f32 V", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieVhaMix), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_vha_apply, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_vha_apply },
+{ "ernie_mhc_pre_bf16", "ernie_mhc_pre", "norm",
+  "ERNIE mHC pre-collapse, post gates, and Sinkhorn mixing", "M <= 65535, n >= 1, hc 2..8",
+  "bf16 h and x, f32 weights and outputs", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieMhcPreBf16), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_mhc_pre, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_mhc_pre },
+{ "ernie_mhc_pre_f32", "ernie_mhc_pre", "norm",
+  "ERNIE mHC pre-collapse, post gates, and Sinkhorn mixing", "M <= 65535, n >= 1, hc 2..8",
+  "f32 h and x, f32 weights and outputs", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieMhcPreF32), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_mhc_pre, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_mhc_pre },
+{ "ernie_mhc_pre_rms_bf16", "ernie_mhc_pre_rms", "norm",
+  "ERNIE mHC pre-collapse fused with weighted RMSNorm", "M <= 65535, n >= 1, hc 2..8",
+  "bf16 h, gain and x, f32 weights and outputs", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieMhcPreBf16), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_mhc_pre_rms, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_mhc_pre_rms },
+{ "ernie_mhc_head_bf16", "ernie_mhc_head", "norm",
+  "ERNIE mHC final learned stream collapse", "M <= 65535, n >= 1, hc 2..8",
+  "bf16 h and x, f32 weights", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieMhcHead), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_mhc_head, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_mhc_head },
+{ "ernie_hca_state_write_f32", "ernie_hca_state_write", "attn",
+  "Write HCA compressor state rows [kv | score + ape]", "M <= 65535, head_dim 1..4096",
+  "f32 kv, score, ape and state; i32 positions and slots", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieHcaState), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_hca_state_write, r4d_rad_ernie_hca_state_write_scratch, nullptr, nullptr,
+  r4d_shape_ernie_hca_state_write },
+{ "ernie_hca_gather_slots_i32", "ernie_hca_gather_slots", "attn",
+  "Resolve HCA compressor window state slots from block table", "M <= 65535, block_size >= 1",
+  "i32 positions, req, block_table and gather_slots", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieHcaGather), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_hca_gather_slots, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_hca_gather_slots },
+{ "ernie_hca_gather_slots_origin_i32", "ernie_hca_gather_slots_origin", "attn",
+  "Resolve HCA compressor state slots with a per-request table origin", "M <= 65535, block_size >= 1",
+  "i32 positions, req, block_table, origin and gather_slots", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieHcaGather), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_hca_gather_slots_origin, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_hca_gather_slots_origin },
+{ "ernie_hca_compress_bf16", "ernie_hca_compress", "attn",
+  "Pool, RMSNorm, RoPE and store HCA compressed KV rows", "M <= 65535, head_dim 2..4096, rope_dim 2..512 even",
+  "f32 state, bf16 norm_weight and out (or u8 packed)", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieHcaCompress), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_hca_compress, r4d_rad_ernie_hca_compress_scratch, nullptr, nullptr,
+  r4d_shape_ernie_hca_compress },
+{ "ernie_hca_union_attn_bf16", "ernie_hca_union_attn", "attn",
+  "ERNIE HCA unified softmax over compressed and window KV with sink", "M <= 65535, heads >= 1, head_dim 1..4096",
+  "bf16 q, win_kv, cmp_kv and out; f32 sink; i32 tables", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieHcaUnion), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_hca_union_attn, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_hca_union_attn },
+{ "ernie_hca_union_attn_origin_bf16", "ernie_hca_union_attn_origin", "attn",
+  "ERNIE HCA union attention with a per-request window table origin", "M <= 65535, heads >= 1, head_dim 1..4096",
+  "bf16 q, win_kv, cmp_kv and out; f32 sink; i32 tables and origin", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieHcaUnion), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_hca_union_attn_origin, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_hca_union_attn_origin },
+{ "ernie_mhc_stream_mean_bf16", "ernie_mhc_stream_mean", "mhc",
+  "Mean-pool mult mHC streams into one hidden stream", "M <= 65535, hidden 1..65535, mult 1..16",
+  "bf16 x and out (column-sliced out supported)", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieMhcStreamMean), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_mhc_stream_mean, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_mhc_stream_mean },
+{ "ernie_hca_dspark_attn_bf16", "ernie_hca_dspark_attn", "attn",
+  "ERNIE HCA DSpark non-causal anchor-window MQA K=V attention with sink", "M <= 65535, heads >= 1, head_dim 1..4096",
+  "bf16 q, kv and out; f32 sink; i32 block_table, seqused, cu_seqlens", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieHcaDspark), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_hca_dspark_attn, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_hca_dspark_attn },
+{ "ernie_hca_wo_a_bf16", "ernie_hca_wo_a", "attn",
+  "ERNIE HCA inverse RoPE and grouped wo_a projection", "M <= 65535, heads >= 1, head_dim 2..4096, groups >= 1, rank >= 1",
+  "bf16 o, wo_a and out; i32 positions", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieHcaWoA), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_hca_wo_a, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_hca_wo_a },
+{ "ernie_idx_query_e4m3", "ernie_idx_query", "attn",
+  "ERNIE DSA indexer query RoPE, FWHT and E4M3 quantization", "M <= 65535, heads 1..256, head_dim 4..256, rope_dim >= 2 even",
+  "bf16 q, i32 positions, e4m3 qf, f32 qs", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieIdxQuery), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_idx_query, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_idx_query },
+{ "ernie_idx_key_e4m3", "ernie_idx_key", "attn",
+  "ERNIE DSA indexer key LayerNorm, RoPE, FWHT and E4M3 cache write", "M <= 65535, head_dim 4..256, rope_dim >= 2 even",
+  "bf16 k, gamma, beta; i32 positions, slots; u8 cache", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieIdxKey), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_idx_key, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_idx_key },
+{ "ernie_idx_logits_e4m3", "ernie_idx_logits", "attn",
+  "ERNIE DSA indexer per-token ReLU dot-product score logits", "M <= 65535, heads 1..256, head_dim 4..256",
+  "e4m3 qf, f32 qs and scores, bf16 w, u8 cache, i32 tables", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieIdxLogits), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_idx_logits, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_idx_logits },
+{ "ernie_dsa_select_f32", "ernie_dsa_select", "attn",
+  "ERNIE DSA top-k and local window selection with slot translation", "M <= 65535, topk 1..2048, window >= 1, block_size >= 1",
+  "f32 scores, i32 positions, req, block_table, ids and slots", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieDsaSelect), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_dsa_select, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_dsa_select },
+{ "ernie_dsa_topk_tiled_f32", "ernie_dsa_topk_tiled", "attn",
+  "ERNIE DSA indexer logits and top-k + window selection in context tiles (running top-k; score plane = one tile)",
+  "M <= 65535, heads 1..256, head_dim 4..256, topk 1..2048, window >= 1, block_size >= 1; a host-side context bound (seqused operand or tokens)",
+  "e4m3 qf, f32 qs and scratch tile, bf16 w, u8 cache, i32 tables, ids, slots and the kept-list scratch", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieDsaTopkTiled), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_dsa_topk_tiled, nullptr, nullptr, nullptr,
+  /* the tile count comes from the step's host-side context bound (RadArgs::kv_used_max_h): a prefill or mixed pass is recorded only under an
+   * architecture key that holds it, and ernie55 has none, so it must be declared like the attention launchers that split by the live context */
+  r4d_shape_ernie_dsa_topk_tiled, nullptr, nullptr, RAD_KERNEL_CAP_DYNAMIC_PREFILL_SPLIT },
+{ "ernie_mla_project_bf16", "ernie_mla_project", "attn",
+  "ERNIE MLA kv_b_proj absorb and expand projection", "M <= 65535, heads >= 1, k_dim >= 1, v_dim >= 1, latent_dim >= 1",
+  "bf16 x, w and y", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieMlaProject), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_mla_project, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_mla_project },
+{ "ernie_mla_sparse_attn_bf16", "ernie_mla_sparse_attn", "attn",
+  "ERNIE MLA absorbed sparse latent attention with per-head sink", "M <= 65535, heads >= 1, latent_dim 1..2048, rope_dim 1..512",
+  "bf16 q, q_rope and out; bf16 kv, or with kv_layout fp8_ds_mla u8 rows (E4M3 codes, f32 tile scales, bf16 rope); i32 slots; f32 sink", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieMlaSparse), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_mla_sparse_attn, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_mla_sparse_attn },
+{ "ernie_mla_latent_store_fp8_ds_mla", "ernie_mla_latent_store", "attn",
+  "ERNIE MLA latent row writer for the fp8_ds_mla cache, one block a row", "M <= 65535, latent_dim a multiple of quant_block (default 128), latent_dim <= 2048; a negative or out-of-range slot stores nothing",
+  "bf16 rows, i32 slot mapping, u8 cache rows of latent_dim + 4 * (latent_dim / quant_block) + 2 * rope_dim bytes", RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cErnieMlaLatentStore), NOTUNE,
+  nullptr, nullptr, r4d_rad_ernie_mla_latent_store, nullptr, nullptr, nullptr,
+  r4d_shape_ernie_mla_latent_store },
+{ "situ_mul_bf16", "situ_mul", "elem",
+  "ERNIE SiTU gated product over a fused [M, 2n] gate_up",
+  "n >= 1, 1 <= M <= 65535; the gate is the first half; beta and linear_beta finite and positive; pitched rows",
+  "bf16 in and out, fp32 arithmetic, one rounding",
+  RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
+  ROW(cBf16Row), NOTUNE,
+  nullptr, nullptr, r4d_rad_situ_mul, nullptr, nullptr, nullptr,
   r4d_shape_silu_mul },
 { "silu_mul_bf16", "silu_mul", "elem",
   "silu-gated product over a fused [M, 2n] gate_up",
@@ -8930,6 +9413,29 @@ R4D_WIN_TREE_PAIR(512, 4) R4D_WIN_TREE_PAIR(512, 8)
   ROW(cMoeScatter), NOTUNE,
   nullptr, nullptr, r4d_rad_moe_scatter_inv, r4d_rad_moe_scatter_scratch, nullptr, nullptr,
   r4d_shape_moe_scatter_inv },
+
+{ "gemm_fp8a8_f32scale", "gemm_nt_q", "gemm", "FP8 WMMA with canonical F32 block scales",
+  "N and K multiples of 128; pitched activations and row-major weights", "E4M3 codes, F32 scales, BF16 output",
+  RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY, ROW(cFp8F32Scale), NOTUNE,
+  nullptr, nullptr, r4d_rad_fp8_f32scale, nullptr, r4d_layout_fp8_f32scale, nullptr,
+  nullptr },
+{ "gemm_fp8a16_f32scale", "gemm_nt_q", "gemm", "FP8xBF16 decode matvec with canonical F32 block scales",
+  "M <= 8; N and K multiples of 128; pitched activations/outputs and row-major weights", "BF16 activation, E4M3 codes, F32 scales, BF16 output",
+  RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY, ROW(cFp8A16F32Scale), NOTUNE,
+  nullptr, nullptr, r4d_rad_fp8a16_f32scale, nullptr, r4d_layout_fp8_f32scale, nullptr,
+  nullptr },
+{ "moe_gemm_fp8a8_f32scale", "moe_gemm_q", "moe", "grouped FP8 WMMA with canonical F32 block scales",
+  "equal parity widths; token/sorted activations; canonical pointer tables", "E4M3 codes, F32 scales, BF16 output",
+  RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY, ROW(cFp8F32Scale), NOTUNE,
+  nullptr, nullptr, r4d_rad_moe_fp8_f32scale, nullptr, r4d_layout_fp8_f32scale, nullptr,
+  nullptr },
+{ "moe_gemm_mxfp4a8", "moe_gemm_q", "moe",
+  "canonical MXFP4 experts decoded in packed words into exact FP8 WMMA tiles, scales folded per 32 values",
+  "K multiple 128, parity tables, token and sorted order, parts and narrower odd experts",
+  "E2M1 and E8M0 weights, E4M3 activations and f32 scales, bf16 output",
+  RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY, ROW(cMoeMx), NOTUNE,
+  nullptr, nullptr, r4d_rad_moe_mxfp4, nullptr, r4d_rad_layout_moe_mxfp4, nullptr,
+  r4d_shape_moe_mxfp4 },
 
 { "moe_gemm_w4a8", "moe_gemm_q", "moe",
   "grouped FOUR-BIT GEMM: signed I4 in 16-column/64-K fragment tiles, loaded directly into "

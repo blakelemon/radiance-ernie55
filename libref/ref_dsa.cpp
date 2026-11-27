@@ -218,3 +218,121 @@ int ref_dsa_pool(const RadArgs* a, RadStream) {
     }
     return RAD_OK;
 }
+
+/* ------------------------------------------------------------------ ernie_dsa_select
+ * The single-rank DSA selection row, the CPU form of the pinned Baidu `merge_swa_topk` fed by the
+ * indexer's top-k (docs/ernie55/mla-selection.md, facts m03..m06 of attention-reference.md).
+ *
+ * Row r is the query at position p = positions[r] (seq = p + 1) of request req[r]. `scores` is
+ * [rows, L] f32 indexed by LOGICAL token, the layout dsa_score writes when one block-table entry is
+ * one key (block_size 1 there); selection runs on logical ids and physical pages are applied last.
+ *   candidates  token ids in [0, max(seq - window, 0)) whose score is not -inf (the scorer's mask)
+ *               and whose page is initialised (0 <= table entry < num_pages, block inside the table)
+ *   selected    at most `topk` of them: all of them in ascending id order when they fit, otherwise
+ *               the `topk` highest scores in descending score order, ties to the LOWER id (the
+ *               pinned kernels leave tie order and the order inside the row unspecified: m06)
+ *   window      ids seq - min(seq, window) .. seq - 1 ascending, minus any on an uninitialised page
+ *   row         [selected | window | -1 ...], `ids` at least topk + window wide (ERNIE: 2176)
+ *   slots       the same row translated to physical cache slots, table[id / block_size] *
+ *               block_size + id % block_size, -1 where the id is -1
+ * Columns at or beyond the candidate end (future tokens, never-written scores) are not read, so
+ * garbage there is harmless; a NaN or +inf score inside the range, a bad position or request, or
+ * scores narrower than the candidate range refuses the launch before any store. `M` is the row
+ * band's ceiling as elsewhere: the live rows come from `scores`. */
+namespace {
+bool select_pos_strides(const RadTensor& t) {
+    if (t.rank > (uint32_t)RAD_MAX_RANK) return false;
+    for (uint32_t i = 0; i < t.rank; ++i)
+        if (t.stride[i] <= 0) return false;
+    return true;
+}
+}
+
+int ref_ernie_dsa_select(const RadArgs* a, RadStream) {
+    if (!have(a, 6)) return RAD_E_INVAL;
+    const auto &sc = a->t[0], &pos = a->t[1], &req = a->t[2], &bt = a->t[3], &ids = a->t[4],
+               &slots = a->t[5];
+    const int64_t band = p_int(a, "M", 0), topk = p_int(a, "topk", 0),
+                  window = p_int(a, "window", 0), bs = p_int(a, "block_size", 0);
+    /* `num_pages` optional (story 3-2b amendment): the pool size is unknown when a plugin declares the op, so an
+     * absent value bounds nothing here (every non-negative table entry is a page); the consumers of `slots`
+     * (ernie_mla_sparse_attn) check slots against the real pool. A given value works as before. */
+    const int64_t pages = p_find(a, "num_pages") ? p_int(a, "num_pages", 0) : (bs >= 1 ? INT32_MAX / bs : 0);
+    if (band <= 0 || topk < 1 || window < 1 || bs < 1 || pages < 1 || topk > INT32_MAX / 2 ||
+        window > INT32_MAX / 2 || pages > INT32_MAX / bs)
+        return RAD_E_SHAPE;
+    if (!sc.data || !pos.data || !req.data || !bt.data || !ids.data || !slots.data)
+        return RAD_E_SHAPE;
+    if (sc.dtype != RAD_F32 || pos.dtype != RAD_I32 || req.dtype != RAD_I32 ||
+        bt.dtype != RAD_I32 || ids.dtype != RAD_I32 || slots.dtype != RAD_I32)
+        return RAD_E_SHAPE;
+    for (const RadTensor* t : {&sc, &pos, &req, &bt, &ids, &slots})
+        if (!select_pos_strides(*t)) return RAD_E_SHAPE;
+    if (sc.rank != 2 || pos.rank != 1 || req.rank != 1 || bt.rank != 2 || ids.rank != 2 ||
+        slots.rank != 2)
+        return RAD_E_SHAPE;
+    const int64_t L = sc.shape[1], S = bt.shape[0], B = bt.shape[1], width = topk + window;
+    if (L < 1 || S < 1 || B < 1 || ids.shape[1] < width || slots.shape[1] != ids.shape[1])
+        return RAD_E_SHAPE;
+    /* Optional shape hints, checked when a caller passes them. */
+    if ((p_find(a, "tokens") && p_int(a, "tokens", 0) != L) ||
+        (p_find(a, "seqs") && p_int(a, "seqs", 0) != S) ||
+        (p_find(a, "blocks") && p_int(a, "blocks", 0) != B))
+        return RAD_E_SHAPE;
+    const int64_t M = band_rows(sc.shape[0], band);
+    if (M <= 0 || pos.shape[0] != M || req.shape[0] != M || ids.shape[0] != M ||
+        slots.shape[0] != M)
+        return RAD_E_SHAPE;
+
+    const int32_t *pp = (const int32_t*)pos.data, *rp = (const int32_t*)req.data;
+    const float* sp = (const float*)sc.data;
+    /* Validate every row before the first store. */
+    for (int64_t m = 0; m < M; ++m) {
+        const int64_t p = pp[m * pos.stride[0]], r = rp[m * req.stride[0]];
+        if (p < 0 || r < 0 || r >= S) return RAD_E_SHAPE;
+        const int64_t end = std::max<int64_t>(p + 1 - window, 0);
+        if (end > L) return RAD_E_SHAPE;
+        for (int64_t id = 0; id < end; ++id) {
+            const float v = sp[m * sc.stride[0] + id * sc.stride[1]];
+            if (std::isnan(v) || v == INFINITY) return RAD_E_SHAPE;
+        }
+    }
+
+    const int32_t* tp = (const int32_t*)bt.data;
+    int32_t *ip = (int32_t*)ids.data, *op = (int32_t*)slots.data;
+    const int64_t os = ids.stride[1], ss = slots.stride[1];
+    REF_PAR_FOR(M * (L + width))
+    for (int64_t m = 0; m < M; ++m) {
+        const int64_t seq = (int64_t)pp[m * pos.stride[0]] + 1, r = rp[m * req.stride[0]];
+        auto page = [&](int64_t id) -> int64_t {
+            const int64_t b = id / bs;
+            if (b >= B) return -1;
+            const int64_t e = tp[r * bt.stride[0] + b * bt.stride[1]];
+            return e >= 0 && e < pages ? e : -1;
+        };
+        const float* row = sp + m * sc.stride[0];
+        const int64_t end = std::max<int64_t>(seq - window, 0);
+        std::vector<int32_t> line;
+        line.reserve((size_t)width);
+        std::vector<int32_t> cand;
+        for (int64_t id = 0; id < end; ++id)
+            if (row[id * sc.stride[1]] > -INFINITY && page(id) >= 0) cand.push_back((int32_t)id);
+        if ((int64_t)cand.size() > topk) {
+            auto better = [&](int32_t x, int32_t y) {
+                const float vx = row[(int64_t)x * sc.stride[1]], vy = row[(int64_t)y * sc.stride[1]];
+                return vx > vy || (vx == vy && x < y);
+            };
+            std::partial_sort(cand.begin(), cand.begin() + topk, cand.end(), better);
+            cand.resize((size_t)topk);
+        }
+        line.insert(line.end(), cand.begin(), cand.end());
+        for (int64_t id = seq - std::min(seq, window); id < seq; ++id)
+            if (page(id) >= 0) line.push_back((int32_t)id);
+        for (int64_t j = 0; j < ids.shape[1]; ++j) {
+            const int32_t id = j < (int64_t)line.size() ? line[(size_t)j] : -1;
+            ip[m * ids.stride[0] + j * os] = id;
+            op[m * slots.stride[0] + j * ss] = id < 0 ? -1 : (int32_t)(page(id) * bs + id % bs);
+        }
+    }
+    return RAD_OK;
+}

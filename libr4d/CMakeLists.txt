@@ -164,6 +164,10 @@ set(R4D_UNITS
   "r4d_gemm_iqr_p1|"
   "r4d_gemm_iqr_p2|"
   "r4d_gemm_iqr_p3|"
+  # Canonical routed MXFP4 experts: donor b4c04b6042861ef652af6dc076e67f03f87a01ac.
+  "r4d_moe_mxfp4|"
+  "r4d_fp8_f32scale|"
+
   "r4d_moe_iqr|"
   "r4d_iqr_embed|"
   "r4d_logits_vocab|"
@@ -205,6 +209,13 @@ set(R4D_UNITS
   # expert_scale, each one kernel for a chain of small ones.
   "r4d_norm_join_bf16|"
   "r4d_expert_scale_bf16|"
+  # ERNIE 5.5 Flash operations (epic 4-3): small ops, mHC, HCA, MLA-DSA.
+  "r4d_ernie_small|"
+  "r4d_ernie_ops|"
+  "r4d_ernie_mhc|"
+  "r4d_ernie_hca|"
+  "r4d_ernie_dspark|"
+  "r4d_ernie_mla|"
   # Runtime LoRA's two halves (lora_shrink, lora_expand), per-row adapter slot: scalar and tiled rows.
   "r4d_lora_bf16|"
   "r4d_dflash_conv_t2_g16_bf16|"

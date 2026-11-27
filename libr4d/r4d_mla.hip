@@ -143,6 +143,9 @@ struct Meta {
 /* RADIANCE_MLA_CONFLICT_STATS: per device, the 16-token passes the matrix row ran, how many of them
  * were a pair's second pass, and the chunks of the max(length) raster a pass-free pairing would
  * run. Read back by r4d_mla_matrix_stats, and printed every 1024th counted launch. */
+/* DIAGNOSTICS ONLY (RADIANCE_MLA_CONFLICT_STATS). This is a program-scope variable: on the engine's device backend the kernels launched through it write the copy in the
+ * backend's own hsa_executable, while read_stats below reads the one in HIP's loaded code object, so there the counters read 0. They are meaningful when the kernels are launched
+ * by HIP itself (the library self-test, a HIP build run without the backend). Nothing depends on them; the ERNIE verdict state does not use globals (r4d_ernie_verdict.h). */
 __device__ unsigned long long g_mla_stats[3];
 __device__ void load_latent(const uint16_t* p, float (&v)[16]) {
     if (!((uintptr_t)p & 15)) {

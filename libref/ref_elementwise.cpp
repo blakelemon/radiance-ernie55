@@ -1090,6 +1090,117 @@ int ref_gelu_mul(const RadArgs* a, RadStream) {
     return RAD_OK;
 }
 
+/* ------------------------------------------------------------------ situ_mul */
+/* y[.., i] = beta * tanh(gate / beta) * sigmoid(gate) * linear_beta * tanh(up / linear_beta), the
+ * SiTU gated product ERNIE's dense, shared and routed feed-forwards run (the pinned vLLM
+ * activation's `situ_and_mul`). The layout is silu_mul's fused [M, 2*n] plane -- the GATE is the
+ * FIRST half, the up projection the second -- but each side is clipped before it is combined: the
+ * gate soft-clips to +-`beta` (its own tanh, then the logistic sigmoid gates it) and the up
+ * projection soft-clips to +-`linear_beta`. Both clips are finite and strictly positive (ERNIE uses
+ * 4 and 25); anything else is refused rather than run. A large finite gate is safe: tanh saturates
+ * to +-1 and the sigmoid to 0 or 1, so every term stays within +-(beta * linear_beta) and the
+ * product cannot overflow. The whole term is f32 and stored once in y's dtype, so a bf16 call
+ * rounds the final product and nothing in between. */
+int ref_situ_mul(const RadArgs* a, RadStream) {
+    if (!have(a, 2)) return RAD_E_INVAL;
+    const RadTensor *gu = &a->t[0], *y = &a->t[1];
+    /* `M` is the row band's ceiling, not this call's row count (see band_rows in ref_common.h):
+     * p_int reads the frozen integer as it is and a range at its high bound, so both spellings
+     * band the call the same way. The shape callback sizes the buffers at that ceiling. */
+    const int64_t band = p_int(a, "M", 0);
+    const int64_t n = p_int(a, "n", numel(y));
+    if (band <= 0 || n <= 0) return RAD_E_SHAPE;
+    const float beta = p_f32(a, "beta", 0.0f), lbeta = p_f32(a, "linear_beta", 0.0f);
+    if (!(beta > 0.0f) || !(lbeta > 0.0f) || !std::isfinite(beta) || !std::isfinite(lbeta))
+        return RAD_E_INVAL;
+    /* The live rows come from the operands and are banded by that ceiling: a decode step carries a
+     * few rows out of buffers sized at the band, and a call above the ceiling was resolved against
+     * constraints it does not satisfy. Both are refused here, before gate_up is read and before a
+     * byte of y is written, so a refused launch leaves both buffers exactly as it found them. */
+    const int64_t rows = band_rows(rows_of(y, n), band);
+    if (rows <= 0) return RAD_E_SHAPE;
+    /* The gate half must be whole: gate_up is [M, 2*n] with the gate first, so its last extent is
+     * exactly twice the output width. A narrower plane would read the up projection as gate. */
+    if (gu->rank == 0 || gu->shape[gu->rank - 1] != 2 * n || numel(gu) < rows * 2 * n)
+        return RAD_E_SHAPE;
+
+    REF_PAR_FOR(rows * n)
+    for (int64_t r = 0; r < rows; ++r) {
+        const int64_t gb = rowoff(gu, r, 2 * n), yb = rowoff(y, r, n);
+        const int64_t gs = laststride(gu), ys = laststride(y);
+        for (int64_t i = 0; i < n; ++i) {
+            const float g = ldt(gu, gb + i * gs);
+            const float u = ldt(gu, gb + (n + i) * gs);
+            const float gate = beta * ref_tanh(g / beta) * act_sigmoid(g);
+            const float up   = lbeta * ref_tanh(u / lbeta);
+            stt(y, yb + i * ys, gate * up);
+        }
+    }
+    return RAD_OK;
+}
+
+/* ------------------------------------------------------------------ ernie_multimax */
+/* y = x + t[0]*max(r[0]-x,0) + t[1]*max(x-r[1],0) + t[2]*max(r[2]-x,0)^2 + t[3]*max(x-r[3],0)^2,
+ * ERNIE's learned piecewise transform of the float32 logits (the pinned Baidu reference's
+ * `Ernie5_5ParallelLMHead.multimax`, commit b8414da6): four hinge terms, two linear and two
+ * quadratic, each carrying a learned threshold r and a learned coefficient t. Inside the learned
+ * ranges every hinge is zero, so the transform is the identity there and the thresholds are exact
+ * boundaries rather than a temperature -- the quadratic tails below r[2] and above r[3] are the
+ * shape the model learned, so they are never folded into a linear cap. `ranges` [4] and
+ * `coefficients` [4] are the learned tensors, `x` [M,n] in and `y` [M,n] out. ALL four operands are
+ * float32 -- logits and learned tensors alike -- and every multiply and add of the term is its own
+ * f32 rounding, contracted into nothing (libref builds with -ffp-contract=off), so the value stored
+ * into `y` is that f32 rounded exactly once more into its dtype (which is f32). The reference's
+ * multiply order on the quadratic terms is square-then-weight -- `(max(...))^2 * t`, never
+ * `max(...) * (max(...) * t)` -- and that is what is done here, so the product lands on the same
+ * f32 the pinned reference reaches: the two orders differ by an ULP once the coefficient is not a
+ * power of two. A non-float32 operand, or a learned tensor that is not four elements long, is
+ * refused rather than run; the rows' pitch and both buffers' padding are preserved. */
+int ref_ernie_multimax(const RadArgs* a, RadStream) {
+    if (!have(a, 4)) return RAD_E_INVAL;
+    const RadTensor *x = &a->t[0], *rg = &a->t[1], *cf = &a->t[2], *y = &a->t[3];
+    /* The transform is defined in float32; a bf16 or other view of any operand would read as a
+     * narrowed, wrong answer, so the launch refuses it instead of converting. */
+    if (x->dtype != (uint32_t)RAD_F32 || y->dtype != (uint32_t)RAD_F32 ||
+        rg->dtype != (uint32_t)RAD_F32 || cf->dtype != (uint32_t)RAD_F32)
+        return RAD_E_DTYPE;
+    const int64_t band = p_int(a, "M", 0);
+    const int64_t n = p_int(a, "n", y->rank ? y->shape[y->rank - 1] : 0);
+    if (band <= 0 || n <= 0) return RAD_E_SHAPE;
+    /* Exactly four learned ranges and four learned coefficients: a shorter tensor would read past
+     * its end pairing an element with the wrong hinge, and a longer one means a mis-sliced learned
+     * plane whose extra entries have no term -- both are a malformed learned tensor, refused. */
+    if (numel(rg) != 4 || numel(cf) != 4) return RAD_E_SHAPE;
+    /* `M` is the row band's ceiling, not this call's row count: the live rows come from `x` and are
+     * banded by it (see band_rows in ref_common.h), so a decode step's few rows of a band-sized
+     * logits plane run, while a call above the ceiling -- resolved against constraints it does not
+     * satisfy -- is refused here, before the learned tensors or any logit is read and before a byte
+     * of `y` is written. */
+    const int64_t rows = band_rows(rows_of(x, n), band);
+    if (rows <= 0 || numel(y) < rows * n) return RAD_E_SHAPE;
+    float r[4], t[4];
+    for (int i = 0; i < 4; ++i) r[i] = ldt(rg, offlin(rg, i));
+    for (int i = 0; i < 4; ++i) t[i] = ldt(cf, offlin(cf, i));
+
+    REF_PAR_FOR(rows * n)
+    for (int64_t row = 0; row < rows; ++row) {
+        const int64_t xb = rowoff(x, row, n), yb = rowoff(y, row, n);
+        const int64_t xs = laststride(x), ys = laststride(y);
+        for (int64_t i = 0; i < n; ++i) {
+            const float v  = ldt(x, xb + i * xs);
+            const float h0 = std::max(r[0] - v, 0.0f), h1 = std::max(v - r[1], 0.0f);
+            const float h2 = std::max(r[2] - v, 0.0f), h3 = std::max(v - r[3], 0.0f);
+            /* Square each quadratic hinge first, as its own f32 rounding, then weight it -- the
+             * reference's order. Folding the coefficient into the first multiply, (t*h)*h, gives
+             * a different f32 once t is not a power of two. The order the terms are summed in is
+             * unchanged: x, then the two linear tails, then the two quadratic ones. */
+            const float q2 = h2 * h2, q3 = h3 * h3;
+            stt(y, yb + i * ys, v + t[0] * h0 + t[1] * h1 + t[2] * q2 + t[3] * q3);
+        }
+    }
+    return RAD_OK;
+}
+
 /* ------------------------------------------------------------------ seg_sinusoid */
 /* A Whisper-style absolute position table restarting every `period` rows of a segment: row r of
  * segment s (rows [cu[s] / cu_div, cu[s+1] / cu_div)) takes position p = (r - cu[s] / cu_div) mod

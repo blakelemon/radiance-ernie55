@@ -360,6 +360,41 @@ int ref_quant_act_fp8(const RadArgs* a, RadStream) {
     return RAD_OK;
 }
 
+int ref_situ_mul_quant_fp8(const RadArgs* a, RadStream) {
+    if (!have(a, 3)) return RAD_E_INVAL;
+    const RadTensor *gu = &a->t[0], *q = &a->t[1], *s = &a->t[2];
+    const int64_t band = p_int(a, "M", 0);
+    const int64_t n = p_int(a, "n", 0);
+    const int64_t g = p_int(a, "group", 128);
+    const float beta = p_f32(a, "beta", 0.0f), lbeta = p_f32(a, "linear_beta", 0.0f);
+    if (!(beta > 0.0f) || !(lbeta > 0.0f) || !std::isfinite(beta) || !std::isfinite(lbeta))
+        return RAD_E_INVAL;
+    if (band <= 0 || n < 4 || (n % 4) != 0 || g != 128) return RAD_E_SHAPE;
+    const int64_t rows = band_rows(rows_of(q, n), band);
+    const int64_t ngrp = (n + g - 1) / g;
+    if (rows <= 0 || gu->rank == 0 || gu->shape[gu->rank - 1] != 2 * n ||
+        numel(gu) < rows * 2 * n || numel(q) < rows * n || numel(s) < rows * ngrp)
+        return RAD_E_SHAPE;
+    REF_PAR_FOR(rows * n)
+    for (int64_t r = 0; r < rows; ++r) {
+        const int64_t gb = rowoff(gu, r, 2 * n), qb = rowoff(q, r, n);
+        const int64_t gs = laststride(gu), qs = laststride(q);
+        for (int64_t gi = 0; gi < ngrp; ++gi) {
+            const int64_t k0 = gi * g, k1 = (k0 + g < n) ? k0 + g : n;
+            const float sc = q8_group([&](int64_t i) {
+                const int64_t col = k0 + i;
+                const float gv = ldt(gu, gb + col * gs);
+                const float uv = ldt(gu, gb + (n + col) * gs);
+                const float prod = (beta * std::tanh(gv / beta) * act_sigmoid(gv)) *
+                                   (lbeta * std::tanh(uv / lbeta));
+                return bf16_to_f32(f32_to_bf16(prod));
+            }, k1 - k0, 448.0f, q, qb + k0 * qs, qs);
+            stt(s, rowoff(s, r, ngrp) + gi * laststride(s), sc);
+        }
+    }
+    return RAD_OK;
+}
+
 /* ------------------------------------------------------------- quant_cols_fp8 */
 /* E4M3 codes with ONE scale per column over all M rows: scale[c] = amax_r |x[r, c]| times 1/448
  * in f32 (1 for an all-zero column), y = clamp(x * (1/scale), +-448) rounded to nearest even. The

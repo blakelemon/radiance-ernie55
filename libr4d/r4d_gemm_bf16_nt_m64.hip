@@ -21,6 +21,7 @@
 #include "r4d_bf16_gemm_rows.h"
 #include "r4d_gdn_wmma.h"
 #include "r4d_chain.h"
+#include "r4d_launch.h"   // R4D_DYN_LDS
 #include <hip/hip_bf16.h>
 #include <cstdint>
 #include <stdexcept>
@@ -56,7 +57,7 @@ __device__ __forceinline__ void r4d_gemm_bf16_nt_m64_body(
     const unsigned short* __restrict__ A, const unsigned short* __restrict__ W,
     __hip_bfloat16* __restrict__ C, int M, int K, int N, int WV, int SK) {
   if (CHAIN) r4d_chain_wait_vec();
-  extern __shared__ float red[];              // WV*SK*256 floats: one 16x16 tile per (column, split)
+  R4D_DYN_LDS(float, red);                    // WV*SK*256 floats: one 16x16 tile per (column, split)
   const int tid = threadIdx.x, wave = tid / WAVE32, lane = tid % WAVE32;
   const int col_local = wave / SK, ksplit = wave % SK;
   const int nt = blockIdx.x * WV + col_local;

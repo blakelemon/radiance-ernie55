@@ -76,6 +76,105 @@ int ref_router_topk(const RadArgs* a, RadStream) {
     return RAD_OK;
 }
 
+/* ------------------------------------------------------------------ ernie_router_topk */
+namespace {
+bool router_pos_strides(const RadTensor& t) {
+    if (t.rank > (uint32_t)RAD_MAX_RANK) return false; /* never walk past the stride array */
+    for (uint32_t i = 0; i < t.rank; ++i)
+        if (t.stride[i] <= 0) return false;
+    return true;
+}
+}
+
+/* ERNIE's routing between its two router projections and the latent expert dispatch (the pinned
+ * Baidu plugin's `ernie5_5_routing`). Each candidate's score is the sum of two sigmoid projections,
+ * sigmoid(logits[e]) + sigmoid(logits[experts+e]); the correction bias SELECTS, the original
+ * (uncorrected) score WEIGHTS. The per-expert scale is ALWAYS applied, indexed by the logical expert
+ * id, and only after the division. With `renormalize` the kept weights are first divided by their own
+ * sum -- clamped to a minimum of 1e-20 so an all-underflow row stays finite; with it off they are
+ * used as-is. Selection is descending by
+ * score + bias with ties to the lower id, the existing Radiance top-k order; Baidu calls unsorted
+ * Torch top-k, so both the order and the exact ties are this local convention. Everything is f32. */
+int ref_ernie_router_topk(const RadArgs* a, RadStream) {
+    if (!have(a, 5)) return RAD_E_INVAL;
+    const auto &lg = a->t[0], &bias = a->t[1], &scale = a->t[2], &ids = a->t[3], &w = a->t[4];
+    /* `M` is the row band's ceiling, not this call's row count: p_int reads the frozen integer as
+     * it is and a range at its high bound, so both spellings band the call the same way. The
+     * shape callback sizes the buffers at that ceiling. */
+    const int64_t band   = p_int(a, "M", 0);
+    const int64_t ne     = p_int(a, "experts", 0);
+    const int64_t k      = p_int(a, "topk", 0);
+    const int64_t renorm = p_int(a, "renormalize", 0);
+    if (band <= 0 || ne <= 0 || ne > INT32_MAX || k < 1 || k > ne || (renorm != 0 && renorm != 1))
+        return RAD_E_SHAPE;
+    if (!lg.data || !bias.data || !scale.data || !ids.data || !w.data) return RAD_E_SHAPE;
+    if (lg.dtype != RAD_F32 || bias.dtype != RAD_F32 || scale.dtype != RAD_F32 ||
+        ids.dtype != RAD_I32 || w.dtype != RAD_F32)
+        return RAD_E_SHAPE;
+    if (!router_pos_strides(lg) || !router_pos_strides(bias) || !router_pos_strides(scale) ||
+        !router_pos_strides(ids) || !router_pos_strides(w))
+        return RAD_E_SHAPE;
+    const int64_t width = 2 * ne;
+    if (lg.rank != 2 || lg.shape[1] != width || bias.rank != 1 ||
+        bias.shape[0] != ne || scale.rank != 1 || scale.shape[0] != ne || ids.rank != 2 ||
+        ids.shape[1] != k || w.rank != 2 || w.shape[1] != k)
+        return RAD_E_SHAPE;
+    /* Rows come from the rank-two logits operand (see band_rows in ref_common.h): a decode step
+     * routes a few active rows of buffers sized at the band. Zero rows is not a call, and a call
+     * above the ceiling was resolved against constraints it does not satisfy -- both refused.
+     * Both outputs must carry the logits' active rows; rows past them keep their padding. */
+    const int64_t M = band_rows(lg.shape[0], band);
+    if (M <= 0 || ids.shape[0] != M || w.shape[0] != M) return RAD_E_SHAPE;
+
+    /* Finite inputs, checked across every operand before a byte is written: an infinite or NaN
+     * projection would otherwise reach the kept weights, and on a later row leak past a store the
+     * launch has already made. */
+    const int64_t ls = laststride(&lg), bs = laststride(&bias), ss = laststride(&scale);
+    for (int64_t m = 0; m < M; ++m) {
+        const int64_t lb = rowoff(&lg, m, width);
+        for (int64_t e = 0; e < width; ++e)
+            if (!std::isfinite(ldt(&lg, lb + e * ls))) return RAD_E_SHAPE;
+    }
+    for (int64_t e = 0; e < ne; ++e)
+        if (!std::isfinite(ldt(&bias, e * bs)) || !std::isfinite(ldt(&scale, e * ss)))
+            return RAD_E_SHAPE;
+
+    REF_PAR_FOR(M * width * (k + 2))
+    for (int64_t m = 0; m < M; ++m) {
+        const int64_t lb = rowoff(&lg, m, width);
+        std::vector<float> score((size_t)ne), select((size_t)ne);
+        for (int64_t e = 0; e < ne; ++e) {
+            score[e] =
+                act_sigmoid(ldt(&lg, lb + e * ls)) + act_sigmoid(ldt(&lg, lb + (ne + e) * ls));
+            select[e] = score[e] + ldt(&bias, e * bs);
+        }
+        std::vector<int64_t> pick((size_t)k);
+        std::vector<float> kept((size_t)k);
+        float sum = 0.0f;
+        for (int64_t j = 0; j < k; ++j) {
+            /* Descending by score + bias; strictly-greater keeps ties to the lower (first-seen) id,
+             * and the -inf marks the pick so ids stay distinct. Every select is finite and k <= ne,
+             * so a pick is always found. */
+            int64_t best = -1;
+            for (int64_t e = 0; e < ne; ++e)
+                if (select[e] > -INFINITY && (best < 0 || select[e] > select[best])) best = e;
+            pick[j]  = best;
+            kept[j]  = score[best];
+            sum     += score[best];
+            select[best] = -INFINITY;
+        }
+        const float denom = renorm ? (sum > 1e-20f ? sum : 1e-20f) : 1.0f;
+        const int64_t ib = rowoff(&ids, m, k), is = laststride(&ids);
+        const int64_t wb = rowoff(&w, m, k),   ws = laststride(&w);
+        for (int64_t j = 0; j < k; ++j) {
+            const int64_t e = pick[j];
+            st_int(ids.dtype, ids.data, ib + j * is, e);
+            stt(&w, wb + j * ws, (kept[j] / denom) * ldt(&scale, e * ss));
+        }
+    }
+    return RAD_OK;
+}
+
 /* ------------------------------------------------------------------ moe_scatter */
 /* `protect`: local experts the sort places last, in the order listed, the rest closed up; the
  * layout a layer serving a few experts with a second grouped GEMM needs (libr4d's sort_place).
@@ -176,6 +275,22 @@ int ref_router_topk_scatter(const RadArgs* a, RadStream s) {
                               RAD_INT("expert_base", p_int(a, "expert_base", 0)),
                               RAD_STR("protect", p_str(a, "protect", nullptr)) };
     const RadArgs sa{ t2, 4, sp, 4, nullptr, 0, nullptr, a->rank, a->world_size };
+    return ref_moe_scatter(&sa, s);
+}
+
+int ref_ernie_router_topk_scatter(const RadArgs* a, RadStream s) {
+    if (!have(a, 8)) return RAD_E_INVAL;
+    const int64_t M = p_int(a, "M", 0), ne = p_int(a, "experts", 0),
+                  k = p_int(a, "topk", 0), renorm = p_int(a, "renormalize", 0);
+    if (M <= 0 || ne <= 0 || k < 1 || k > ne) return RAD_E_SHAPE;
+    const RadParam rp[] = { RAD_INT("M", M), RAD_INT("experts", ne),
+                            RAD_INT("topk", k), RAD_INT("renormalize", renorm) };
+    const RadArgs ra{ a->t, 5, rp, 4, nullptr, 0, nullptr, a->rank, a->world_size };
+    const int rc = ref_ernie_router_topk(&ra, s);
+    if (rc != RAD_OK) return rc;
+    const RadTensor t2[] = { a->t[3], a->t[5], a->t[6], a->t[7] };
+    const RadParam sp[] = { RAD_INT("n_expert", ne), RAD_INT("top_k", k), RAD_INT("expert_base", 0) };
+    const RadArgs sa{ t2, 4, sp, 3, nullptr, 0, nullptr, a->rank, a->world_size };
     return ref_moe_scatter(&sa, s);
 }
 

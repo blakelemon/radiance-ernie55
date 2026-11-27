@@ -637,6 +637,334 @@ extern "C" int r4d_shape_silu_mul(const RadParam* p, int n_p, int operand,
     const RadOpdDesc l[] = { opd(D, M, 2 * n), opd(D, M, n) };
     R4D_PICK(l);
 }
+/* ERNIE's router: logits [M, 2 * experts] f32, the correction bias and the per-expert scale [experts] f32, ids [M, topk] i32, weights [M, topk] f32. */
+extern "C" int r4d_shape_ernie_router_topk(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), ne = pi(p, n_p, "experts"), k = pi(p, n_p, "topk");
+    if (ne <= 0 || ne > 512 || k <= 0 || k > ne || k > 32) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = { opd((uint32_t)RAD_F32, M, 2 * ne), opd((uint32_t)RAD_F32, ne), opd((uint32_t)RAD_F32, ne), opd_idx(M, k, ne), opd((uint32_t)RAD_F32, M, k) };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_router_topk_scatter(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), ne = pi(p, n_p, "experts"), k = pi(p, n_p, "topk");
+    if (M <= 0 || ne <= 0 || ne > 512 || k <= 0 || k > ne || k > 32) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = { opd((uint32_t)RAD_F32, M, 2 * ne), opd((uint32_t)RAD_F32, ne), opd((uint32_t)RAD_F32, ne),
+                             opd_idx(M, k, ne), opd((uint32_t)RAD_F32, M, k),
+                             opd_idx(M * k, 0, M * k), opd_idx(ne + 1, 0, M * k + 1), opd_idx(ne, 0, M * k + 1) };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_situ_mul_quant_fp8(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), n = pi(p, n_p, "n"), g = pi(p, n_p, "group");
+    if (M < 1 || n < 4 || (n % 4) != 0 || g != 128) return RAD_E_UNSUPPORTED;
+    const int64_t nkb = (n + 127) / 128;
+    const RadOpdDesc l[] = { opd((uint32_t)RAD_BF16, M, 2 * n), opd((uint32_t)RAD_F8E4M3, M, n),
+                             opd((uint32_t)RAD_F32, M, nkb) };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_add_mhc_post(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), n = pi(p, n_p, "n"), hc = pi(p, n_p, "hc");
+    if (M < 1 || n < 1 || hc < 2 || hc > 8) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = { opd((uint32_t)RAD_BF16, M, n), opd((uint32_t)RAD_BF16, M, n),
+                             opd((uint32_t)RAD_BF16, M, hc * n), opd((uint32_t)RAD_F32, M, hc),
+                             opd((uint32_t)RAD_F32, M, hc * hc), opd((uint32_t)RAD_BF16, M, hc * n) };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_multimax(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), n = pi(p, n_p, "n");
+    if (M <= 0 || n <= 0) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = { opd((uint32_t)RAD_F32, M, n), opd((uint32_t)RAD_F32, 4), opd((uint32_t)RAD_F32, 4), opd((uint32_t)RAD_F32, M, n) };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_row_req(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M");
+    if (M < 1) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = { opd_idx(2, 0, M, -1, (uint32_t)RAD_OPD_F_IDX_CU), opd_idx(M, 0, 0) };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_head_slice(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), H = pi(p, n_p, "heads"), W = pi(p, n_p, "width"), cnt = pi(p, n_p, "count");
+    if (M < 1 || H < 1 || W < 1 || cnt < 1 || cnt > W) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = { opd((uint32_t)RAD_BF16, M, H * W), opd((uint32_t)RAD_BF16, M, H * cnt) };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_rope_tail(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), H = pi(p, n_p, "heads"), W = pi(p, n_p, "width"), R = pi(p, n_p, "rope_dim");
+    if (M < 1 || H < 1 || W < 1 || R < 2 || (R & 1) || R > W) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = { opd((uint32_t)RAD_BF16, M, H * W), opd_idx(M, 0, 1024) };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_hca_q_prep(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), H = pi(p, n_p, "heads"), D = pi(p, n_p, "head_dim"), R = pi(p, n_p, "rope_dim");
+    if (M < 1 || H < 1 || D < 2 || D > 4096 || R < 2 || (R & 1) || R > D) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = { opd((uint32_t)RAD_BF16, M, H * D), opd_idx(M, 0, 1024) };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_vha_mix(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), H = pi(p, n_p, "heads"), D = pi(p, n_p, "dim"), R = pi(p, n_p, "rank");
+    const int64_t W = pi(p, n_p, "world_size", 1);
+    if (M < 1 || H < 1 || H > 4096 || D < 1 || R < 1 || W < 1 || W > 64 || (H % W) != 0) return RAD_E_UNSUPPORTED;
+    const int64_t Hloc = H / W;
+    const RadOpdDesc l[] = { opd((uint32_t)RAD_BF16, W * M, Hloc * D), opd((uint32_t)RAD_BF16, H, R), opd((uint32_t)RAD_BF16, H, R), opd((uint32_t)RAD_BF16, M, Hloc * D) };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_vha_proj(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), H = pi(p, n_p, "heads"), D = pi(p, n_p, "dim"), R = pi(p, n_p, "rank");
+    const int64_t W = pi(p, n_p, "world_size", 1);
+    if (M < 1 || H < 1 || H > 4096 || D < 1 || R < 1 || W < 1 || W > 64 || (H % W) != 0) return RAD_E_UNSUPPORTED;
+    const int64_t Hloc = H / W;
+    const RadOpdDesc l[] = { opd((uint32_t)RAD_BF16, M, Hloc * D), opd((uint32_t)RAD_BF16, H, R), opd((uint32_t)RAD_BF16, M, R * D) };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_vha_apply(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), H = pi(p, n_p, "heads"), D = pi(p, n_p, "dim"), R = pi(p, n_p, "rank");
+    const int64_t W = pi(p, n_p, "world_size", 1);
+    if (M < 1 || H < 1 || H > 4096 || D < 1 || R < 1 || W < 1 || W > 64 || (H % W) != 0) return RAD_E_UNSUPPORTED;
+    const int64_t Hloc = H / W;
+    const RadOpdDesc l[] = { opd((uint32_t)RAD_BF16, M, Hloc * D), opd((uint32_t)RAD_BF16, M, R * D), opd((uint32_t)RAD_BF16, H, R), opd((uint32_t)RAD_BF16, M, Hloc * D) };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_mhc_pre(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const uint32_t D = dt_act(p, n_p, "dtype");
+    if (D != (uint32_t)RAD_F32 && D != (uint32_t)RAD_BF16) return RAD_E_UNSUPPORTED;
+    const int64_t M = pi(p, n_p, "M"), n = pi(p, n_p, "n"), hc = pi(p, n_p, "hc");
+    if (M <= 0 || n <= 0 || hc < 2 || hc > 8) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = {
+        opd(D, M, hc * n), opd((uint32_t)RAD_F32, hc * (hc + 2), hc * n), opd((uint32_t)RAD_F32, 3),
+        opd((uint32_t)RAD_F32, hc * (hc + 2)), opd(D, M, n), opd((uint32_t)RAD_F32, M, hc), opd((uint32_t)RAD_F32, M, hc * hc)
+    };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_mhc_pre_rms(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    if (dt_act(p, n_p, "dtype") != (uint32_t)RAD_BF16) return RAD_E_UNSUPPORTED;
+    const int64_t M = pi(p, n_p, "M"), n = pi(p, n_p, "n"), hc = pi(p, n_p, "hc");
+    if (M <= 0 || n <= 0 || hc < 2 || hc > 8) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = {
+        opd((uint32_t)RAD_BF16, M, hc * n), opd((uint32_t)RAD_F32, hc * (hc + 2), hc * n), opd((uint32_t)RAD_F32, 3),
+        opd((uint32_t)RAD_F32, hc * (hc + 2)), opd((uint32_t)RAD_BF16, n), opd((uint32_t)RAD_BF16, M, n),
+        opd((uint32_t)RAD_F32, M, hc), opd((uint32_t)RAD_F32, M, hc * hc)
+    };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_mhc_head(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), n = pi(p, n_p, "n"), hc = pi(p, n_p, "hc");
+    if (M <= 0 || n <= 0 || hc < 2 || hc > 8) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = {
+        opd((uint32_t)RAD_BF16, M, hc * n), opd((uint32_t)RAD_F32, hc, hc * n), opd((uint32_t)RAD_F32, 1),
+        opd((uint32_t)RAD_F32, hc), opd((uint32_t)RAD_BF16, M, n)
+    };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_hca_state_write(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), r = pi(p, n_p, "ratio"), D = pi(p, n_p, "head_dim");
+    if (M < 1 || (r != 4 && r != 128) || D < 1 || D > 4096) return RAD_E_UNSUPPORTED;
+    const int64_t W = (r == 4 ? 2 : 1) * D, S = M + 8;
+    const RadOpdDesc l[] = {
+        opd((uint32_t)RAD_F32, M, W), opd((uint32_t)RAD_F32, M, W), opd((uint32_t)RAD_F32, r, W),
+        opd_idx(M, 0, 1024), opd_idx(M, 0, S), opd((uint32_t)RAD_F32, S, 2 * W)
+    };
+    R4D_PICK(l);
+}
+static int hca_gather_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out, bool with_origin) {
+    const int64_t M = pi(p, n_p, "M"), r = pi(p, n_p, "ratio"), bs = pi(p, n_p, "block_size");
+    const int64_t S = pi(p, n_p, "seqs", 2), B = pi(p, n_p, "blocks", 8);
+    if (M < 1 || (r != 4 && r != 128) || bs < 1 || S < 1 || B < 1) return RAD_E_UNSUPPORTED;
+    const int64_t Wn = (r == 4 ? 2 : 1) * r;
+    if (with_origin) {
+        const RadOpdDesc l[] = { opd_idx(M, 0, B * bs), opd_idx(M, 0, S), opd_idx(S, B, S * B), opd_idx(S, 0, 0, 0), opd_idx(M, Wn, 0) };
+        R4D_PICK(l);
+    }
+    const RadOpdDesc l[] = { opd_idx(M, 0, B * bs), opd_idx(M, 0, S), opd_idx(S, B, S * B), opd_idx(M, Wn, 0) };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_hca_gather_slots(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    return hca_gather_shape(p, n_p, operand, out, false);
+}
+extern "C" int r4d_shape_ernie_hca_gather_slots_origin(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    return hca_gather_shape(p, n_p, operand, out, true);
+}
+extern "C" int r4d_shape_ernie_hca_compress(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), r = pi(p, n_p, "ratio"), D = pi(p, n_p, "head_dim"), R = pi(p, n_p, "rope_dim");
+    const int64_t qb = pi(p, n_p, "quant_block", 64);
+    const char* layout = rad_param_gets(p, n_p, "layout", nullptr);
+    const bool packed = layout && !std::strcmp(layout, "fp8_ds_mla");
+    if (layout && !packed && std::strcmp(layout, "bf16_full")) return RAD_E_UNSUPPORTED;
+    const char* cl = rad_param_gets(p, n_p, "out_layout", nullptr);
+    if (cl && std::strcmp(cl, "token")) return RAD_E_UNSUPPORTED;   /* the block layout needs out slots at a block's last row: see libref's description */
+    if (M < 1 || (r != 4 && r != 128) || D < 2 || D > 4096 || R < 2 || (R & 1) || R > D ||
+        (packed && (qb < 1 || (D - R) < 1 || (D - R) % qb)))
+        return RAD_E_UNSUPPORTED;
+    const int64_t coff = r == 4 ? 2 : 1, W = coff * D, Wn = coff * r, S = M + Wn;
+    const RadOpdDesc out_opd = packed
+        ? opd((uint32_t)RAD_U8, M, (D - R) + 2 * R + (D - R) / qb + 1)
+        : opd((uint32_t)RAD_BF16, M, D);
+    const RadOpdDesc l[] = {
+        opd((uint32_t)RAD_F32, S, 2 * W), opd_idx(M, Wn, S), opd_idx(M, 0, 1024),
+        opd_idx(M, 0, M), opd((uint32_t)RAD_BF16, D), out_opd
+    };
+    R4D_PICK(l);
+}
+static int hca_union_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out, bool with_origin) {
+    const int64_t M = pi(p, n_p, "M"), H = pi(p, n_p, "heads"), D = pi(p, n_p, "head_dim"), ratio = pi(p, n_p, "ratio");
+    const char* layout = rad_param_gets(p, n_p, "cmp_layout", "dense");
+    const bool blk = !std::strcmp(layout, "block");
+    const int64_t S = pi(p, n_p, "seqs", 2), bw = pi(p, n_p, "win_block", 4), Bw = pi(p, n_p, "win_blocks", 8),
+                  bc = blk ? ratio : pi(p, n_p, "cmp_block", 2), Bc = pi(p, n_p, "cmp_blocks", 8);
+    if (blk && (ratio < 1 || D % ratio)) return RAD_E_UNSUPPORTED;
+    const int64_t Pw = pi(p, n_p, "win_pages", 0) > 0 ? pi(p, n_p, "win_pages") : S * Bw + 1;
+    const int64_t Pc = pi(p, n_p, "cmp_pages", 0) > 0 ? pi(p, n_p, "cmp_pages") : S * Bc + 1;
+    if (M < 1 || H < 1 || D < 1 || D > 4096 || (ratio != 4 && ratio != 128) || S < 1 || bw < 1 || Bw < 1 || bc < 1 || Bc < 1)
+        return RAD_E_UNSUPPORTED;
+    const int64_t L = std::min<int64_t>(Bw * bw, Bc * bc * (blk || (with_origin && !std::strcmp(layout, "token")) ? 1 : ratio));
+    const RadOpdDesc l[] = {
+        opd((uint32_t)RAD_BF16, M, H * D), opd((uint32_t)RAD_BF16, Pw, 1, bw, D), opd((uint32_t)RAD_BF16, Pc, 1, bc, blk ? D / ratio : D),
+        opd_idx(M, 0, L), opd_idx(M, 0, S), opd_idx(S, Bw, Pw), opd_idx(S, Bc, Pc),
+        opd((uint32_t)RAD_F32, H), opd((uint32_t)RAD_BF16, M, H * D)
+    };
+    if (with_origin && operand >= 7) {
+        const RadOpdDesc origin = opd_idx(S, 0, 0, 0);
+        if (operand == 7) return pick(out, 0, &origin, 1);
+        --operand;
+    }
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_hca_union_attn(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    return hca_union_shape(p, n_p, operand, out, false);
+}
+extern "C" int r4d_shape_ernie_hca_union_attn_origin(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    return hca_union_shape(p, n_p, operand, out, true);
+}
+extern "C" int r4d_shape_ernie_mhc_stream_mean(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), H = pi(p, n_p, "hidden"), mult = pi(p, n_p, "mult");
+    if (M < 1 || H < 1 || mult < 1 || mult > 16) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = {
+        opd((uint32_t)RAD_BF16, M, mult * H), opd((uint32_t)RAD_BF16, M, H)
+    };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_hca_dspark_attn(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), H = pi(p, n_p, "heads"), D = pi(p, n_p, "head_dim");
+    const int64_t S = pi(p, n_p, "seqs", 1), bs = pi(p, n_p, "block_size", 4), B = pi(p, n_p, "blocks", 8);
+    const int64_t P = pi(p, n_p, "pages", 0) > 0 ? pi(p, n_p, "pages") : S * B + 1;
+    if (M < 1 || H < 1 || D < 1 || D > 4096 || S < 1 || bs < 1 || B < 1 || P < 1) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = {
+        opd((uint32_t)RAD_BF16, M, H * D), opd((uint32_t)RAD_BF16, P, 1, bs, D),
+        opd_idx(S, B, P), opd_idx(S, 0, 0, std::min<int64_t>(B * bs, std::max<int64_t>(M, bs))),
+        opd_idx(S + 1, 0, M, -1, (uint32_t)RAD_OPD_F_IDX_CU),   /* ascending, cu[0] = 0, as libref */
+        opd((uint32_t)RAD_F32, H), opd((uint32_t)RAD_BF16, M, H * D)
+    };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_hca_wo_a(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), H = pi(p, n_p, "heads"), D = pi(p, n_p, "head_dim"), R = pi(p, n_p, "rope_dim"),
+                  G = pi(p, n_p, "groups"), K = pi(p, n_p, "rank");
+    if (M < 1 || H < 1 || D < 2 || D > 4096 || R < 2 || (R & 1) || R > D || G < 1 || H % G || K < 1)
+        return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = {
+        opd((uint32_t)RAD_BF16, M, H * D), opd_idx(M, 0, 1024),
+        opd((uint32_t)RAD_BF16, G * K, (H / G) * D), opd((uint32_t)RAD_BF16, M, G * K)
+    };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_idx_query(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), H = pi(p, n_p, "heads"), D = pi(p, n_p, "head_dim"), R = pi(p, n_p, "rope_dim");
+    if (M < 1 || H < 1 || D < 4 || D > 256 || R < 2 || (R & 1) || R > D) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = {
+        opd((uint32_t)RAD_BF16, M, H * D), opd_idx(M, 0, 1024),
+        opd((uint32_t)RAD_F8E4M3, M, H * D), opd((uint32_t)RAD_F32, M, H)
+    };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_idx_key(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), D = pi(p, n_p, "head_dim"), R = pi(p, n_p, "rope_dim");
+    const int64_t bs = pi(p, n_p, "block_size", 16), pages = pi(p, n_p, "num_pages", 4);
+    if (M < 1 || D < 4 || D > 256 || R < 2 || (R & 1) || R > D || bs < 1 || pages < 1) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = {
+        opd((uint32_t)RAD_BF16, M, D), opd((uint32_t)RAD_BF16, D), opd((uint32_t)RAD_BF16, D),
+        opd_idx(M, 0, 1024), opd_idx(M, 0, pages * bs), opd((uint32_t)RAD_U8, pages, 1, bs, D + 4)
+    };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_idx_logits(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), H = pi(p, n_p, "heads"), D = pi(p, n_p, "head_dim");
+    const int64_t L = pi(p, n_p, "tokens", 256), S = pi(p, n_p, "seqs", 2), B = pi(p, n_p, "blocks", 16);
+    const int64_t bs = pi(p, n_p, "block_size", 16), pages = pi(p, n_p, "num_pages", 32);
+    if (M < 1 || H < 1 || D < 4 || D > 256 || L < 1 || S < 1 || B < 1 || bs < 1 || pages < 1) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = {
+        opd((uint32_t)RAD_F8E4M3, M, H * D), opd((uint32_t)RAD_F32, M, H), opd((uint32_t)RAD_BF16, M, H),
+        opd((uint32_t)RAD_U8, pages, 1, bs, D + 4), opd_idx(S, B, pages), opd_idx(M, 0, S),
+        opd_idx(M, 0, L), opd((uint32_t)RAD_F32, M, L)
+    };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_dsa_select(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), k = pi(p, n_p, "topk"), w = pi(p, n_p, "window"), bs = pi(p, n_p, "block_size");
+    const int64_t L = pi(p, n_p, "tokens", 256), S = pi(p, n_p, "seqs", 2), B = pi(p, n_p, "blocks", 16);
+    const int64_t pages = pi(p, n_p, "num_pages", 0) > 0 ? pi(p, n_p, "num_pages") : std::max<int64_t>(B, 1);
+    if (M < 1 || k < 1 || k > 2048 || w < 1 || bs < 1 || L < 1 || S < 1 || B < 1) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = {
+        opd((uint32_t)RAD_F32, M, L), opd_idx(M, 0, L), opd_idx(M, 0, S),
+        opd_idx(S, B, pages), opd_idx(M, k + w, 0), opd_idx(M, k + w, 0)
+    };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_dsa_topk_tiled(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), H = pi(p, n_p, "heads"), D = pi(p, n_p, "head_dim"), k = pi(p, n_p, "topk"), w = pi(p, n_p, "window"),
+                  bs = pi(p, n_p, "block_size", 16), L = pi(p, n_p, "tokens", 256), S = pi(p, n_p, "seqs", 2), tile = pi(p, n_p, "tile", 64);
+    /* every parameter is validated before any arithmetic on it: block_size divides the token count below */
+    if (M < 1 || H < 1 || D < 4 || D > 256 || k < 1 || k > 2048 || w < 1 || bs < 1 || L < 1 || S < 1 || tile < 1) return RAD_E_UNSUPPORTED;
+    const int64_t B = std::max<int64_t>(pi(p, n_p, "blocks", 0), (L + bs - 1) / bs), pages = std::max<int64_t>(pi(p, n_p, "num_pages", 0), S * B);
+    const RadOpdDesc l[] = {
+        opd((uint32_t)RAD_F8E4M3, M, H * D), opd((uint32_t)RAD_F32, M, H), opd((uint32_t)RAD_BF16, M, H),
+        opd((uint32_t)RAD_U8, pages, 1, bs, D + 4), opd_idx(S, B, pages), opd_idx(M, 0, S), opd_idx(M, 0, L), opd_idx(S, B, pages),
+        opd((uint32_t)RAD_F32, M, tile), opd_idx(M, k + w, 0), opd_idx(M, k + w, 0), opd_idx(M * (2 * k + 3), 0, 0)
+    };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_mla_project(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), H = pi(p, n_p, "heads"), kd = pi(p, n_p, "k_dim"),
+                  vd = pi(p, n_p, "v_dim"), L = pi(p, n_p, "latent_dim"), qw = pi(p, n_p, "q_width", kd);
+    const char* mode = rad_param_gets(p, n_p, "mode", nullptr);
+    const bool absorb = mode && !std::strcmp(mode, "absorb"), expand = mode && !std::strcmp(mode, "expand");
+    if (M < 1 || H < 1 || kd < 1 || vd < 1 || L < 1 || (!absorb && !expand) || qw < kd || (expand && qw != kd))
+        return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = {
+        opd((uint32_t)RAD_BF16, M, H * (absorb ? qw : L)), opd((uint32_t)RAD_BF16, H * (kd + vd), L),
+        opd((uint32_t)RAD_BF16, M, H * (absorb ? L : vd))
+    };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_mla_sparse_attn(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), H = pi(p, n_p, "heads"), L = pi(p, n_p, "latent_dim"),
+                  R = pi(p, n_p, "rope_dim"), bs = pi(p, n_p, "block_size"), W = pi(p, n_p, "width");
+    const int64_t pages = pi(p, n_p, "num_pages", 4);
+    if (M < 1 || H < 1 || L < 1 || L > 2048 || R < 1 || bs < 1 || pages < 1 || W < 1) return RAD_E_UNSUPPORTED;
+    const char* lay = rad_param_gets(p, n_p, "kv_layout", nullptr);
+    const bool fp8 = lay && (!std::strcmp(lay, "fp8_ds_mla") || !std::strcmp(lay, "i8_ds_mla") || !std::strcmp(lay, "i10_ds_mla") || !std::strcmp(lay, "i12_ds_mla") || !std::strcmp(lay, "bf16_ds_mla"));
+    const int lb = lay && !std::strcmp(lay, "i10_ds_mla") ? 2 : lay && !std::strcmp(lay, "i12_ds_mla") ? 4 : lay && !std::strcmp(lay, "bf16_ds_mla") ? 8 : 0;   /* low bits of the integer rows */
+    const int64_t lob = lb ? L * lb / 8 : 0;   /* packed low-bit bytes */
+    const int64_t qb = pi(p, n_p, "quant_block", 128);
+    if (fp8 && (qb < 1 || L % qb || (lb && (qb * lb) % 8))) return RAD_E_UNSUPPORTED;
+    const RadOpdDesc l[] = {
+        opd((uint32_t)RAD_BF16, M, H * L), opd((uint32_t)RAD_BF16, M, H * R),
+        fp8 ? opd((uint32_t)RAD_U8, pages, 1, bs, L + lob + 4 * (L / qb) + 2 * R) : opd((uint32_t)RAD_BF16, pages, 1, bs, L + R),
+        opd_idx(M, W, pages * bs),
+        opd((uint32_t)RAD_F32, H), opd((uint32_t)RAD_BF16, M, H * L)
+    };
+    R4D_PICK(l);
+}
+extern "C" int r4d_shape_ernie_mla_latent_store(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), L = pi(p, n_p, "latent_dim"), R = pi(p, n_p, "rope_dim"), bs = pi(p, n_p, "block_size"),
+                  qb = pi(p, n_p, "quant_block", 128);
+    const char* lay = rad_param_gets(p, n_p, "kv_layout", nullptr);
+    const int lb = lay && !std::strcmp(lay, "i10_ds_mla") ? 2 : lay && !std::strcmp(lay, "i12_ds_mla") ? 4 : lay && !std::strcmp(lay, "bf16_ds_mla") ? 8 : 0;   /* low bits of the integer rows */
+    const int64_t lob = lb ? L * lb / 8 : 0;   /* packed low-bit bytes */
+    if (M < 1 || L < 1 || L > 2048 || R < 1 || bs < 1 || qb < 1 || L % qb || (lb && (qb * lb) % 8)) return RAD_E_UNSUPPORTED;
+    const int64_t nb = (M + bs - 1) / bs + 2;
+    const RadOpdDesc l[] = {
+        opd((uint32_t)RAD_BF16, M, L + R), opd_idx(M, 0, nb * bs, -1, (uint32_t)RAD_OPD_F_IDX_UNIQUE),
+        opd((uint32_t)RAD_U8, nb, 1, bs, L + lob + 4 * (L / qb) + 2 * R)
+    };
+    R4D_PICK(l);
+}
 extern "C" int r4d_shape_router_sigmoid_topk(const RadParam* p, int n_p, int operand,
                                              RadOpdDesc* out) {
     const int64_t M = pi(p, n_p, "M"), ne = pi(p, n_p, "n_expert"), k = pi(p, n_p, "top_k");
@@ -1403,6 +1731,13 @@ extern "C" int r4d_shape_gemm_nt_f32(const RadParam* p, int n_p, int operand, Ra
                              opd((uint32_t)RAD_F32, M, N) };
     R4D_PICK(l);
 }
+extern "C" int r4d_shape_gemm_nt_f32_pair(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), N = pi(p, n_p, "N"), K = pi(p, n_p, "K");
+    const RadOpdDesc l[] = { opd((uint32_t)RAD_BF16, M, K), opd((uint32_t)RAD_F32, N, K),
+                             opd((uint32_t)RAD_F32, N, K), opd((uint32_t)RAD_F32, M, N),
+                             opd((uint32_t)RAD_F32, M, N) };
+    R4D_PICK(l);
+}
 extern "C" int r4d_shape_gemm_nt(const RadParam* p, int n_p, int operand,
                                  RadOpdDesc* out) {
 
@@ -1630,6 +1965,29 @@ static int moe_gemm_q_shape(const RadParam* p, int n_p, int operand, RadOpdDesc*
         opd(D, M * k, N),                                 /* y, in sorted order */
         opd_none(),                                       /* split -- optional */
     };
+    R4D_PICK(l);
+}
+
+extern "C" int r4d_shape_moe_mxfp4(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+    const int64_t M = pi(p, n_p, "M"), N = pi(p, n_p, "N"), K = pi(p, n_p, "K");
+    const int64_t N1 = rad_param_geti(p, n_p, "N_odd", N), K1 = rad_param_geti(p, n_p, "K_odd", K);
+    const int64_t ne = pi(p, n_p, "n_expert"), top = pi(p, n_p, "top_k");
+    const char* order = rad_param_gets(p, n_p, "a_order", "");
+    const int64_t ar = !std::strcmp(order, "sorted") ? M * top : M;
+    const int64_t nk = std::max(K, K1), nn = std::max(N, N1);
+    RadOpdDesc s0 = opd((uint32_t)RAD_U8, (ne + 1) / 2, N, K / 32);
+    RadOpdDesc s1 = opd((uint32_t)RAD_U8, ne / 2, N1, K1 / 32);
+    s0.fill = s1.fill = RAD_FILL_INDEX;
+    s0.idx_const = s1.idx_const = 127;
+    const RadOpdDesc l[] = { opd((uint32_t)RAD_F8E4M3, ar, nk),
+                             opd((uint32_t)RAD_F32, ar, nk / 128),
+                             opd((uint32_t)RAD_FP4E2M1, (ne + 1) / 2, N, K),
+                             s0,
+                             opd_idx(M * top, 0, M * top),
+                             opd_idx(ne + 1, 0, M * top + 1),
+                             opd((uint32_t)RAD_FP4E2M1, ne / 2, N1, K1),
+                             s1,
+                             opd((uint32_t)RAD_BF16, M * top, nn) };
     R4D_PICK(l);
 }
 

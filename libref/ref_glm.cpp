@@ -4,7 +4,8 @@
 #include <cmath>
 using namespace ref;
 
-/* Routing and index head gates are F32 projections in GLM, even with BF16 hidden states. */
+/* Routing and index head gates are F32 projections with BF16 hidden states; weights may be F32
+ * (GLM) or BF16 (ERNIE routers and HCA projections), always accumulated and stored in F32. */
 int ref_gemm_nt_f32(const RadArgs* a, RadStream) {
     if (!have(a, 3)) return RAD_E_INVAL;
     const auto &x = a->t[0], &w = a->t[1], &y = a->t[2];
@@ -13,7 +14,8 @@ int ref_gemm_nt_f32(const RadArgs* a, RadStream) {
         x.shape[1] != k || w.shape[0] != n || w.shape[1] != k || y.shape[0] != x.shape[0] ||
         y.shape[1] != n)
         return RAD_E_SHAPE;
-    if (x.dtype != RAD_BF16 || w.dtype != RAD_F32 || y.dtype != RAD_F32) return RAD_E_DTYPE;
+    if (x.dtype != RAD_BF16 || (w.dtype != RAD_F32 && w.dtype != RAD_BF16) || y.dtype != RAD_F32)
+        return RAD_E_DTYPE;
     if (!x.data || !w.data || !y.data) return RAD_E_INVAL;
 #pragma omp parallel for schedule(static)
     for (int64_t r = 0; r < x.shape[0]; ++r)
@@ -23,6 +25,34 @@ int ref_gemm_nt_f32(const RadArgs* a, RadStream) {
                 sum += ldt(&x, r * x.stride[0] + j * x.stride[1]) *
                        ldt(&w, col * w.stride[0] + j * w.stride[1]);
             stt(&y, r * y.stride[0] + col * y.stride[1], sum);
+        }
+    return RAD_OK;
+}
+
+int ref_gemm_nt_f32_pair(const RadArgs* a, RadStream) {
+    if (!have(a, 5)) return RAD_E_INVAL;
+    const auto &x = a->t[0], &w0 = a->t[1], &w1 = a->t[2], &y0 = a->t[3], &y1 = a->t[4];
+    const int64_t n = p_int(a, "N", 0), k = p_int(a, "K", 0);
+    if (n < 1 || k < 1 || x.rank != 2 || w0.rank != 2 || w1.rank != 2 || y0.rank != 2 ||
+        y1.rank != 2 || x.shape[0] < 1 || x.shape[1] != k || w0.shape[0] != n ||
+        w0.shape[1] != k || w1.shape[0] != n || w1.shape[1] != k || y0.shape[0] != x.shape[0] ||
+        y0.shape[1] != n || y1.shape[0] != x.shape[0] || y1.shape[1] != n)
+        return RAD_E_SHAPE;
+    if (x.dtype != RAD_BF16 || (w0.dtype != RAD_F32 && w0.dtype != RAD_BF16) ||
+        w1.dtype != w0.dtype || y0.dtype != RAD_F32 || y1.dtype != RAD_F32)
+        return RAD_E_DTYPE;
+    if (!x.data || !w0.data || !w1.data || !y0.data || !y1.data) return RAD_E_INVAL;
+#pragma omp parallel for schedule(static)
+    for (int64_t r = 0; r < x.shape[0]; ++r)
+        for (int64_t col = 0; col < n; ++col) {
+            float s0 = 0.0f, s1 = 0.0f;
+            for (int64_t j = 0; j < k; ++j) {
+                const float xv = ldt(&x, r * x.stride[0] + j * x.stride[1]);
+                s0 += xv * ldt(&w0, col * w0.stride[0] + j * w0.stride[1]);
+                s1 += xv * ldt(&w1, col * w1.stride[0] + j * w1.stride[1]);
+            }
+            stt(&y0, r * y0.stride[0] + col * y0.stride[1], s0);
+            stt(&y1, r * y1.stride[0] + col * y1.stride[1], s1);
         }
     return RAD_OK;
 }

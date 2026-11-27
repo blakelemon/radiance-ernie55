@@ -167,9 +167,62 @@ long align16(long v) { return (v + 15) & ~15L; }
 std::mutex     g_ar8_m;
 R4DAr8Settings g_ar8;
 
+/* Environment overrides of the eight-rank two-shot, for timing a board at serving (default: none
+ * set, nothing changes): R4D_AR8_PIECES=N pins the piece count (1..R4D_AR_TS_MAX_PIECES, as the
+ * `pieces` launch parameter does), R4D_AR8_WEIGHTS=off makes the shards even whatever the links
+ * say. A bad value is ignored with one line on stderr. The same bits whatever is set. */
+void ar8_env_override(R4DAr8Settings* s) {
+    static std::once_flag said;
+    if (const char* e = std::getenv("R4D_AR8_PIECES")) {
+        const int k = std::atoi(e);
+        if (k >= 1 && k <= R4D_AR_TS_MAX_PIECES) s->pieces = k;
+        else std::call_once(said, [e] {
+            std::fprintf(stderr, "[r4d] R4D_AR8_PIECES=%s ignored (1..%d)\n", e,
+                         (int)R4D_AR_TS_MAX_PIECES);
+        });
+    }
+    if (const char* e = std::getenv("R4D_AR8_WEIGHTS"))
+        if (!std::strcmp(e, "off") || !std::strcmp(e, "even")) s->weights = R4D_AR8_WEIGHTS_EVEN;
+}
+
 R4DAr8Settings ar8_settings() {
     std::lock_guard<std::mutex> lk(g_ar8_m);
-    return g_ar8;
+    R4DAr8Settings s = g_ar8;
+    ar8_env_override(&s);
+    return s;
+}
+
+/* R4D_AR8_FORM=lockstep|ring|split: the two-shot's form when the launch names none (the engine
+ * names none). -1 unset or bad. Read once. */
+int ar8_env_form() {
+    static const int f = [] {
+        const char* e = std::getenv("R4D_AR8_FORM");
+        if (!e) return -1;
+        const int v = r4d_ar8_form_parse(e);
+        if (v < 0) std::fprintf(stderr, "[r4d] R4D_AR8_FORM=%s ignored (lockstep, ring or split)\n", e);
+        return v;
+    }();
+    return f;
+}
+
+/* R4D_AR8_CODED=1: the exact eight-rank two-shot carries its pushes coded losslessly
+ * (r4d_ar_twoshot_8rank_exact_coded, ~12.2 bits a bf16 value where the groups' exponents allow) from
+ * R4D_AR8_CODED_MIN elements (default 1048576) on messages the form fits; the `coded` launch
+ * parameter (0/1) pins one launch. Unset: the plain wire, as before. */
+bool ar8_env_coded() {
+    static const bool on = [] {
+        const char* e = std::getenv("R4D_AR8_CODED");
+        return e && *e && std::strcmp(e, "0") != 0;
+    }();
+    return on;
+}
+long ar8_env_coded_min() {
+    static const long v = [] {
+        const char* e = std::getenv("R4D_AR8_CODED_MIN");
+        const long n = e ? std::atol(e) : 0;
+        return n > 0 ? n : 1048576L;
+    }();
+    return v;
 }
 
 /* This rank's card's slowest PCIe hop, from sysfs by the runtime's bus id. */
@@ -744,6 +797,11 @@ static int ar_setup(const RadArgs* a, ArCall* c, int shard_nb) {
     /* a decode-sized shard takes the decode rule (nb_for_shard), a prompt-sized one nb_for's */
     c->nblocks = cfgv.nblocks > 0 ? cfgv.nblocks
                : (shard_nb && basis <= kTsDecodeShard) ? nb_for_shard(basis, cap) : nb_for(basis, cap);
+    if (!shard_nb && in->world == 8 && words16 <= 1024 && cfgv.nblocks <= 0) {
+        /* Multi-CU PCIe push + per-block handshake overlap with 256 threads (8 waves). */
+        c->nblocks = (words16 <= 512) ? 2 : 4;
+        if (c->nthreads == 1024 && r4d_geti_or(a, "nthreads", 0) <= 0) c->nthreads = 256;
+    }
     if (c->nblocks > in->max_blocks) c->nblocks = in->max_blocks;
     return RAD_OK;
 }
@@ -822,16 +880,19 @@ static int ar_gather_wide_setup(const RadArgs* a, int ws, const ArInst** out_in,
     R4dArCfg cfgv;
     r4d_cfg_ar(a, &cfgv);
     const long words16 = (long)n * in->esize / 16;
-    int nblocks = cfgv.nblocks > 0 ? cfgv.nblocks : nb_for(words16, in->nb_cap);
-    if (nblocks > in->max_blocks) nblocks = in->max_blocks;
 
     *out_in = in;
     c->in = in;
     c->inp = r4d_addr(x);
     c->out = r4d_addr(y);
     c->numel = n;
-    c->nblocks = nblocks;
+    c->nblocks = cfgv.nblocks > 0 ? cfgv.nblocks : nb_for(words16, in->nb_cap);
     c->nthreads = cfgv.nthreads;
+    if (ws == 8 && words16 <= 1024 && cfgv.nblocks <= 0) {
+        c->nblocks = (words16 <= 512) ? 2 : 4;
+        if (c->nthreads == 1024 && r4d_geti_or(a, "nthreads", 0) <= 0) c->nthreads = 256;
+    }
+    if (c->nblocks > in->max_blocks) c->nblocks = in->max_blocks;
     c->drain = cfgv.drain;
     c->acq = cfgv.acq;
     c->pub = cfgv.pub;
@@ -1222,8 +1283,32 @@ extern "C" int r4d_rad_ar_twoshot_8rank_exact(const RadArgs* a, RadStream s) {
      * 2-6% less time for 8 and 16 MiB messages, but at TP8 the split form, which includes the ring
      * order, moves neither prefill nor decode beyond run-to-run noise. */
     const long long timeline = r4d_pgeti_or(a->p, a->n_p, "timeline", 0);
-    const long long form = r4d_pgeti_or(a->p, a->n_p, "form", R4D_AR8_FORM_LOCKSTEP);
+    const long long form = r4d_pgeti_or(a->p, a->n_p, "form",
+                                          ar8_env_form() >= 0 ? ar8_env_form() : R4D_AR8_FORM_LOCKSTEP);
     if (form < R4D_AR8_FORM_LOCKSTEP || form > R4D_AR8_FORM_SPLIT) return RAD_E_INVAL;
+    /* The coded wire (R4D_AR8_CODED or the `coded` parameter): even shards, the default form and
+     * no timeline only, whatever the message fits (r4d_ar_twoshot_coded_ok). Every rank decides
+     * from the same message, instance and environment, as the wire must match across ranks. */
+    {
+        const long long pin = r4d_pgeti_or(a->p, a->n_p, "coded", -1);
+        const bool want = pin >= 0 ? pin != 0
+                                   : ar8_env_coded() && c.numel >= ar8_env_coded_min();
+        if (want && !weights && timeline == 0 && form == R4D_AR8_FORM_LOCKSTEP &&
+            r4d_ar_twoshot_coded_ok(c.numel, in->dtype, 8, in->slot16)) {
+            R4D_TRY("ar_twoshot_8rank_exact (coded)",
+                r4d_ar_twoshot_8rank_exact_coded(
+                    in->peer_scratch[0], in->peer_scratch[1], in->peer_scratch[2],
+                    in->peer_scratch[3], in->peer_scratch[4], in->peer_scratch[5],
+                    in->peer_scratch[6],
+                    in->peer_flags[0], in->peer_flags[1], in->peer_flags[2],
+                    in->peer_flags[3], in->peer_flags[4], in->peer_flags[5],
+                    in->peer_flags[6],
+                    in->my_scratch, in->my_flags, in->my_seq, in->slot16,
+                    c.inp, c.out, c.numel, in->rank, (long)(uintptr_t)s,
+                    c.nblocks, c.nthreads, c.drain, c.acq, c.pub));
+            return RAD_OK;
+        }
+    }
     R4D_TRY("ar_twoshot_8rank_exact",
         r4d_ar_twoshot_8rank_exact(in->peer_scratch[0], in->peer_scratch[1], in->peer_scratch[2],
                                    in->peer_scratch[3], in->peer_scratch[4], in->peer_scratch[5],

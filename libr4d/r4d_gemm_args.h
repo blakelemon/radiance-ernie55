@@ -103,6 +103,10 @@ static inline int pick_sk(long long n_tiles, long long K, long long unit, int wv
     return best;
 }
 
+/* The tGemmSkinny axis defaults (wv 1, sk 0 = the shape's own ladder, mb 0, npw 1, nt 1): r4d_rows.cpp holds the table, this mirrors it (the table's
+ * comment points here; the emulator row-identity test builds without r4d_rows.cpp and states the same values). */
+static constexpr R4dGemmCfg kGemmCfgDefault = { 1, 0, 0, 1, 1 };
+
 /* Resolve the tuned point into (WV, SK, MB, NPW, NT) for a shape whose split unit is `unit`. */
 struct Cfg { int wv, sk, mb, npw, nt; };
 
@@ -110,8 +114,12 @@ struct Cfg { int wv, sk, mb, npw, nt; };
  * split, right wherever the split is the only source of parallelism. */
 static inline int cfg_for(const RadArgs* a, long long K, long long M, long long unit, BoundRule br,
                           Cfg* out, long long n_tiles = 0) {
+    /* Row identity. The split `sk` fixes the summation order, and the tuned point is chosen per kernel row and geometry, so a tune cache could give the
+     * M <= 16, M <= 64 and tiled rows different splits for one op: a row's bits would then depend on the step's row count. An op that declares
+     * `row_identity` 1 ignores the tuned point and takes the axis defaults, which `pick_sk` resolves from (K, n_tiles) alone, the same in every band. */
     R4dGemmCfg cv;
-    r4d_cfg_gemm(a, &cv);
+    if (r4d_geti_or(a, "row_identity", 0)) cv = kGemmCfgDefault;
+    else r4d_cfg_gemm(a, &cv);
     const R4dGemmCfg* c = &cv;
     out->wv  = c->wv  > 0 ? c->wv  : 1;
     /* MB is the number of row tiles one block covers; mb <= 0 means all of them. grid.y is

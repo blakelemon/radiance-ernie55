@@ -29813,7 +29813,8 @@ static void ar8_perf_worker(Ar8Perf* t) {
                 std::vector<RadParam> ps = ip;
                 if (nb > 0) ps.push_back(PI("nblocks", nb));
                 if (t->ks[j] > 0) ps.push_back(PI("pieces", t->ks[j]));
-                if (t->forms[j] >= 0) ps.push_back(PI("form", t->forms[j]));
+                if (t->forms[j] == 3) ps.push_back(PI("coded", 1));
+                else if (t->forms[j] >= 0) ps.push_back(PI("form", t->forms[j]));
                 RadTensor ts[2] = { T(in, dt, { n }), T(out, dt, { n }) };
                 RadArgs a;
                 std::memset(&a, 0, sizeof(a));
@@ -30047,8 +30048,8 @@ static void ar8_perf(const Plugin& pl, int64_t numel, int iters, const char* dty
             const size_t comma = all.find(',', at);
             const std::string one = all.substr(at, comma == std::string::npos ? std::string::npos
                                                                                 : comma - at);
-            const int f = r4d_ar8_form_parse(one.c_str());
-            if (f < 0) { std::printf("--perfar8: form '%s' (lockstep, ring or split)\n",
+            const int f = one == "coded" ? 3 : r4d_ar8_form_parse(one.c_str());
+            if (f < 0) { std::printf("--perfar8: form '%s' (lockstep, ring, split or coded)\n",
                                      one.c_str()); return; }
             fl.push_back(f);
             if (comma == std::string::npos) break;
@@ -30132,6 +30133,7 @@ static void ar8_perf(const Plugin& pl, int64_t numel, int iters, const char* dty
                            : ks[j] > 0 ? ks[j] : r4d_ar8_auto_pieces(n);
             const char* fam = forms[j] == R4D_AR8_FORM_RING    ? "ring"
                             : forms[j] == R4D_AR8_FORM_SPLIT   ? "split"
+                            : forms[j] == 3                    ? "coded"
                                                                : "lockstep";
             const std::string rname = !two ? std::string("one-shot")
                                     : ks[j] < 0 ? fmt("%s set K%d", fam, keff)

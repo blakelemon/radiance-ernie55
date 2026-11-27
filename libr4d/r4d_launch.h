@@ -18,4 +18,8 @@
 #ifndef R4D_DYN_LDS
 #define R4D_DYN_LDS(type, name) extern __shared__ type name[]
 #endif
+/* The same with an alignment attribute (`extern __shared__ __align__(al) type name[]` in a build). */
+#ifndef R4D_DYN_LDS_ALIGNED
+#define R4D_DYN_LDS_ALIGNED(type, name, al) extern __shared__ __align__(al) type name[]
+#endif
 #endif
