@@ -113,6 +113,9 @@ static bool dspark_kv_window_from_env() { const char* v = getenv("RADIANCE_ERNIE
 /* RADIANCE_ERNIE55_KV_REPLICATED=1: the tier keeps one copy of the MLA latent cache (kv_latent) and the indexer key cache (kv_dsa_index), written by rank 0 and read by every rank, instead of every rank's copy. Every rank computes both whole: the latent is projected from the unsharded mqa down-projection and the index key from the unsharded indexer q/k weights, so the rows agree bit for bit. Default off. */
 static bool kv_replicated_from_env() { const char* v = getenv("RADIANCE_ERNIE55_KV_REPLICATED"); return v && v[0] == '1' && v[1] == '\0'; }
 
+/* RADIANCE_ERNIE55_IDX_ROW_SPLIT=1: under tensor parallelism each rank runs the DSA indexer chain (ernie_idx_logits + ernie_dsa_select / ernie_dsa_topk_tiled) for its own run of a prefill-sized step's rows instead of the whole step, and an all_gather joins the runs' slot lists (m.sl_all) for ernie_mla_sparse_attn; the key side and the query-side projections stay whole on every rank, so each row's selection is bit-identical to the replicated one's. The collectives-overlap is off when this is on (ov_declare). Default off. */
+static bool idx_row_split_from_env() { const char* v = getenv("RADIANCE_ERNIE55_IDX_ROW_SPLIT"); return v && v[0] == '1' && v[1] == '\0'; }
+
 /* Diagnostic pin, neutral unless set: ERNIE_ROUTER_SPLIT=1 routes a one-row step through ernie_router_topk + moe_scatter, the ops
  * every other row count uses, instead of the fused ernie_router_topk_scatter, so the router is not a source of M=1 versus M>1
  * difference. */
@@ -1385,7 +1388,7 @@ struct AttnLayer {
     MhcW hc;
     rad_weight gain = 0;
     rad_op pre = 0, qa = 0, qn = 0, qb = 0, kva = 0, kvn = 0, rq = 0, rk = 0, store = 0, ik = 0, iw = 0, iq = 0,
-           iqn = 0, ikey = 0, logit = 0, select = 0, topk_tiled = 0, slice = 0, absorb = 0, attn = 0, expand = 0,
+           iqn = 0, ikey = 0, logit = 0, select = 0, topk_tiled = 0, idx_ag = 0, slice = 0, absorb = 0, attn = 0, expand = 0,
            vha_ag = 0, vha = 0, vha_proj = 0, vha_ar = 0, vha_apply = 0, gate = 0,
            gmul = 0, out = 0, out_ar = 0, post = 0;
     int64_t vha_rank = 0;
@@ -1464,6 +1467,12 @@ struct FfnProgram {
     int64_t lat_lo = 0;
     rad_buf qa = 0, qn = 0, q = 0, qr = 0, qabs = 0, kv = 0, gt = 0, ol = 0, ov = 0, om = 0, og = 0, ik = 0, iw = 0,
             iq = 0, qf = 0, qs = 0, sc = 0, topk_state = 0, req = 0, aids = 0, sl = 0;
+    /* Indexer row split (RADIANCE_ERNIE55_IDX_ROW_SPLIT=1): the per-rank slot list and the gather
+     * destination, declared only when the split is (m.idx_split); the serial step reuses the first
+     * Rmax rows of each as scratch. idx_rmax is the run size the buffers are declared with. */
+    rad_buf sl_part = 0, sl_all = 0;
+    bool idx_split = false;
+    int64_t idx_rmax = 0;
     rad_op row_req = 0;
     /* HCA's sliding KV and compressor state groups each have their own per-sequence block table
      * origin. The full compressed group stores each summary at its completing token's slot. */
@@ -1590,6 +1599,7 @@ static int ov_declare(RadBuilder* b, const RadBuildCtx* ctx, const FfnProgram& m
         if (m.rank == 0) fprintf(stderr, "radiance: ernie55: collectives overlap requested but off: %s\n", why);
         return RAD_OK;
     };
+    if (idx_row_split_from_env()) return off("the indexer row split is on");
     if (!m.quant_fwd || m.world < 2) return off("it needs the quantised forward at tensor parallel 2 or more");
     if (!m.attn || !m.logits || !m.embed_ar) return off("not a target program with attention");
     for (const FfnLayer& y : m.L) {
@@ -1780,6 +1790,34 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
         m.req  = decl_b(b, nm.f("attn.req"), RAD_I32, {T});
         m.aids = decl_b(b, nm.f("attn.ids"), RAD_I32, {T, W2});
         m.sl   = decl_b(b, nm.f("attn.slots"), RAD_I32, {T, W2});
+        /* Indexer row split (RADIANCE_ERNIE55_IDX_ROW_SPLIT=1): a rank runs the indexer chain
+         * (ernie_idx_logits + ernie_dsa_select / ernie_dsa_topk_tiled) for its own run of rows and an
+         * all_gather joins the runs' slot lists into m.sl_all for ernie_mla_sparse_attn. Declared only
+         * with the switch on, tensor parallel >= 2, an MLA-DSA layer to split (the same layers that
+         * declare ernie_idx_logits), and a gather row that is whole 16-byte words (an all_gather moves
+         * whole words); otherwise the serial whole-step chain runs unchanged. */
+        if (idx_row_split_from_env()) {
+            bool any_mla = false;
+            for (int64_t l = 0; l < c.main_layers; ++l)
+                if (c.modes[(size_t)l] != kHca && fh.layers[(size_t)l].attn.present) { any_mla = true; break; }
+            if (world < 2) {
+                if (rank == 0) fprintf(stderr, "radiance: ernie55: indexer row split requested but off: it needs tensor parallel 2 or more\n");
+            } else if (!any_mla) {
+                if (rank == 0) fprintf(stderr, "radiance: ernie55: indexer row split requested but off: no MLA-DSA layer to split\n");
+            } else if ((W2 * 4) % 16 != 0) {
+                if (rank == 0) fprintf(stderr, "radiance: ernie55: indexer row split requested but off: the gather row (slot width %lld i32 = %lld bytes) is not a whole 16-byte word\n",
+                                       (long long)W2, (long long)(W2 * 4));
+            } else {
+                m.idx_split = true;
+                m.idx_rmax = (T + world - 1) / world;
+                m.sl_part = decl_b(b, nm.f("attn.sl_part"), RAD_I32, {m.idx_rmax, W2});
+                m.sl_all  = decl_b(b, nm.f("attn.sl_all"), RAD_I32, {world * m.idx_rmax, W2});
+                if (!m.sl_part || !m.sl_all) return RAD_E_INVAL;
+                if (rank == 0)
+                    fprintf(stderr, "radiance: ernie55: indexer row split on: run %lld rows, world %d, slot width %lld, gather %lld bytes a layer\n",
+                            (long long)m.idx_rmax, world, (long long)W2, (long long)(m.idx_rmax * W2 * 4));
+            }
+        }
         m.row_req = rw(b, RAD_OP(b, "ernie_row_req", RAD_PARAMS(RAD_RANGE("M", 1, T)), RAD_NOWEIGHTS), {}, {m.req});
         if (!m.row_req) return RAD_E_INVAL;
     }
@@ -1894,11 +1932,11 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
                                        RAD_STR("dtype", "bf16"), RAD_INT("exact", 1)),
                             RAD_NOWEIGHTS), {buf}, {buf});
     };
-    auto make_ag_max = [&](int64_t width, int64_t max_rows, rad_buf src, rad_buf dst) -> rad_op {
+    auto make_ag_max = [&](int64_t width, int64_t max_rows, rad_buf src, rad_buf dst, const char* dtype = "bf16") -> rad_op {
         if (world <= 1) return 0;
         return rw(b, RAD_OP(b, "all_gather",
                             RAD_PARAMS(RAD_INT("world_size", world), RAD_RANGE("numel", width, max_rows * width),
-                                       RAD_STR("dtype", "bf16")),
+                                       RAD_STR("dtype", dtype)),
                             RAD_NOWEIGHTS), {src}, {dst});
     };
     auto make_ag = [&](int64_t width, rad_buf src, rad_buf dst) -> rad_op {
@@ -2470,6 +2508,12 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
                                      RAD_PARAMS(RAD_RANGE("M", 1, T), RAD_INT("topk", a.topk), RAD_INT("window", a.window),
                                                 RAD_INT("block_size", a.block)),
                                      RAD_NOWEIGHTS), {m.sc, m.req}, {m.aids, m.sl});
+            }
+            /* Indexer row split: the all_gather that joins the ranks' slot-list runs, declared per
+             * MLA layer as the VHA gather is (make_ag_max), moving i32 slot rows as "f32" bytes. */
+            if (m.idx_split) {
+                At.idx_ag = make_ag_max(W2, m.idx_rmax, m.sl_part, m.sl_all, "f32");
+                if (!At.idx_ag) return RAD_E_INVAL;
             }
             At.slice = rw(b, RAD_OP(b, "ernie_head_slice",
                                     RAD_PARAMS(RAD_RANGE("M", 1, T), RAD_INT("heads", ah_loc), RAD_INT("width", qw),
@@ -4280,6 +4324,15 @@ static bool ov_step(RadCtx* c, const RadBatch* batch) {
     return true;
 }
 
+/* Whether this step splits the indexer over the ranks' rows (item 5): a pure function of the step
+ * shape, so a recorded pass replays identically. A prefill-sized step (>= 256 rows), or a smaller
+ * one from 16 rows whose rows x live context (the batch's max_ctx_len, the same bound GLM's
+ * DsaCache::live_blocks reads) reach 2^18, scores and selects enough to outweigh the gather. */
+static bool idx_split_step(const FfnProgram& m, const RadBatch* batch) {
+    const int64_t T = batch->n_tok;
+    return m.idx_split && (T >= 256 || (T >= 16 && T * (int64_t)batch->max_ctx_len >= (int64_t(1) << 18)));
+}
+
 static void step(RadCtx* c, const RadBatch* batch) {
     using namespace rad::arch;
     const FfnProgram& m = g_ffn[rad_slot(c)];
@@ -4454,7 +4507,31 @@ static void step(RadCtx* c, const RadBatch* batch) {
             RAD_ISSUE(c, At.ikey, brows(m.ik, T), RAD_W(w.ik_g), RAD_W(w.ik_b), pos,
                       praw(ki->slot_mapping, RAD_I32, T), kv_cache(m.kvi, (int)l));
             RAD_ISSUE(c, At.iqn, brows(m.iq, T), pos, brows(m.qf, T), brows(m.qs, T));
-            if (At.topk_tiled) {
+            const bool idx_split = idx_split_step(m, batch);
+            if (idx_split) {
+                /* this rank's run of rows [r0, r0 + rows): the per-row operands sliced the way the
+                 * AR-overlap pieces are (brow_slice / praw + r0), the score plane and ids the first
+                 * rows of their scratch. A rank wholly past the step runs no rows but still joins the
+                 * gather with its (dead) part buffer; the query side above stays whole at T rows. */
+                const int64_t W2 = a.topk + a.window, R = (T + m.world - 1) / m.world;
+                const int64_t r0 = (int64_t)m.rank * R, rows = r0 >= T ? 0 : std::min(R, T - r0);
+                if (rows > 0) {
+                    const RadOperand qf = brow_slice(m.qf, r0, rows, a.ih * a.id);
+                    const RadOperand qs = brow_slice(m.qs, r0, rows, a.ih);
+                    const RadOperand iw = brow_slice(m.iw, r0, rows, a.ih);
+                    const RadOperand req = brow_slice(m.req, r0, rows, 1);
+                    const RadOperand posr = praw(batch->positions + r0, RAD_I32, rows);
+                    if (At.topk_tiled) {
+                        RAD_ISSUE_N(c, At.topk_tiled, rows, qf, qs, iw, kv_cache(m.kvi, (int)l), ibt, req, posr, lbt,
+                                    RAD_B(m.sc), brows(m.aids, rows), brows(m.sl_part, rows), RAD_B(m.topk_state),
+                                    ki->seqused ? praw(ki->seqused, RAD_I32, S) : RAD_NONE);
+                    } else {
+                        RAD_ISSUE_N(c, At.logit, rows, qf, qs, iw, kv_cache(m.kvi, (int)l), ibt, req, posr, brows(m.sc, rows));
+                        RAD_ISSUE_N(c, At.select, rows, brows(m.sc, rows), posr, req, lbt, brows(m.aids, rows), brows(m.sl_part, rows));
+                    }
+                }
+                RAD_ISSUE_N(c, At.idx_ag, R * W2, brows(m.sl_part, R), brows(m.sl_all, m.world * R));
+            } else if (At.topk_tiled) {
                 RAD_ISSUE(c, At.topk_tiled, brows(m.qf, T), brows(m.qs, T), brows(m.iw, T), kv_cache(m.kvi, (int)l), ibt,
                           brows(m.req, T), pos, lbt, RAD_B(m.sc), brows(m.aids, T), brows(m.sl, T), RAD_B(m.topk_state),
                           /* the index groups seqused: the engine reads the steps host-side context bound from it, which sets the tile count of the device op */
@@ -4467,7 +4544,7 @@ static void step(RadCtx* c, const RadBatch* batch) {
             /* the attention */
             RAD_ISSUE(c, At.slice, brows(m.q, T), brows(m.qr, T));
             RAD_ISSUE(c, At.absorb, brows(m.q, T), RAD_W(w.kvb), brows(m.qabs, T));
-            RAD_ISSUE(c, At.attn, brows(m.qabs, T), brows(m.qr, T), kv_cache(m.kvl, (int)l), brows(m.sl, T),
+            RAD_ISSUE(c, At.attn, brows(m.qabs, T), brows(m.qr, T), kv_cache(m.kvl, (int)l), brows(idx_split ? m.sl_all : m.sl, T),
                       RAD_W(w.sink), brows(m.ol, T));
             RAD_ISSUE(c, At.expand, brows(m.ol, T), RAD_W(w.kvb), brows(m.ov, T));
             if (At.vha_ag && T <= m.mla_vha_dec_max) {
