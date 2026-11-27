@@ -1,0 +1,15 @@
+# ernie55-weights.recipe -- the dense and shared weights of ERNIE 5.5 Flash as the weights-only
+# conversion (`--set ernie55_weights_only=1`, arch/ernie55) stores them.
+#
+#   rad-convert <ERNIE 5.5 directory> --set ernie55_weights_only=1 \
+#       --recipe data/recipes/ernie55-weights.recipe -o ernie55-weights.rad
+#
+# The mHC mixers ship (in, out) = [hc*hidden, mix] and the ernie_mhc ops read [mix, hc*hidden]; the
+# converter transposes them in f32 and a rule stores the result. Every other weight keeps the
+# checkpoint's encoding (BF16 norms, embedding and head, F32 mHC bias and gains).
+
+blk.*.attn_hc.fn      cast dtype=f32
+blk.*.ffn_hc.fn       cast dtype=f32
+head_hc.fn            cast dtype=f32
+# The routed tensors (--set ernie55_moe_weights=1, story 2-6) keep the checkpoint encoding and need
+# no rule.

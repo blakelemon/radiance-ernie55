@@ -1,0 +1,23 @@
+# ERNIE 5.5 Flash Preview native serving recipe (MXFP4 routed experts + block-FP8 trunk).
+# mHC mixers are transposed at convert and stored F32.
+blk.*.attn_hc.fn          cast dtype=f32
+blk.*.ffn_hc.fn           cast dtype=f32
+head_hc.fn                cast dtype=f32
+
+# Exact dequant to BF16 for the small trunk projections that either are not 128-row-aligned
+# (MLA kv_a_proj_with_mqa: 576x4096) or are consumed directly by non-FP8 attention ops
+# (HCA linear_o_group_proj -> ernie_hca_wo_a; MLA kv_b_proj -> ernie_mla_absorb/expand).
+blk.7.attn_kv_a_mqa.weight   cast dtype=bf16
+blk.14.attn_kv_a_mqa.weight  cast dtype=bf16
+blk.21.attn_kv_a_mqa.weight  cast dtype=bf16
+blk.28.attn_kv_a_mqa.weight  cast dtype=bf16
+blk.35.attn_kv_a_mqa.weight  cast dtype=bf16
+blk.42.attn_kv_a_mqa.weight  cast dtype=bf16
+blk.*.attn_o_group.weight    cast dtype=bf16
+blk.*.attn_kv_b.weight       cast dtype=bf16
+
+# DSpark 3-layer block-diffusion MTP drafter weights (when converted with --set ernie55_dspark=1).
+dspark.blk.*.attn_hc.fn          cast dtype=f32
+dspark.blk.*.ffn_hc.fn           cast dtype=f32
+dspark.head_hc.fn                cast dtype=f32
+dspark.blk.*.attn_o_group.weight cast dtype=bf16

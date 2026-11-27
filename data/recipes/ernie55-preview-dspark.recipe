@@ -1,0 +1,53 @@
+# ernie55-preview-dspark.recipe -- ERNIE 5.5 Flash Preview: the native serving recipe (block-FP8 trunk, MXFP4
+# routed experts) plus the DSpark 3-layer block-diffusion MTP drafter (`model.mtp.*`, converted with
+# `--set ernie55_dspark=1`). The base rules are data/recipes/ernie55-preview.recipe verbatim; the DSpark
+# rules follow. Rationale and measurements of the checkpoint: docs/ernie55/architecture-discovery.md.
+#
+#   rad-convert /models/ernie55-flash-preview -o <out>.rad --tokenizer <ckpt>/tokenizer.json \
+#       --reuse <base>.rad --recipe data/recipes/ernie55-preview-dspark.recipe \
+#       --set ernie55_quant_forward=1 --set ernie55_dspark=1 --max-spec 7 --kv-cache-dtype bf16 \
+#       --max-tok 2048 --max-ctx 200000
+#
+# max-tok x max-ctx must stay <= 2^30 (indexer score plane) and max-tok >= 1792 (DSpark: 256 seqs x block 7).
+# ---- Trunk (unchanged from ernie55-preview.recipe) -------------------------------------------------------
+# mHC mixers are transposed at convert and stored F32.
+blk.*.attn_hc.fn          cast dtype=f32
+blk.*.ffn_hc.fn           cast dtype=f32
+head_hc.fn                cast dtype=f32
+
+# Exact dequant to BF16 for the small trunk projections that either are not 128-row-aligned
+# (MLA kv_a_proj_with_mqa: 576x4096) or are consumed directly by non-FP8 attention ops
+# (HCA linear_o_group_proj -> ernie_hca_wo_a; MLA kv_b_proj -> ernie_mla_absorb/expand).
+blk.7.attn_kv_a_mqa.weight   cast dtype=bf16
+blk.14.attn_kv_a_mqa.weight  cast dtype=bf16
+blk.21.attn_kv_a_mqa.weight  cast dtype=bf16
+blk.28.attn_kv_a_mqa.weight  cast dtype=bf16
+blk.35.attn_kv_a_mqa.weight  cast dtype=bf16
+blk.42.attn_kv_a_mqa.weight  cast dtype=bf16
+blk.*.attn_o_group.weight    cast dtype=bf16
+blk.*.attn_kv_b.weight       cast dtype=bf16
+
+# ---- DSpark drafter -------------------------------------------------------------------------------------
+# Same classes as the trunk's mHC mixers and HCA output projection:
+#  * mHC mixers (attn_hc/ffn_hc mapping_proj, mhc_contract.hc_head_fn): stored F32 [16384, 24] / [16384, 4],
+#    transposed at convert; exact, kept F32 (the mHC pre/post programs read F32).
+#  * HCA linear_o_group_proj: block-FP8 with a `_scale_inv` plane, read by ernie_hca_wo_a, which has no FP8
+#    reader: exact dequant (e4m3 codes x f32 block scale) to BF16, as the trunk does.
+dspark.blk.*.attn_hc.fn          cast dtype=f32
+dspark.blk.*.ffn_hc.fn           cast dtype=f32
+dspark.head_hc.fn                cast dtype=f32
+dspark.blk.*.attn_o_group.weight cast dtype=bf16
+
+# Markov codebook W1: checkpoint [256, 201216] BF16, stored transposed at convert to [201216, 256]
+# (ernie55.cpp declare_dspark_weights: map_transpose + decl_w(..., RAD_BF16, ...)). A transposed weight is a
+# derived tensor, so it plans only under a rule (checkpoint.cpp resolve_derived: "a recipe rule stores it").
+# BF16 -> BF16 is the identity on values: exact, no re-quantisation. markov_w2 is already [201216, 256] BF16
+# and is copied as it ships (it plans without a rule).
+dspark.markov_w1                 cast dtype=bf16
+
+# Routed experts (dspark.blk.N.ffn_{gate_up,down}_exps.E.weight, 3 layers x 512 experts): deliberately NO
+# rule. They ship as the trunk's experts do (I8-packed e2m1 codes + F8_E8M0 scale per 32 of K, MXFP4) and are
+# served as MXFP4 straight from the checkpoint bytes: an unmatched weight keeps its stored encoding, so no
+# re-quantisation happens. They plan only once Checkpoint::import_piece's PreviewMx expert pattern covers
+# `model.mtp.N.` as well as `model.layers.N.` (core/format/checkpoint.cpp:1545).
+# No recipe rule can substitute for that: `cast` would read the packed I8 bytes as integers.

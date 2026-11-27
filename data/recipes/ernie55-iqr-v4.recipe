@@ -1,0 +1,50 @@
+# ernie55-iqr-v4.recipe -- ERNIE 5.5 Flash in IQR-V4 (story 5-0-iqr-v4-target; operator decision 2026-11-23). The block-FP8 checkpoint is the conversion SOURCE only.
+#
+#   CALIB=<calibration Hessians, RADGRAM2> rad-convert <ernie55 directory> --set ernie55_weights_only=1 --set ernie55_moe_weights=1 \
+#       --recipe data/recipes/ernie55-iqr-v4.recipe -o ernie55-iqr-v4.rad
+#
+# STATUS: a plan, not yet convertible end to end. The ernie55 plugin refuses these encodings today ("this model needs bf16 ... (or block-fp8 of that shape)",
+# arch/ernie55/ernie55.cpp:293/645) and its graph reads gemm_nt dtype bf16 only; the plugin has to declare gemm_nt_q / moe_gemm_q at i8a8h first (docs/ernie55/iqr-v4-gap.md,
+# "plugin gaps"). No ERNIE calibration Hessians exist; the measured numbers (docs/ernie55/iqr-v4-layers.json) used the identity Hessian (calib option dropped), an upper bound on
+# the error of a calibrated conversion. docs/ernie55/iqr-v4-precision-map.json says why each class sits where it does. First match wins.
+#
+# Routed experts (86% of the checkpoint): IQR-V4's computed 16-bit trellis at four bits, one f32 scale a row, 128-wide Hadamard, GPTQ in act order (the recipe of
+# data/recipes/museglimmer-30b-iq4r-v4.recipe and the four-bit candidate qwen4exp-u4-w6nl-bf16ple.recipe). moe_gemm_iqr reads N % 16, K % 128, n_expert <= 512 at i8a8h.
+blk.*.ffn_gate_exps.*.weight         gptq codes=u4 tcq=16 tcq_code=mad tcq_rows=512 block=1x* scale=f32 transform=fwht128 tcq_gain=1.12 damp=0.01 calib=$CALIB tcq_order=1
+blk.*.ffn_up_exps.*.weight           gptq codes=u4 tcq=16 tcq_code=mad tcq_rows=512 block=1x* scale=f32 transform=fwht128 tcq_gain=1.12 damp=0.01 calib=$CALIB tcq_order=1
+blk.*.ffn_down_exps.*.weight         gptq codes=u4 tcq=16 tcq_code=mad tcq_rows=256 block=1x* scale=f32 transform=fwht128 tcq_gain=1.12 damp=0.01 calib=$CALIB tcq_order=1
+
+# Always-on linears at IQ8R (rotated int8, one u8 scale a (row, 256 of K) under a bf16 row scale; gemm_iq8r_*): attention projections and gate, the DSA indexer's query,
+# the dense layer-0 FFN, the shared experts, the latent down/up projections, the MTP e/h projections. K is a multiple of 256 everywhere.
+blk.*.attn_q_a.weight                rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search
+blk.*.attn_q_b.weight                rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search
+blk.*.attn_kv_a_mqa.weight           rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search
+blk.*.attn_gate.weight               rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search
+blk.*.attn_output.weight             rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search
+blk.*.attn_idx_q_b.weight            rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search
+blk.*.ffn_gate.weight                rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search
+blk.*.ffn_up.weight                  rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search
+blk.*.ffn_down.weight                rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search
+blk.*.ffn_gate_shexp.weight          rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search
+blk.*.ffn_up_shexp.weight            rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search
+blk.*.ffn_down_shexp.weight          rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search
+blk.*.ffn_latent_in.weight           rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search
+blk.*.ffn_latent_out.weight          rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search
+blk.*.mtp_e_proj.weight              rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search
+blk.*.mtp_h_proj.weight              rtn codes=i8 group=256 scale=u8 scale2=bf16 block2=1x* transform=fwht128 clamp=sym rule=search
+
+# The head: int8, unrotated, one bf16 scale a (row, 128) (logits_gemm_i8), as every IQ8R recipe of this tree does. The vocabulary-weighted IQR head
+# (logits_gemm_vocab_iqr, n_embd % 256) is the later size lever.
+output.weight                        rtn codes=i8 group=128 scale=bf16 clamp=sym rule=search
+
+# Read inside an ernie_* operation that has no quantised reader: the fp8 checkpoint's weights are dequantised to BF16 (exact: e4m3 x power-of-two scale) until the operation grows one.
+blk.*.attn_o_group.weight            cast dtype=bf16
+blk.*.attn_kv_b.weight               cast dtype=bf16
+
+# The mHC mixing matrices are stored transposed in f32 and read by ernie_mhc_pre_rms / ernie_mhc_head at f32 (data/recipes/ernie55-weights.recipe).
+blk.*.attn_hc.fn                     cast dtype=f32
+blk.*.ffn_hc.fn                      cast dtype=f32
+head_hc.fn                           cast dtype=f32
+
+# Kept as the checkpoint stores them (no rule): both routers (bf16, read f32), the indexer's wk and weights_proj (bf16), the compressor projections (bf16), the embedding (bf16), every norm gain, bias, sink and
+# scalar (bf16/f32). The routers (0.34 GiB) could drop to IQ8R once a quantised f32-arithmetic router row exists; see the precision map.
