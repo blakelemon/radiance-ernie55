@@ -537,6 +537,11 @@ public:
      * slots can be filled at once, while uncovered ones empty as their units drop and their
      * quarantine clears. loan_held() is how far into the lender's memory the slab still reaches;
      * the lender may not reuse those bytes until it has fallen to the loan. */
+    /* Published capacity, distinct from physically backed pages and held units. A recall
+     * must never turn surplus physical backing into a larger usable loan. */
+    int64_t loan_offered(int lender) const {
+        return lender >= 0 && lender < kLenders ? loan_[lender] : 0;
+    }
     int     set_loan(int lender, int64_t amount);
     int64_t loan_held(int lender) const;
     int64_t loan(int lender) const { return loan_[lender]; }
@@ -868,7 +873,7 @@ private:
     int64_t  file_buf_bytes_ = 0;
     char*    windows_ = nullptr;
     int      n_windows_ = 0;
-    char*    calm_ = nullptr;      /* zeroed: dummy table entries read zeros, not NaN */
+    char*    zero_region_ = nullptr; /* zeroed: dummy table entries read zeros, not NaN */
     int      win_next_ = 0;
     std::vector<RadEvent> win_ev_;
     std::vector<uint8_t>  win_rec_;

@@ -52,6 +52,18 @@ struct SchedMetrics {
     int64_t mixed_step_target_misses = 0;
     int64_t mixed_step_target_prefill_cap = 0;
 
+    /* Runtime LoRA, by slot index (the names ride the same index: rad::Engine::lora_names()).
+     * What has completed under each slot, and what runs there now. The scheduler counts rows;
+     * a slot with no adapter is all-zero. */
+    static const int MAX_LORA_SLOTS = 16;
+    struct LoraCount {
+        int64_t requests = 0;       /* closed Finished */
+        int64_t prompt_tokens = 0;  /* summed over those */
+        int64_t output_tokens = 0;
+        int64_t running = 0;        /* instantaneous: rows on the card right now */
+    };
+    LoraCount loras[MAX_LORA_SLOTS] = {};
+
     /* Cumulative nanoseconds spent inside steps, total and for decode steps only. Wall time over
      * a step count is not a step time: it charges idle gaps between requests to steps and mixes
      * prefill with decode. `step_ns_decode / steps_decode` is the decode step time. Measured from
@@ -64,6 +76,24 @@ struct SchedMetrics {
      * step at more sequences is a different measurement and does not count. */
     int64_t step_ns_decode_best = 0;
     int64_t step_ns_decode_recent = 0;
+
+    /* The encoder (engine_mm.cpp): items and patches encoded and the nanoseconds the passes took,
+     * cumulative, and the items waiting for it or being encoded now. Encoding runs between
+     * steps, so a model that is encoding steps nothing and its step figures stay flat; these say
+     * where the time went. */
+    int64_t encode_items = 0;
+    int64_t encode_patches = 0;
+    int64_t encode_ns = 0;
+    int64_t encode_pending = 0;
+    /* When the pass under way began (steady clock, ns), 0 when none. metrics() and
+     * observed_metrics() add the time since to encode_ns, so a long pass reads as busy while
+     * it runs; the field is how the observers' copy carries that between publications. */
+    int64_t encode_started_ns = 0;
+    /* The step under way: its phase (RAD_PHASE_*, -1 when none) and how long it has run. A prefill
+     * chunk can take seconds, and the copy observers read is published only when a step ends, so
+     * this is how they see that a step is running rather than a stalled engine. Filled at read. */
+    int     step_open_phase = -1;
+    int64_t step_open_ns = 0;
 
     /* Per KV group. `name` points into the Program, which outlives any scrape. */
     int n_kv_groups = 0;
@@ -141,6 +171,24 @@ struct SchedMetrics {
      * and the reusable tokens they gave back to be recomputed. */
     int64_t draft_refills = 0;
     int64_t draft_refill_tokens = 0;
+    /* Window snapshots a prefix hit could not seed blocks for (KVManager::seed_window): the whole
+     * hit was dropped and the prompt re-prefilled. */
+    int64_t window_seed_failures = 0;
+    /* Checkpoints whose drafter window could not be saved right (no drafter context pass behind
+     * the step, or the drafter group's window rows were not held): not committed, so no hit
+     * resumes from them. */
+    int64_t draft_window_stale_ckpts = 0;
+    /* --draft-max-lanes: steps whose block drafter was gated off because more than K sequences
+     * decoded (Scheduler::block_begin). */
+    int64_t draft_gated_steps = 0;
+    /* --draft-min-accept: sequence-steps a block drafter did not propose for a sequence whose
+     * acceptance was below the threshold (probes excluded). */
+    int64_t draft_acc_gated_steps = 0;
+    /* Sequence-steps a block drafter did not propose because the sequence's draft cache has a hole
+     * the window has not slid past (a prefix hit that left one; Scheduler::draft_floor). */
+    int64_t draft_reach_declined_steps = 0;
+    /* Gauge: running sequences the drafter is currently stopped for under --draft-min-accept. */
+    int64_t draft_spec_off_seqs = 0;
     float   draft_acceptance = 0.0f;
     int     draft_depth = 0;          /* what the controller would choose right now */
     /* Per draft position: `reached` counts verifies where every earlier position was accepted,
@@ -163,6 +211,15 @@ struct SchedMetrics {
     int64_t lookup_proposals = 0;
     int64_t lookup_held = 0;
     int64_t lookup_held_drafts = 0;
+    /* Depth 0 and the hybrid (draft.h, scheduler.h; --draft-depth0 / --draft-hybrid),
+     * zero while off: cycles planned at D = 0, probe cycles, moves between 0 and drafting; proposals
+     * the hybrid took from the lookup and left to the head, and steps it kept from issuing ahead. */
+    int64_t draft_zero_cycles = 0;
+    int64_t draft_probe_cycles = 0;
+    int64_t draft_zero_moves = 0;
+    int64_t hybrid_lookup = 0;
+    int64_t hybrid_head = 0;
+    int64_t hybrid_unahead = 0;
     int64_t lookup_held_hits = 0;
     /* --draft-suffix (suffix.h): verifies that carried a suffix chain, the rows they carried and the
      * drafts accepted; decode steps not issued ahead because the sequence was in a recurring

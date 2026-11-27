@@ -130,6 +130,7 @@ HttpResponse Server::handle_sessions(const HttpRequest&) {
         e["id"]        = s.id;
         e["model"]     = s.model;
         if (!s.label.empty()) e["label"] = s.label;
+        if (!s.lora.empty()) e["lora"] = s.lora;
         e["tokens"]    = s.n_tokens;
         e["bytes"]     = s.bytes;
         e["idle_s"]    = s.idle_s;
@@ -366,6 +367,22 @@ HttpResponse Server::handle_stats(const HttpRequest&) {
         o["draft_accept"]    = m.draft_acceptance;
         o["preemptions"]     = m.preemptions;
         o["total_requests"]  = m.total_requests;
+        /* Work attributed per runtime LoRA, by slot, named. A model serving several adapters
+         * shares every other counter; these are the ones that are not shared. */
+        {
+            const std::vector<std::string> lnames = deps_.sched->lora_names();
+            json lz = json::array();
+            for (size_t i = 0; i < lnames.size() && i < (size_t)SchedMetrics::MAX_LORA_SLOTS; ++i) {
+                json l;
+                l["name"]          = lnames[i];
+                l["requests"]      = m.loras[i].requests;
+                l["prompt_tokens"] = m.loras[i].prompt_tokens;
+                l["output_tokens"] = m.loras[i].output_tokens;
+                l["running"]       = m.loras[i].running;
+                lz.push_back(std::move(l));
+            }
+            o["loras"] = std::move(lz);
+        }
         o["steps"]           = m.steps;
         o["steps_prefill"]   = m.steps_prefill;
         o["steps_mixed"]     = m.steps_mixed;
@@ -381,7 +398,17 @@ HttpResponse Server::handle_stats(const HttpRequest&) {
         o["step_ns_decode"]  = m.step_ns_decode;
         o["step_ns_decode_best"] = m.step_ns_decode_best;
         o["step_ns_decode_recent"] = m.step_ns_decode_recent;
+        /* The step running now, which a long prefill chunk keeps open for seconds while every
+         * counter above stays where the last step left it. */
+        o["step_open_phase"] = m.step_open_phase;
+        o["step_open_s"]     = (double)m.step_open_ns / 1e9;
         o["rows_unspec"]     = m.decode_rows_unspeculated;
+        /* The encoder's time and work, which the step figures above do not show: it runs between
+         * steps. Emitted on every model, zero on one without an encoder. */
+        o["encode_items"]    = m.encode_items;
+        o["encode_patches"]  = m.encode_patches;
+        o["encode_ns"]       = m.encode_ns;
+        o["encode_pending"]  = m.encode_pending;
 
         /* Conditional rate per position with its reach count: a rate of 0.0 over a reach of 3 is
          * noise, over a reach of 40000 a broken draft round. */
@@ -415,6 +442,7 @@ HttpResponse Server::handle_stats(const HttpRequest&) {
             j["kv_blocks"] = q.kv_blocks;
             j["draft"]     = q.n_draft;
             j["slot"]      = q.slot;
+            if (!q.lora.empty()) j["lora"] = q.lora;
             j["age_s"]     = q.age_s;
             if (q.ttft_s >= 0) j["ttft_s"] = q.ttft_s;
             if (q.prefill_s >= 0) j["prefill_s"] = q.prefill_s;
@@ -456,6 +484,13 @@ HttpResponse Server::handle_stats(const HttpRequest&) {
             e["bytes"]      = s.experts.total_bytes;
             e["movable"]    = s.experts.movable;
             e["heat"]       = s.experts.heat_enabled;
+            /* True when any unit lives below the VRAM tier: only then are there hits to rate or
+             * moves to count. */
+            {
+                int64_t below = 0;
+                for (int t = 1; t < kTierCount; ++t) below += s.experts.units[t];
+                e["tiered"] = below > 0;
+            }
             /* One named row per tier, so the page holds no copy of the enum's order. */
             json tiers = json::array();
             for (int t = 0; t < kTierCount; ++t) {
@@ -513,6 +548,31 @@ HttpResponse Server::handle_stats(const HttpRequest&) {
             l["kv_stream_bytes"]  = s.link.kv_stream_bytes;
             l["kv_streaming"]   = s.link.kv_streaming;
             l["kv_stream_active"] = s.link.kv_stream_active;
+            json lr = json::array();
+            for (const auto& r : s.link.ranks) {
+                json jr = { { "ar_calls", r.ar_calls }, { "ar_bytes", r.ar_bytes }, { "h2d_bytes", r.h2d_bytes },
+                            { "d2h_bytes", r.d2h_bytes }, { "stream_bytes", r.stream_bytes },
+                            { "prefetch_bytes", r.prefetch_bytes }, { "staged_bytes", r.staged_bytes },
+                            { "promotions", r.promotions }, { "demotions", r.demotions },
+                            { "routed", r.routed }, { "routed_resident", r.routed_resident },
+                            { "units", r.units }, { "units_vram", r.units_vram },
+                            { "units_pinned", r.units_pinned } };
+                /* Card to card: what this rank's collectives sent to each rank, and the sums. */
+                if (s.link.ar_traffic) {
+                    jr["ar_to"] = r.ar_to;
+                    jr["ar_out_bytes"] = r.ar_out_bytes;
+                    jr["ar_in_bytes"] = r.ar_in_bytes;
+                }
+                lr.push_back(std::move(jr));
+            }
+            l["ranks"] = std::move(lr);
+            if (s.link.ar_traffic) {
+                json jroutes = json::object();
+                for (const auto& rt : s.link.ar_routes)
+                    jroutes[rt.name] = { { "calls", rt.calls }, { "bytes", rt.bytes } };
+                l["ar_routes"] = std::move(jroutes);
+                l["ar_uncounted_calls"] = s.link.ar_uncounted_calls;
+            }
             o["link"] = std::move(l);
         }
         if (s.passes.present) {

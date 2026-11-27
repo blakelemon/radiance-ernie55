@@ -42,7 +42,11 @@
  */
 
 #include "r3d_plugin.h"
+#include "r3d_i8_gemm_rows.h"
 #include "rad_abi_layout.h"
+#ifdef R3D_EXPERT_IQR
+#include "r3dh_moe_iqr.h"
+#endif
 
 #ifndef R3D_BUILD_TARGET
 #define R3D_BUILD_TARGET "gfx1100 gfx1101 gfx1102 gfx1103 gfx1150 gfx1151"
@@ -205,8 +209,10 @@ static const RadOperandSpec oQsaTailStore[] = { { "k", RAD_OPD_IN, 0 },
                                                 { "cu", RAD_OPD_IN, 0 },
                                                 { "state", RAD_OPD_INOUT, 0 },
                                                 { "sidx", RAD_OPD_IN, 0 } };
+/* gate_cap and up_cap are SiTU's (docs/OPS.md); the kernel refuses them when set. */
 static const RadParamSpec pGatedHadQuantI8[] = { P_INT("M"), P_INT("n"), P_INT("group"),
-                                                 P_STR("dtype"), P_STRO("act"), P_INTO("mode") };
+                                                 P_STR("dtype"), P_STRO("act"), P_INTO("mode"),
+                                                 P_F64O("gate_cap"), P_F64O("up_cap") };
 static const RadOperandSpec oGatedHadQuantI8[] = { { "a", RAD_OPD_IN, 0 },
                                                    { "b", RAD_OPD_IN, 1 },
                                                    { "q", RAD_OPD_OUT, 0 },
@@ -236,18 +242,6 @@ static const RadParamSpec pGemmRI[] = { P_INT("M"), P_INT("N"), P_INT("K"), P_ST
  * libr4d's, and the loader compares positionally. */
 static const RadOperandSpec oGemm[] = { { "a", RAD_OPD_IN, 0 }, { "b", RAD_OPD_WEIGHT, 0 },
                                         { "y", RAD_OPD_OUT, 0 } };
-
-/* `w_rb` is libr4d's (docs/OPS.md), accepted and ignored: an int8 weight's per-row scale plane
- * holds each block's value in every row, and the trellis forms that need it are IQR dtypes, which
- * no row here serves. */
-static const RadParamSpec pGemmQ[] = { P_INT("M"), P_INT("N"), P_INT("K"), P_INT("group"),
-                                       P_STR("dtype"), P_INTO("pb1"), P_INTO("pb2"),
-                                       P_INTO("split_n"), P_INTO("w_rb"), P_INTO("mvm_max") };
-static const RadOperandSpec oGemmQ[] = { { "a", RAD_OPD_IN, 0 }, { "a_scale", RAD_OPD_IN, 1 },
-                                         { "b", RAD_OPD_WEIGHT, 0 },
-                                         { "b_scale", RAD_OPD_WEIGHT, 0 },
-                                         { "y", RAD_OPD_OUT, 0 }, { "a_sum", RAD_OPD_IN, 1 },
-                                         { "b_ref", RAD_OPD_WEIGHT, 1 } };
 
 /* --- gated-delta-net --- */
 static const RadParamSpec pGdnKktSolve[] = { P_INT("M"), P_INT("head_k"), P_CHUNK("chunk") };
@@ -335,6 +329,19 @@ static const RadOperandSpec oPleConv[] = {
     { "num_accepted", RAD_OPD_IN,     1 },
     { "y",            RAD_OPD_OUT,    0 },
 };
+/* causal_conv1d: libref's schema, ple_conv's without `dilation` and `resid`. */
+static const RadParamSpec pCausalConv[] = { P_INT("M"), P_INT("n"), P_INT("width"),
+                                            P_STR("dtype") };
+static const RadOperandSpec oCausalConv[] = {
+    { "x",            RAD_OPD_IN,     0 },
+    { "w",            RAD_OPD_WEIGHT, 0 },
+    { "conv_state",   RAD_OPD_INOUT,  0 },
+    { "cu",           RAD_OPD_IN,     0 },
+    { "cache_idx",    RAD_OPD_IN,     1 },
+    { "has_init",     RAD_OPD_IN,     1 },
+    { "num_accepted", RAD_OPD_IN,     1 },
+    { "y",            RAD_OPD_OUT,    0 },
+};
 
 static const RadParamSpec pExpertScale[] = { P_INT("M"), P_INT("n_expert"), P_INT("top_k"),
                                              P_STR("dtype") };
@@ -387,7 +394,7 @@ static const RadParamSpec pMoeGemmQ[] = { P_INT("M"), P_INT("N"), P_INT("K"), P_
 
 /* moe_gemm_q dtype w4a8: the grouped int4 GEMM (r3d_moe_gemm_w4a8.hip) is a row of the moe_gemm_q
  * op above (two's-complement int4 experts, a bf16 scale per (row, 128 of K), bf16 out; the int8 or
- * E4M3 activation arm is picked by `a`'s dtype). It reuses moe_gemm_q's nine-operand parity schema. */
+ * E4M3 activation arm is picked by `a`'s dtype). It reuses moe_gemm_q's ten-operand parity schema. */
 
  /* moe_gemm: the grouped GEMM with unquantised experts, libref's schema; one weight table. */
 static const RadOperandSpec oMoeGemm[] = { { "a", RAD_OPD_IN, 0 },
@@ -658,6 +665,10 @@ static const RadOpSchema kSchemas[] = {
            "y = x * rsqrt(mean(x^2) + eps) * (w + wadd) * mult. `wadd` is GemmaRMSNorm's `1 +`, "
            "added to the gain in f32; `mult` scales the normed row before its one rounding. No "
            "gain operand at all means a gain of 1 and a `wadd` of 0."),
+    SCHEMA("rmsnorm_rows", pRmsNorm, oRmsNorm,
+           "the same norm under its row-form name: a plugin written for libr4d's short-row launch "
+           "(LFM2's and LFM3's q/k head norms) resolves here, and libr3d launches it as `rmsnorm` "
+           "(byte-identical)."),
     SCHEMA("layernorm", pLayernorm, oLayernorm,
            "y = (x - mean) / sqrt(var + eps) * w + b, the mean and the variance taken in two "
            "passes over the row."),
@@ -685,6 +696,9 @@ static const RadOpSchema kSchemas[] = {
            "Rotary positions applied in place to a fused qkv row: q heads, then the key heads, the "
            "value heads untouched. `mode` is neox, gptj, mrope, imrope or axial; the yarn, llama3 "
            "and ladder parameters adjust the frequency ladder."),
+    SCHEMA("rope_rows", pRope, oRope,
+           "the same rotation under its row-form name: a plugin written for libr4d's one-angle-a-"
+           "(token, pair) launch resolves here, and libr3d launches it as `rope` (byte-identical)."),
     SCHEMA("kv_store", pKvStore, oKvStore,
            "K and V into a paged cache at slot_mapping's slots, converting to the cache's dtype. A "
            "negative slot is skipped; the cache is [blocks, kv_heads, block_size, 2*head_dim]."),
@@ -748,7 +762,7 @@ static const RadOpSchema kSchemas[] = {
     SCHEMA("gemm_nt_f32", pGemm, oGemm,
            "BF16 activations times F32 weights, F32 accumulation and output; preserves routing "
            "and index gate precision."),
-    SCHEMA("gemm_nt_q", pGemmQ, oGemmQ,
+    SCHEMA("gemm_nt_q", r3d_i8_gemm::params, r3d_i8_gemm::operands,
            "The same product against a quantised weight. `dtype` names the scheme: fp8a16 a bf16 "
            "activation against E4M3 codes, fp8a8 quant_act_fp8's codes and scales, i8a8 int8 on "
            "both axes. `group` is the activation's scale width; `pb1` and `pb2` the weight's block, "
@@ -796,6 +810,10 @@ static const RadOpSchema kSchemas[] = {
            "Absent, every token commits: the read is at offset zero and the last "
            "(width-1)*dilation inputs land at offset zero, which is the prefill chunk. "
            "`resid` absent drops the add and leaves the plain convolution."),
+    SCHEMA("causal_conv1d", pCausalConv, oCausalConv,
+           "y[t] = sum_j w[c][j] * x[t - (width-1-j)], ple_conv at dilation one with no "
+           "activation and no residual: LFM2's short convolution, whose gates the caller applies. "
+           "The window, `has_init`, `cache_idx` and `num_accepted` are ple_conv's."),
     SCHEMA("kda_update", pKdaUpdate, oKdaUpdate,
            "Bounded per-channel KDA recurrence. verify stores candidate states; prefill commits final state. "
            "Absolute cu offsets, accepted-prefix read slot, optional cold initialization, no output norm."),
@@ -1207,16 +1225,16 @@ extern "C" void r3d_cfg_topk(const RadArgs* a, R3dTopkCfg* out) {
  * from, capped at 16 MiB. Attaching scratch makes the row non-concurrent (rad_kernel_concurrent is
  * `scratch == nullptr`), which is the cost of the split. */
 static int64_t attn_scratch(const RadArgs* a) {
-    /* Sized from the shape: a scratch hook runs at declare, when the operands' shapes are bound
-     * but every tensor's `data` is still null. A hook that required data would answer 0 and the
-     * split pass would find no buffer. gemm_scratch sizes from RadParam dims for the same reason. */
-    if (!a || a->n_t < 1 || a->t[0].rank == 0) return 0;
-    long long n_head = 0, head_dim = 0;
-    const int64_t nh = rad_args_geti(a, "n_head", &n_head) ? n_head : 0;
-    if (!rad_args_geti(a, "head_dim", &head_dim) || !head_dim || !nh) return 0;
-    const long long rows = rad_tensor_numel(&a->t[0]) / (nh * head_dim);
-    if (rows <= 0) return 0;
-    const long long want = rows * nh * 8 * 132 * (long long)sizeof(float);
+    /* Sized from the geometry alone: the builder calls a scratch hook at declare with the band's
+     * params and no tensors (rad_builder.cpp), so a hook that read an operand's shape would answer
+     * 0, the shim would halve the slice count to 1 and one wave a KV head would walk the whole
+     * context. The decode band is q_len <= 16 (cAttnBf16Decode), so the query rows are at most
+     * 16 * max_seqs; 8 is pick_splits' widest count. gemm_scratch sizes from RadParam dims for
+     * the same reason. */
+    long long n_head = 0, max_seqs = 0;
+    if (!a || !rad_args_geti(a, "n_head", &n_head) || n_head <= 0) return 0;
+    if (!rad_args_geti(a, "max_seqs", &max_seqs) || max_seqs < 1) max_seqs = 1;
+    const long long want = 16 * max_seqs * n_head * 8 * 132 * (long long)sizeof(float);
     const long long cap = 16LL << 20;
     return want < cap ? want : cap;
 }
@@ -1352,7 +1370,8 @@ static const RadConstraint cHadQuantFp8[] = { C_IN("dtype", "bf16"), C_EQ("group
 static const RadConstraint cGatedHadQuantFp8[] = { C_IN("dtype", "bf16"), C_EQ("group", 128),
                                                    C_EQ("n", 128) };
 static const RadConstraint cQuantCols[] = { C_IN("dtype", "bf16"), C_DIV("n", 8) };
-static const RadConstraint cHadQuantI8g[] = { C_IN("dtype", "bf16"), C_EQ("group", 128), C_EQ("n", 128) };
+static const RadConstraint cHadQuantI8g[] = { C_IN("dtype", "bf16"), C_EQ("group", 128),
+                                              C_DIV("n", 128) };
 static const RadConstraint cGatedHadQuantI8g[] = { C_IN("dtype", "bf16"), C_EQ("group", 128),
                                                    C_EQ("n", 128) };
 static const RadConstraint cRmsQuantI8[] = { C_IN("dtype", "bf16"), C_DIV("n", 16) };
@@ -1409,6 +1428,10 @@ static const RadConstraint cGdnConvUpdW4[] = { C_GE("q_len", 1), C_EQ("head_k", 
 static const RadConstraint cPleConv[]   = { C_IN("dtype", "bf16"), C_GE("width", 1),
                                             C_LE("width", 5), C_GE("dilation", 1),
                                             C_LE("dilation", 4) };
+/* Undilated, so the history is width-1 <= 7: inside both the kernel's 8 taps (kPcMaxW) and its
+ * 16-slot write-back window (kPcMaxHist). Width 1 has no history and no model declares it. */
+static const RadConstraint cCausalConv[] = { C_IN("dtype", "bf16"), C_GE("width", 2),
+                                             C_LE("width", 8) };
 static const RadConstraint cGdnRecurrent[] = { C_GE("q_len", 1), C_EQ("head_k", 128),
                                               C_EQ("head_v", 128) };
 static const RadConstraint cKdaUpdate[] = {
@@ -1433,6 +1456,16 @@ static const RadConstraint cMoeGemmQ[] = { C_IN("dtype", "fp8a8f32"), C_GE("n_ex
                                            C_GE("top_k", 1) };
 static const RadConstraint cMoeGemmMxfp4[] = { C_IN("dtype", "mxfp4a8"), C_GE("n_expert", 1),
                                                C_GE("top_k", 1) };
+#ifdef R3D_EXPERT_IQR
+#define IQR_GATE_CONSTRAINTS(even, odd) { C_IN("dtype", "i8a8h"), C_IN("a_order", "token"), \
+       C_GE("M", 1), C_LE("M", 2048), C_EQ("N", even), C_EQ("N_odd", odd), C_EQ("K", 2560), \
+       C_EQ("K_odd", 2560), C_EQ("n_expert", 512), C_EQ("top_k", 10), C_EQ("group", 128), \
+       C_EQ("a_group", 128), C_EQ("parts", 2) }
+static const RadConstraint cIqrGateEvenWide[] = IQR_GATE_CONSTRAINTS(768, 512);
+static const RadConstraint cIqrGateOddWide[] = IQR_GATE_CONSTRAINTS(512, 768);
+static const RadConstraint cIqrGateFull[] = IQR_GATE_CONSTRAINTS(1280, 1280);
+#undef IQR_GATE_CONSTRAINTS
+#endif
 static const RadConstraint cMoeGemmQW4A8[] = { C_IN("dtype", "w4a8"), C_GE("n_expert", 1),
                                                C_GE("top_k", 1) };
 static const RadConstraint cMoeGemmW4A4[] = { C_IN("dtype", "w4a4"), C_GE("n_expert", 1),
@@ -1515,11 +1548,6 @@ static const RadConstraint cGemmQFp8a16[] = { C_IN("dtype", "fp8a16"),
                                               C_LE("M", 16), C_DIV("K", 128), C_GE("N", 1) };
 static const RadConstraint cGemmQFp8a8[]  = { C_IN("dtype", "fp8a8"),
                                               C_EQ("group", R3D_FP8_BLOCK), C_GE("M", 1),
-                                              C_LE("M", 16), C_DIV("K", 128), C_GE("N", 1) };
-/* The int8 GEMM's constraints. No row uses them: a row must name an entry point the library
- * defines, or the plugin fails to load. */
-static const RadConstraint cGemmQI8[]     = { C_IN("dtype", "i8a8"),
-                                              C_EQ("group", R3D_W8_GROUP), C_GE("M", 1),
                                               C_LE("M", 16), C_DIV("K", 128), C_GE("N", 1) };
 
 /* ================================================================== the rows
@@ -1605,7 +1633,22 @@ static const RadConstraint cDflashSelect[] = { C_IN("dtype", "bf16"), C_GE("M", 
                                                C_LE("top_k", 256), C_GE("rank", 1),
                                                C_GE("n_vocab", 1) };
 
+#ifdef R3D_EXPERT_IQR
+template<size_t Count>
+static constexpr RadKernelInfo iqr_gate(const char* name, const RadConstraint (&constraints)[Count]) {
+       return {name, "moe_gemm_q", "moe", "Routed IQR gate and up projections in sorted slot order",
+              "even/odd expert tables; each half padded to the wider class; dropped rows zeroed",
+              "token i8 and f32 group scales; trellis u4, MAD16 and row/column f32 scales; bf16 result",
+              RAD_DOMAIN_DEVICE, R3D_PRIO_ONLY, constraints, Count, nullptr, 0, nullptr, nullptr, nullptr,
+              r3dh_moe_iqr_launch, nullptr, r3dh_moe_iqr_layout, r3dh_moe_iqr_relayout,
+              r3dh_moe_iqr_shape, r3dh_moe_iqr_unrelayout};
+}
+#endif
+
 static const RadKernelInfo kKernels[] = {
+#ifdef R3D_DENSE_IQR
+    r3d_i8_gemm::packed,
+#endif
 /* ------------------------------------------------------------------ r3d_model_bf16.hip
  *
  * One workgroup a row. The `shape` column states the geometry the grid is built for; the
@@ -1626,6 +1669,18 @@ static const RadKernelInfo kKernels[] = {
   "f32 x, y and gain, fp32 reduction",
   RAD_DOMAIN_DEVICE, R3D_PRIO_ONLY,
   ROW(cNormF32), NOTUNE,
+  nullptr, nullptr, r3d_rad_rmsnorm, nullptr, nullptr, nullptr,
+  r3d_shape_rmsnorm },
+
+/* rmsnorm under its row-form name (libr4d's rmsnorm_rows): the same launch, so a per-head q/k
+ * norm declared for the rows form has a device row on this part too. */
+{ "rmsnorm_rows_bf16", "rmsnorm_rows", "norm",
+  "root-mean-square norm with a gain, two passes over the row, under its row-form name",
+  "any n; a workgroup a row (a wave for a head-wide row); the sum of squares accumulates in f32 "
+  "and only the store narrows; byte-identical to rmsnorm",
+  "bf16 x and y, bf16 or f32 gain, fp32 reduction",
+  RAD_DOMAIN_DEVICE, R3D_PRIO_ONLY,
+  ROW(cNormBf16), NOTUNE,
   nullptr, nullptr, r3d_rad_rmsnorm, nullptr, nullptr, nullptr,
   r3d_shape_rmsnorm },
 
@@ -1811,8 +1866,19 @@ static const RadKernelInfo kKernels[] = {
 
 { "rope_bf16", "rope", "attn",
   "rotary positions applied in place to a fused qkv row, neox and gptj pair layouts",
-  "head_dim even; rotary_dim optional and even, defaulting to head_dim; a wave a head; the "
-  "angles from accurate powf and sincosf, the position divided by `scale`",
+  "head_dim even; rotary_dim optional and even, defaulting to head_dim; the `rotary` and the "
+  "proportional `head` ladder; a wave a head; the angles from accurate powf and sincosf, the "
+  "position divided by `scale`",
+  "bf16 qkv in place, i32 positions, fp32 angles",
+  RAD_DOMAIN_DEVICE, R3D_PRIO_ONLY,
+  ROW(cRope), NOTUNE,
+  nullptr, nullptr, r3d_rad_rope, nullptr, nullptr, nullptr, r3d_shape_rope },
+
+/* rope under its row-form name (libr4d's rope_rows): the same launch. */
+{ "rope_rows_bf16", "rope_rows", "attn",
+  "rotary positions applied in place, one thread a rotated pair, under its row-form name",
+  "head_dim even; rotary_dim optional and even; the `rotary` and the proportional `head` ladder "
+  "(LFM3's partial rotary on its full layers); neox and gptj pairings; byte-identical to rope",
   "bf16 qkv in place, i32 positions, fp32 angles",
   RAD_DOMAIN_DEVICE, R3D_PRIO_ONLY,
   ROW(cRope), NOTUNE,
@@ -1992,8 +2058,9 @@ static const RadKernelInfo kKernels[] = {
 
 { "had_quant_act_i8g_bf16", "had_quant_act_i8g", "quant",
   "a 128-wide block Hadamard, then per-group int8: the rotated form for the int8 trunk GEMMs",
-  "n == group == 128 (single-group form, the FWHT runs once per wave so its DPP stages stay out of "
-  "a loop); the codes row-major for the i8a8 dot2 GEMM, the scale carrying the 1/sqrt(128)",
+  "group 128, n a multiple of it: a workgroup is one wave and one (row, group), so the FWHT runs "
+  "once per wave and its DPP stages stay out of a loop; the codes row-major for the i8a8 GEMMs, "
+  "the scale libref's amax / 127 (1 for an all-zero group)",
   "bf16 in, int8 codes (row-major), f32 scale per group",
   RAD_DOMAIN_DEVICE, R3D_PRIO_ONLY,
   ROW(cHadQuantI8g), NOTUNE,
@@ -2265,6 +2332,16 @@ static const RadKernelInfo kKernels[] = {
   ROW(cPleConv), NOTUNE,
   nullptr, nullptr, r3d_rad_ple_conv, nullptr, nullptr, nullptr, nullptr },
 
+/* LFM2's and LFM3's short convolution on the same kernel: its SILU=false arm, no residual, the
+ * family of ple_conv beside which it sits. */
+{ "causal_conv1d_bf16", "causal_conv1d", "norm",
+  "depthwise causal conv with no activation (ple_conv's kernel); one thread a channel",
+  "width 2 to 8, undilated",
+  "bf16 activations, weights and conv state; i32 cu, slots, has_init and num_accepted",
+  RAD_DOMAIN_DEVICE, R3D_PRIO_ONLY,
+  ROW(cCausalConv), NOTUNE,
+  nullptr, nullptr, r3d_rad_causal_conv1d, nullptr, nullptr, nullptr, nullptr },
+
 { "expert_scale_bf16", "expert_scale", "moe",
   "Each routing weight times its expert's own per-expert scale, in place",
   "the router's renormalised top-k weight scaled by the [n_expert] table, an out-of-table id "
@@ -2353,6 +2430,11 @@ static const RadKernelInfo kKernels[] = {
   * registers (the 256-entry decode table), the f16 wave-matrix, the even experts in `w` and the
   * odd in `w_odd`.
   */
+#ifdef R3D_EXPERT_IQR
+ iqr_gate("model_moe_iqr_768_512_strict", cIqrGateEvenWide),
+ iqr_gate("model_moe_iqr_512_768_strict", cIqrGateOddWide),
+ iqr_gate("model_moe_iqr_1280_1280_strict", cIqrGateFull),
+#endif
  { "moe_gemm_q_e4m3", "moe_gemm_q", "moe",
   "The grouped quantised GEMM over the model's fp8a8f32 experts: y[i] = a[sorted_tok[i]/top_k] @ "
   "w_e^T with a per-(row, grid-of-K) scale fold, e the expert of sorted row i",
@@ -2646,6 +2728,8 @@ static const RadKernelInfo kKernels[] = {
    ROW(cGemmQW8A8M64), NOTUNE,
    nullptr, nullptr, r3d_rad_gemm_nt_q_w8a8_m64,
    nullptr, nullptr, nullptr, r3d_shape_gemm_nt_q_w8a8 },
+
+    r3d_i8_gemm::native,
 
     { "silu_mul_bf16", "silu_mul", "elem",
       "silu(gate) * up over one fused gate_up plane, the gate the first half",

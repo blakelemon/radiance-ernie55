@@ -125,10 +125,20 @@ inline SchedMetrics bridge_metrics(const rad::SchedMetrics& m) {
     o.prefill_tokens = m.prefill_tokens;   o.decode_tokens = m.decode_tokens;
     o.draft_tokens = m.draft_tokens;       o.draft_accepted = m.draft_accepted;
     o.draft_refills = m.draft_refills;     o.draft_refill_tokens = m.draft_refill_tokens;
+    o.window_seed_failures = m.window_seed_failures;
+    o.draft_window_stale_ckpts = m.draft_window_stale_ckpts;
+    o.draft_gated_steps = m.draft_gated_steps;
+    o.draft_acc_gated_steps = m.draft_acc_gated_steps;
+    o.draft_reach_declined_steps = m.draft_reach_declined_steps;
+    o.draft_spec_off_seqs = m.draft_spec_off_seqs;
     o.lookup_proposals = m.lookup_proposals;     o.lookup_held = m.lookup_held;
     o.lookup_held_drafts = m.lookup_held_drafts; o.lookup_held_hits = m.lookup_held_hits;
     o.suffix_steps = m.suffix_steps;             o.suffix_rows = m.suffix_rows;
     o.suffix_accepted = m.suffix_accepted;       o.suffix_held_ahead = m.suffix_held_ahead;
+    o.draft_zero_cycles = m.draft_zero_cycles;   o.draft_probe_cycles = m.draft_probe_cycles;
+    o.draft_zero_moves = m.draft_zero_moves;
+    o.hybrid_lookup = m.hybrid_lookup;           o.hybrid_head = m.hybrid_head;
+    o.hybrid_unahead = m.hybrid_unahead;
     o.linear_hit_rate = m.linear_hit_rate;
     o.attn_cached_tokens = m.attn_cached_tokens;
     o.linear_cached_tokens = m.linear_cached_tokens;
@@ -158,9 +168,18 @@ inline SchedMetrics bridge_metrics(const rad::SchedMetrics& m) {
     o.mixed_step_target_misses = m.mixed_step_target_misses;
     o.mixed_step_target_prefill_cap = m.mixed_step_target_prefill_cap;
     o.decode_rows_unspeculated = m.decode_rows_unspeculated;
+    for (int i = 0; i < (int)std::size(m.loras) && i < (int)std::size(o.loras); ++i) {
+        o.loras[i].requests      = m.loras[i].requests;
+        o.loras[i].prompt_tokens = m.loras[i].prompt_tokens;
+        o.loras[i].output_tokens = m.loras[i].output_tokens;
+        o.loras[i].running       = m.loras[i].running;
+    }
     o.step_ns = m.step_ns;  o.step_ns_decode = m.step_ns_decode;
     o.step_ns_decode_best = m.step_ns_decode_best;
     o.step_ns_decode_recent = m.step_ns_decode_recent;
+    o.step_open_phase = m.step_open_phase;  o.step_open_ns = m.step_open_ns;
+    o.encode_items = m.encode_items;      o.encode_patches = m.encode_patches;
+    o.encode_ns = m.encode_ns;            o.encode_pending = m.encode_pending;
     return o;
 }
 
@@ -221,6 +240,13 @@ public:
 
     int64_t reset_prefix_cache() override { return s_->reset_prefix_cache(); }
 
+    /* The engine's LoRA slot names, indexed the same as ReqStat::lora_slot and the metrics'
+     * loras array. Wired by the engine beside the other callbacks. */
+    void set_lora_names(std::function<std::vector<std::string>()> f) { lora_names_ = std::move(f); }
+    std::vector<std::string> lora_names() const override {
+        return lora_names_ ? lora_names_() : std::vector<std::string>{};
+    }
+
     int release_session(const std::string& label, uint64_t id, int64_t keep_tokens,
                         SessionReleased* out) override {
         SessionRelease r;
@@ -267,12 +293,15 @@ public:
             occ->host_cap_bytes = held.host_cap_bytes;
         }
         const uint64_t now = rad_mono_ns();
+        const std::vector<std::string> lnames = lora_names();
         out->reserve(v.size());
         for (const IdleTiers::SessionInfo& s : v) {
             SessionStat o;
             o.id        = s.id;
             o.model     = s.model;
             o.label     = s.label;
+            o.lora      = s.last_lora_slot >= 0 && s.last_lora_slot < (int)lnames.size()
+                              ? lnames[(size_t)s.last_lora_slot] : std::string();
             o.n_tokens  = s.n_tokens;
             o.bytes     = s.bytes;
             o.idle_s    = now > s.last_used_ns  ? (double)(now - s.last_used_ns)  / 1e9 : 0.0;
@@ -293,6 +322,7 @@ public:
     int requests(std::vector<RequestStat>* out) const override {
         std::vector<Scheduler::ReqStat> raw(256);
         const int n = s_->observed_requests(raw.data(), (int)raw.size());
+        const std::vector<std::string> lnames = lora_names();
         out->clear();
         out->reserve((size_t)n);
         for (int i = 0; i < n; ++i) {
@@ -317,6 +347,8 @@ public:
             o.kv_tokens       = r.kv_tokens;
             o.n_draft         = r.n_draft;
             o.slot            = r.slot;
+            o.lora = r.lora_slot >= 0 && r.lora_slot < (int)lnames.size() ? lnames[(size_t)r.lora_slot]
+                                                                           : std::string();
             o.age_s           = r.age_s;
             o.ttft_s          = r.ttft_s;
             o.prefill_s       = r.prefill_s;
@@ -339,6 +371,7 @@ private:
     const IdleTiers*      tiers_ = nullptr;
     /* Ids start at 1: zero is the "no request" value the sink and the metrics use. */
     std::atomic<uint64_t> next_{1};
+    std::function<std::vector<std::string>()> lora_names_;
 };
 
 /* ================================================================== text */
@@ -698,6 +731,7 @@ public:
                 out->parser            = b.parser;
                 out->think_open        = b.think_open;
                 out->think_close       = b.think_close;
+                out->think_frame       = b.think_frame;
                 out->think_starts_open = b.think_starts_open;
                 return RAD_OK;
             }
@@ -749,6 +783,7 @@ public:
         const ReasoningMarkers rm = rp->reasoning();
         out->think_open        = rm.open;
         out->think_close       = rm.close;
+        out->think_frame       = rm.frame;
         out->think_starts_open = rm.starts_open;
         out->parser = std::make_shared<ReplyParserBridge>(std::move(rp));
         if (!built_key.empty()) {
@@ -759,6 +794,7 @@ public:
             b.parser            = out->parser;
             b.think_open        = out->think_open;
             b.think_close       = out->think_close;
+            b.think_frame       = out->think_frame;
             b.think_starts_open = out->think_starts_open;
             std::lock_guard<std::mutex> lk(built_mu_);
             if (built_.size() >= 32) built_.clear();
@@ -778,7 +814,7 @@ private:
         bool grammar_lazy = false;
         std::vector<SamplingParams::GrammarTrigger> triggers;
         std::shared_ptr<IReplyParser> parser;
-        std::string think_open, think_close;
+        std::string think_open, think_close, think_frame;
         bool think_starts_open = false;
     };
 
@@ -891,13 +927,13 @@ public:
         return p_->encoder_video(bytes, n, ratio, max_side, max_frames, out, why);
     }
 
-    int encoder_audio(const uint8_t* bytes, size_t n, int32_t rate, int64_t max_samples,
-                      std::vector<float>* out, std::string* why) override {
+    int encoder_audio(const uint8_t* bytes, size_t n, int32_t rate, int32_t channels,
+                      int64_t max_samples, std::vector<float>* out, std::string* why) override {
         if (!p_ || !mm::decoder_available()) {
             if (why) *why = "no audio decoder is available";
             return RAD_E_UNSUPPORTED;
         }
-        return p_->encoder_audio(bytes, n, rate, max_samples, out, why);
+        return p_->encoder_audio(bytes, n, rate, channels, max_samples, out, why);
     }
 
     int32_t audio_rate() const override {

@@ -48,6 +48,16 @@ static inline void scale_row(float* v, int64_t n, float s) {
     for (; i < n; ++i) v[i] *= s;
 }
 
+/* The rotated per-row int8 forms store their codes in the card's step order (libref's
+ * i8_step_pos): byte c of each sixteen holds column c with bits 2 and 3 swapped, so the two middle
+ * quarters of every step trade places. Permuting the values before the encode is the same
+ * permutation of the codes (each code depends only on its own value and the row's scale, and the
+ * amax is order-free), so the stored bytes are libref's. */
+static inline void i8_step_perm(float* v, int64_t n) {
+    for (int64_t k = 0; k < n; k += 16)
+        for (int64_t j = 0; j < 4; ++j) std::swap(v[k + 4 + j], v[k + 8 + j]);
+}
+
 /* ------------------------------------------------------------------ quant_act_i8 */
 /* libref's arithmetic (ref_quant.cpp): one scale per row, max(amax, 1e-8) / 127, codes rounded to
  * nearest even and stored in the step order, the middle two dwords of every 16-byte step
@@ -144,6 +154,7 @@ AVX_KERNEL(had_quant_act_i8) {
     const int64_t g = p_int(a, "group", 0);
     if (n <= 0 || !pow2(g) || n % g != 0) return RAD_E_SHAPE;
     if (g > AVX_HAD_MAX) return RAD_E_UNSUPPORTED;
+    if (n % 16) return RAD_E_SHAPE;                 /* whole steps, as libref */
     const int64_t rows = numel(x) / n;
     if (rows <= 0 || numel(q) < rows * n || numel(s) < rows) return RAD_E_SHAPE;
     const float norm = 1.0f / std::sqrt((float)g);
@@ -156,6 +167,7 @@ AVX_KERNEL(had_quant_act_i8) {
             const float* v = in_row(x, rowoff(x, r, n), n, buf);
             if (v != buf) std::memcpy(buf, v, (size_t)n * sizeof(float));
             fwht_row(buf, n, g);
+            i8_step_perm(buf, n);
             const float amax = row_amax(buf, n);
             cvt_scaled_f32_to_i8(buf, amax > 0.0f ? 127.0f / amax : 0.0f,
                                  (int8_t*)byte_at(q->data, q->dtype, rowoff(q, r, n)), n);
@@ -172,6 +184,7 @@ AVX_KERNEL(had_quant_act_i8) {
         const float* v = in_row(x, rowoff(x, r, n), n, buf);
         if (v != buf) std::memcpy(buf, v, (size_t)n * sizeof(float));
         fwht_row(buf, n, g);
+        i8_step_perm(buf, n);
         const float amax = row_amax(buf, n);
         scale_row(buf, n, amax > 0.0f ? 127.0f / amax : 0.0f);
         out_row(q, rowoff(q, r, n), n, buf);
@@ -200,6 +213,7 @@ AVX_KERNEL(rmsnorm_had_quant_i8) {
     const float wadd = p_f32(a, "wadd", 0.0f);
     if (n <= 0 || !pow2(g) || n % g != 0) return RAD_E_SHAPE;
     if (g > AVX_HAD_MAX) return RAD_E_UNSUPPORTED;
+    if (n % 16) return RAD_E_SHAPE;                 /* whole steps, as libref */
     const int64_t rows = numel(x) / n;
     if (rows <= 0 || numel(q) < rows * n || numel(s) < rows || numel(w) < n) return RAD_E_SHAPE;
     if (res && numel(res) < rows * n) return RAD_E_SHAPE;
@@ -251,6 +265,7 @@ AVX_KERNEL(rmsnorm_had_quant_i8) {
         if (ob) out_row(ob, rowoff(ob, r, n), n, buf);   /* post-norm, pre-rotation */
 
         fwht_row(buf, n, g);
+        i8_step_perm(buf, n);
         const float amax = row_amax(buf, n);
         scale_row(buf, n, amax > 0.0f ? 127.0f / amax : 0.0f);
         out_row(q, rowoff(q, r, n), n, buf);
@@ -272,11 +287,15 @@ AVX_KERNEL(gated_had_quant_i8) {
     if (!ga->data || !q->data || !s->data) return RAD_E_INVAL;
     const int64_t n = p_int(a, "n", 0);
     const int64_t g = p_int(a, "group", 0);
-    static const char* kActs[] = { "silu", "sigmoid" };
-    const int act = p_enum(a, "act", kActs, 2, (int)p_int(a, "mode", 0));
+    static const char* kActs[] = { "silu", "sigmoid", "situ" };
+    const int act = p_enum(a, "act", kActs, 3, (int)p_int(a, "mode", 0));
+    const float gcap = p_f32(a, "gate_cap", 0.0f), ucap = p_f32(a, "up_cap", 0.0f);
     if (n <= 0 || !pow2(g) || n % g != 0) return RAD_E_SHAPE;
-    if (act != 0 && act != 1) return RAD_E_INVAL;
+    if (act < 0 || act > 2) return RAD_E_INVAL;
+    if (!(gcap >= 0.0f) || !(ucap >= 0.0f) || !std::isfinite(gcap) || !std::isfinite(ucap))
+        return RAD_E_INVAL;
     if (g > AVX_HAD_MAX) return RAD_E_UNSUPPORTED;
+    if (n % 16) return RAD_E_SHAPE;                 /* whole steps, as libref */
     const int64_t rows = numel(q) / n;
     if (rows <= 0 || numel(s) < rows) return RAD_E_SHAPE;
     if (numel(ga) < rows * (up ? n : 2 * n)) return RAD_E_SHAPE;
@@ -293,18 +312,27 @@ AVX_KERNEL(gated_had_quant_i8) {
         const float* uv = up ? in_row(up, rowoff(up, r, n), n, ubuf) : gv + n;
 
         int64_t i = 0;
-        for (; i + VF_N <= n; i += VF_N) {
-            const vf gt = vf_loadu(gv + i);
-            const vf act_v = (act == 1) ? vf_sigmoid(gt) : vf_silu(gt);
-            vf_storeu(out + i, vf_mul(act_v, vf_loadu(uv + i)));
-        }
+        /* SiTU runs scalar: its tanh is libm's, not the vector approximation silu uses. */
+        if (act != 2)
+            for (; i + VF_N <= n; i += VF_N) {
+                const vf gt = vf_loadu(gv + i);
+                const vf act_v = (act == 1) ? vf_sigmoid(gt) : vf_silu(gt);
+                vf_storeu(out + i, vf_mul(act_v, vf_loadu(uv + i)));
+            }
         for (; i < n; ++i) {
             const float gt = gv[i];
+            if (act == 2) {
+                const float ga_ = gcap > 0 ? gcap * std::tanh(gt / gcap) : gt;
+                const float ua_ = ucap > 0 ? ucap * std::tanh(uv[i] / ucap) : uv[i];
+                out[i] = ga_ * (1.0f / (1.0f + std::exp(-gt))) * ua_;
+                continue;
+            }
             const float sg = 1.0f / (1.0f + sc_exp(-gt));
             out[i] = (act == 1 ? sg : gt * sg) * uv[i];
         }
 
         fwht_row(out, n, g);
+        i8_step_perm(out, n);
         const float amax = row_amax(out, n);
         scale_row(out, n, amax > 0.0f ? 127.0f / amax : 0.0f);
         out_row(q, rowoff(q, r, n), n, out);
@@ -624,9 +652,9 @@ AVX_KERNEL(had_quant_act_i8g) {
 /* Quantising form: the rotation as one dense 128 x 128 f16 matrix per (part, group) (`tdense`,
  * which rad-convert composes from the pairs and angles as the weight's "t.dense" table), then the
  * block-scaled quantiser named by `out`: "fp8" E4M3 with scale amax / 448, or "i8" with scale
- * amax / 127, rounded to nearest; scale 1 for an all-zero group, as libref. The matrices are widened
- * to f32 once per call. Each group is a matrix-vector product summed in f32 (libref uses f64), so a
- * code on a rounding edge can differ from libref's. */
+ * amax / 127, rounded to nearest; scale 1 for an all-zero group, as libref. The matrices are
+ * widened to f32 once per call. Each group is a matrix-vector product summed in f32 (libref uses
+ * f64), so a code on a rounding edge can differ from libref's. */
 /* ---------------------------------------------------------------- the Gram accumulator
  *
  * h[k1][k2] += sum over rows of x[m][k1] * x[m][k2], where x is the dequantised E4M3 input, or a
@@ -637,7 +665,8 @@ AVX_KERNEL(had_quant_act_i8g) {
  *
  * Accumulation is f64 here (f32 on the device), as in libref: the result is consumed offline by
  * the packer, and the kbench tolerance covers the gap. The f64 inner reduction stays scalar; only
- * the dequantisation is vectorised, once per row into a scratch plane rather than in the k2 loop. */
+ * the dequantisation is vectorised, once per row into a scratch plane rather than in the k2
+ * loop. */
 AVX_KERNEL(gram_accum) {
     /* `a_scale` is optional; without it `a` is read as is (the bf16 form). */
     if (a->n_t < 3) return RAD_E_INVAL;

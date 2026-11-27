@@ -15,15 +15,23 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
 #include <map>
 #include <set>
-#include <sstream>
 #include <stdexcept>
 
 namespace rad::fleet {
 
+bool valid_name(const std::string& n) {
+    if (n.empty()) return false;
+    for (unsigned char ch : n)
+        if (ch == ':' || std::isspace(ch) || std::iscntrl(ch)) return false;
+    return true;
+}
+
 namespace {
+
+/* The largest size in MiB that is still a whole number of bytes in an int64. */
+constexpr int64_t kMaxMib = INT64_MAX / (1 << 20);
 
 /* ------------------------------------------------------------------ levels */
 
@@ -309,7 +317,8 @@ private:
         if (level != "server" && (in(kServerKeys, key) || key == "log")) return key + " belongs under server:";
         if (level != "memory" && level != "model" && in(kMemoryFlagKeys, key))
             return key + " belongs under memory: or a model";
-        if (level != "memory" && (key == "host-mib" || key == "disk-tier" || key == "card-headroom-mib"))
+        if (level != "memory" && (key == "host-mib" || key == "disk-tier" || key == "card-headroom-mib" ||
+                                  key == "pinned-numa-node"))
             return key + " belongs under memory:";
         if (level != "model" && flags_.count(key))
             return key + " is a per-model key; put it under the model or defaults:";
@@ -375,11 +384,25 @@ int Reader::read_memory(const Item& sec, FleetConfig* out) {
     for (const Item& it : items) {
         const std::string& k = it.key;
         if (k == "host-mib") {
-            if (int s = integer(it, 1, INT64_MAX / (1 << 20), &out->host_mib); s < 0) return s;
+            if (int s = integer(it, 1, kMaxMib, &out->host_mib); s < 0) return s;
             continue;
         }
         if (k == "disk-tier") {
             if (int s = scalar_text(it, &out->disk_tier); s < 0) return s;
+            continue;
+        }
+        if (k == "pinned-numa-node") {
+            /* A node number of the mbind mask's width, the device layer's bound; whether the host
+             * has that many nodes is a placement question the kernel answers, not a load error. */
+            int64_t node = 0;
+            if (int s = integer(it, 0, 1023, &node); s < 0) return s;
+            out->pinned_numa_node = (int)node;
+            continue;
+        }
+        /* The upper bound is the device's own ceiling on queues a card holds ahead of its streams
+         * (fleet.cpp kMaxQueuesAhead); a card holds no more whatever this says. */
+        if (k == "queue-reserve") {
+            if (int s = integer(it, 1, 24, &out->queue_reserve); s < 0) return s;
             continue;
         }
         if (k == "card-headroom-mib") {
@@ -393,7 +416,7 @@ int Reader::read_memory(const Item& sec, FleetConfig* out) {
                 if (c.key.empty() || *end || card < 0 || card > 255)
                     return fail(c.node, c.path + ": a card is named by its ordinal, 0 or above");
                 int64_t mib = 0;
-                if (int s = integer(c, 0, INT64_MAX / (1 << 20), &mib); s < 0) return s;
+                if (int s = integer(c, 0, kMaxMib, &mib); s < 0) return s;
                 out->card_headroom_mib[(int)card] = mib;
             }
             continue;
@@ -403,6 +426,8 @@ int Reader::read_memory(const Item& sec, FleetConfig* out) {
             valid.push_back("host-mib");
             valid.push_back("disk-tier");
             valid.push_back("card-headroom-mib");
+            valid.push_back("pinned-numa-node");
+            valid.push_back("queue-reserve");
             return refuse_key(it, "memory", "memory", valid);
         }
         if (int s = flag_args(it, &memory_args_); s < 0) return s;
@@ -548,8 +573,8 @@ int Reader::read_fleet_key(const Item& it, ModelEntry* e) {
                     if ((s = number(f, &e->flex.kv_weight)) == RAD_OK && !(e->flex.kv_weight > 0))
                         return fail(f.node, f.path + " must be above zero");
                 }
-                else if (pk == "experts" && fk == "min-mib")   s = integer(f, 0, INT64_MAX, &e->flex.experts_min_mib);
-                else if (pk == "experts" && fk == "max-mib")   s = integer(f, 0, INT64_MAX, &e->flex.experts_max_mib);
+                else if (pk == "experts" && fk == "min-mib")   s = integer(f, 0, kMaxMib, &e->flex.experts_min_mib);
+                else if (pk == "experts" && fk == "max-mib")   s = integer(f, 0, kMaxMib, &e->flex.experts_max_mib);
                 else {
                     const std::vector<std::string> c = pk == "kv"
                         ? std::vector<std::string>{ "min-tokens", "max-tokens", "weight" }
@@ -580,7 +605,7 @@ int Reader::read_fleet_key(const Item& it, ModelEntry* e) {
                 else if (v == "statics") e->park.vram = ParkSpec::Vram::Statics;
                 else {
                     int64_t mib = 0;
-                    if (integer(f, 1, INT64_MAX, &mib) < 0)
+                    if (integer(f, 1, kMaxMib, &mib) < 0)
                         return fail(f.node, f.path + " takes none, statics or a size in MiB");
                     e->park.vram = ParkSpec::Vram::Mib;
                     e->park.vram_mib = mib;
@@ -655,13 +680,6 @@ int Reader::build_model(const std::string& name, Node at, const std::vector<Item
     return RAD_OK;
 }
 
-bool valid_name(const std::string& n) {
-    if (n.empty()) return false;
-    for (unsigned char ch : n)
-        if (ch == ':' || std::isspace(ch) || std::iscntrl(ch)) return false;
-    return true;
-}
-
 int Reader::run(FleetConfig* out) {
     std::vector<Item> top;
     const Node root = tree_.crootref();
@@ -682,7 +700,7 @@ int Reader::run(FleetConfig* out) {
         else if (k == "groups")    s = read_groups(it, out);
         else if (k == "defaults")  defaults = &it;
         else if (k == "models")    models = &it;
-        else if (k.rfind("x-", 0) == 0) continue;
+        else if (k.starts_with("x-")) continue;
         else return refuse_key(it, "top", "top-level", as_vector(kTopKeys));
         if (s < 0) return s;
     }
@@ -816,14 +834,12 @@ int parse(const std::string& text, const std::string& origin, FleetConfig* out) 
 }
 
 int load(const std::string& path, FleetConfig* out) {
-    std::ifstream f(path, std::ios::binary);
-    if (!f) {
+    std::string text;
+    if (!read_file_bytes(path, &text)) {
         RAD_ERR("%s: cannot read the configuration: %s", path.c_str(), std::strerror(errno));
         return RAD_E_INVAL;
     }
-    std::ostringstream ss;
-    ss << f.rdbuf();
-    return parse(ss.str(), path, out);
+    return parse(text, path, out);
 }
 
 /* ------------------------------------------------------------------ the key reference */
@@ -877,7 +893,13 @@ void print_reference(FILE* to) {
         "\ncards: all | [N, ...]                  the cards models may use\n"
         "\nmemory:\n"
         "  host-mib: N                          pinned host RAM the process may hold\n"
-        "  disk-tier: DIR                       the prefix-cache disk tier and park files\n");
+        "  queue-reserve: N                     hardware queues each card keeps ready for its next\n"
+        "                                       stream, 1 to 24 (8). Each costs about 41 MiB of the\n"
+        "                                       card; lower it to give a model claiming a whole card\n"
+        "                                       the room, and do not lower it on a fleet that parks\n"
+        "  disk-tier: DIR                       the prefix-cache disk tier and park files\n"
+        "  pinned-numa-node: N                  prefer this NUMA node for pinned host memory\n"
+        "                                       (default: the node nearest each card)\n");
     print_keys(to, memory, "  ");
     fprintf(to,
         "\nscheduler:\n"

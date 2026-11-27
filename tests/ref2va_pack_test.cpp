@@ -14,6 +14,7 @@
 
 #include "util/json.h"
 
+#include <cmath>
 #include <fstream>
 #include <string>
 
@@ -125,6 +126,48 @@ TEST(pack_golden_fl2va) { check_case("fl2va"); }
 TEST(pack_golden_ref2va_all) { check_case("ref2va_all"); }
 TEST(pack_golden_chain) { check_case("chain"); }
 TEST(pack_golden_no_text) { check_case("no_text"); }
+TEST(pack_golden_guide) { check_case("guide"); }
+
+/* A song guide is a keyframe of the soundtrack alone. ComfyUI's PackedLayout puts it at
+ * cond_t = text_len + every reference's span + FRAME_RESCALE * frame, each channel's latents a
+ * time step on from there, at the target's width extremes, and MiniMaxH3AddGuide crops it to
+ * floor(audio_t - FRAME_RESCALE * frame) latents. The formula, written out, against the pack. */
+TEST(pack_song_guide_sits_on_the_videos_clock) {
+    const double rescale = 5.0 / 3.0;
+    const int text_len = 9, frame = 20;
+    const Ref2VAGeom g{ 12, 6, 8, 70 };
+    const int guide_t = (int)std::floor((double)g.audio_t - rescale * frame);   /* 36 */
+    CHECK_EQ(guide_t, 36);
+    const std::vector<Ref2VARef> refs = { { kR2VRefImage, 4, 4, 0, 0 },
+                                          { kR2VRefAudioOnly, 0, 0, 0, 5 } };
+    Ref2VAPack p, plain;
+    CHECK_EQ(ref2va_build(text_len, g, { { frame, 0, guide_t } }, refs, &p), 0);
+    CHECK_EQ(ref2va_build(text_len, g, {}, refs, &plain), 0);
+    /* Only the guide's rows were added, right after the prompt. */
+    CHECK_EQ(p.rows, plain.rows + 2 * guide_t);
+    REQUIRE_EQ(p.segs.size(), plain.segs.size() + 1);
+    const Ref2VASeg& s = p.segs[1];
+    CHECK_EQ(s.kind, kR2VCondAudio);
+    CHECK_EQ(s.start, (int64_t)text_len);
+    CHECK_EQ(s.end, (int64_t)text_len + 2 * guide_t);
+    CHECK_EQ(s.update, 0);
+    /* A picture spans 1 and a soundtrack its latents. */
+    const double cond_t = (double)text_len + 1.0 + 5.0 + rescale * frame;
+    const int64_t R = p.rows;
+    /* The target soundtrack's two width ends, the last segment but one. */
+    const int64_t a0 = p.segs[p.segs.size() - 2].start;
+    const int64_t a1 = a0 + g.audio_t;
+    for (int ch = 0; ch < 2; ++ch)
+        for (int i = 0; i < guide_t; ++i) {
+            const int64_t r = s.start + (int64_t)ch * guide_t + i;
+            CHECK_EQ(p.pos[(size_t)r], (float)(cond_t + (double)i));
+            CHECK_EQ(p.pos[(size_t)(R + r)], 0.0f);
+            CHECK_EQ(p.pos[(size_t)(2 * R + r)], p.pos[(size_t)(2 * R + (ch ? a1 : a0))]);
+        }
+    /* The target soundtrack starts at the clock's origin, so the guide's first latent shares a
+     * time with the target's at its frame. */
+    CHECK_EQ(p.pos[(size_t)a0], (float)(text_len + 1.0 + 5.0));
+}
 
 TEST(pack_rejects_negative_dims) {
     Ref2VAPack p;
@@ -142,7 +185,7 @@ TEST(pack_plain_matches_the_three_segment_order) {
     Ref2VAPack p;
     Ref2VAGeom g{ 3, 8, 10, 4 };
     CHECK_EQ(ref2va_build(5, g, {}, {}, &p), 0);
-    CHECK_EQ(p.segs.size(), 3u);
+    REQUIRE_EQ(p.segs.size(), 3u);
     CHECK_EQ(p.segs[0].kind, kR2VText);
     CHECK_EQ(p.segs[1].kind, kR2VAudio);
     CHECK_EQ(p.segs[2].kind, kR2VVideo);
@@ -218,7 +261,7 @@ TEST(pack_mod_groups_images_collapse_to_four) {
     /* Cells: text and the video target read the video schedule (r0 = 0), the photos the
      * video-pinned block (2S), the soundtrack the audio schedule (S). */
     CHECK(grp.r0 == std::vector<int64_t>({ 0, 2 * S, S, 0 }));
-    CHECK_EQ(grp.bound.size(), 5u);
+    REQUIRE_EQ(grp.bound.size(), 5u);
     CHECK_EQ(grp.bound.front(), 0);
     CHECK_EQ(grp.bound.back(), p.rows);
     /* The photo group spans the whole run of reference rows, from the prompt's end to the
@@ -255,7 +298,7 @@ TEST(pack_mod_groups_invariants_over_the_goldens) {
         ref2va_mod_groups(p, 1, {}, &a);
         ref2va_mod_groups(p, 64, {}, &b);
         CHECK(a.bound == b.bound);
-        CHECK(!a.bound.empty());
+        REQUIRE(!a.bound.empty());
         CHECK_EQ(a.bound.front(), 0);
         CHECK_EQ(a.bound.back(), p.rows);
         for (size_t i = 0; i + 1 < a.bound.size(); ++i)

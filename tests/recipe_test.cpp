@@ -51,7 +51,7 @@ TEST(a_command_line_rule_goes_ahead_of_the_file) {
     const RecipeRule* m = r.match("output.weight");
     REQUIRE(m != nullptr);
     CHECK_EQ(m->origin, std::string("--quant"));
-    CHECK_EQ(m->options.size(), (size_t)3);
+    REQUIRE_EQ(m->options.size(), (size_t)3);
     CHECK_EQ(m->options[0].first, std::string("codes"));
     CHECK_EQ(m->options[2].second, std::string("bf16"));
     CHECK_EQ(r.match("blk.0.attn_q.weight")->origin, std::string("file:1"));
@@ -472,6 +472,38 @@ TEST(the_museglimmer_iq4r_v4_recipe_selects_the_trellis_trunk) {
         CHECK(r.match(n) == nullptr);
 }
 
+/* S-V4 text rules plus int8 vision. The patch stem is not named, so it stays BF16. */
+TEST(the_museglimmer_iq4r_s_v4_i8vision_recipe_quantises_the_tower_linears) {
+    const std::string dir = std::string(__FILE__).substr(
+                                0, std::string(__FILE__).find_last_of('/')) + "/../data/recipes";
+    std::ifstream in(dir + "/museglimmer-30b-iq4r-s-v4-i8vision.recipe");
+    REQUIRE(in.good());
+    std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    Recipe r;
+    std::string why;
+    const char* old_calib = std::getenv("CALIB");
+    const std::string saved_calib = old_calib ? old_calib : "";
+    setenv("CALIB", "/tmp/muse-glimmer-calib", 1);
+    const int parse_rc = r.add_text(text, "museglimmer-30b-iq4r-s-v4-i8vision.recipe", &why);
+    if (old_calib) setenv("CALIB", saved_calib.c_str(), 1);
+    else unsetenv("CALIB");
+    REQUIRE_EQ(parse_rc, RAD_OK);
+    for (const char* n : { "v.blk.0.qkv.weight", "v.blk.49.fc2.weight", "v.mlp.fc1.weight",
+                           "v.proj.weight" }) {
+        const RecipeRule* m = r.match(n);
+        REQUIRE(m != nullptr);
+        CHECK_EQ(m->quantizer, std::string("rtn"));
+        CHECK(has_opt(m, "codes", "i8"));
+        CHECK(has_opt(m, "group", "128"));
+        CHECK(has_opt(m, "scale", "bf16"));
+    }
+    CHECK(r.match("v.patch.weight") == nullptr);
+    CHECK(r.match("v.blk.0.norm1.weight") == nullptr);
+    CHECK(r.match("v.blk.0.qkv.bias") == nullptr);
+    CHECK(has_opt(r.match("blk.0.ffn_down.weight"), "codes", "u3"));
+    CHECK(has_opt(r.match("blk.0.ffn_down.weight"), "calib", "/tmp/muse-glimmer-calib"));
+}
+
 /* The Flint recipes as they ship, over arch/flint's declared names. flint-iq8r: every trunk linear
  * (attention, the two dense layers, the shared expert's gate/up) IQ8R, the routed experts and the
  * shared expert's down projection rotated int8 at a bf16 scale a (row, 128 of K), the head plain
@@ -685,6 +717,194 @@ TEST(the_ling_flash_iq8r_w4nl64_recipe_decides_the_model_it_was_written_for) {
                            "blk.5.attn_kv_b.weight", "blk.5.attn_head_gate.weight",
                            "blk.0.ssm_conv.weight", "token_embd.weight", "output.weight" };
     for (const char* n : kept) CHECK(r.match(n) == nullptr);
+}
+
+/* The bf16 recipe with the drafter as it ships: only the drafter's weights have rules, so the trunk,
+ * the embedding and the lm_head keep the checkpoint's bf16, and qwen35_bf16 serves the container. */
+TEST(the_bf16_df2_recipe_quantises_the_drafter_only) {
+    std::string dir = __FILE__;
+    dir = dir.substr(0, dir.find_last_of('/')) + "/../data/recipes";
+    std::ifstream in(dir + "/q38-27b-bf16-df2.recipe");
+    REQUIRE(in.good());
+    std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    Recipe r;
+    std::string why;
+    REQUIRE_EQ(r.add_text(text, "q38-27b-bf16-df2.recipe", &why), RAD_OK);
+    CHECK_EQ(r.rules().size(), (size_t)8);
+
+    const char* kept[] = { "blk.3.attn_qg.weight", "blk.3.attn_k.weight", "blk.3.attn_v.weight",
+                           "blk.3.attn_output.weight", "blk.47.ssm_inz.weight",
+                           "blk.47.ssm_ab.weight", "blk.47.ssm_out.weight",
+                           "blk.47.ffn_gate_up.weight", "blk.47.ffn_down.weight", "output.weight",
+                           "token_embd.weight", "output_norm.weight" };
+    for (const char* n : kept)
+        CHECK(r.match(n) == nullptr);
+    for (const char* n : { "dflash.fc.weight", "dflash.blk.1.attn_q.weight",
+                           "dflash.blk.1.attn_output.weight", "dflash.blk.1.ffn_down.weight" }) {
+        const RecipeRule* m = r.match(n);
+        REQUIRE(m != nullptr);
+        CHECK(has_opt(m, "codes", "fp4_e2m1"));
+        CHECK(has_opt(m, "scale", "e8m0"));
+    }
+    const RecipeRule* dh = r.match("dflash.draft_head.weight");
+    REQUIRE(dh != nullptr);
+    CHECK(has_opt(dh, "codes", "u2"));
+    CHECK(has_opt(dh, "zero", "u8"));
+}
+
+/* The bf16x12 recipe as it ships: the nine trunk linears qwen35_bf16 declares are packed
+ * losslessly (bf16x12, at its default table size), the drafter is decided by the bf16-df2
+ * recipe's own rules, so --reuse can take its weights from that container, and the head, the
+ * embedding, the norms, the delta net's other parameters and the vision tower keep the
+ * checkpoint's bf16. */
+TEST(the_bf16x12_df2_recipe_packs_the_trunk_and_quantises_the_drafter_as_bf16_df2_does) {
+    std::string dir = __FILE__;
+    dir = dir.substr(0, dir.find_last_of('/')) + "/../data/recipes";
+    auto load = [&](const char* file, Recipe* r) {
+        std::ifstream in(dir + "/" + file);
+        std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        std::string why;
+        return in.good() && r->add_text(text, file, &why) == RAD_OK;
+    };
+    Recipe r, df2;
+    REQUIRE(load("q38-27b-bf16x12-df2.recipe", &r));
+    REQUIRE(load("q38-27b-bf16-df2.recipe", &df2));
+    CHECK_EQ(r.rules().size(), (size_t)17);
+
+    const char* trunk[] = { "blk.3.attn_qg.weight", "blk.3.attn_k.weight", "blk.3.attn_v.weight",
+                            "blk.3.attn_output.weight", "blk.0.ssm_in.weight",
+                            "blk.47.ssm_z.weight", "blk.62.ssm_out.weight",
+                            "blk.0.ffn_gate_up.weight", "blk.63.ffn_down.weight" };
+    for (const char* n : trunk) {
+        const RecipeRule* m = r.match(n);
+        REQUIRE(m != nullptr);
+        CHECK_EQ(m->quantizer, std::string("bf16x12"));
+        CHECK(m->options.empty());
+    }
+    /* A drafter linear is decided by its own rule, not a trunk pattern. */
+    const char* drafter[] = { "dflash.draft_head.weight", "dflash.fc.weight",
+                              "dflash.blk.0.attn_q.weight", "dflash.blk.4.attn_k.weight",
+                              "dflash.blk.4.attn_v.weight", "dflash.blk.4.attn_output.weight",
+                              "dflash.blk.0.ffn_gate_up.weight", "dflash.blk.4.ffn_down.weight" };
+    for (const char* n : drafter) {
+        const RecipeRule* a = r.match(n);
+        const RecipeRule* b = df2.match(n);
+        REQUIRE(a != nullptr && b != nullptr);
+        CHECK_EQ(a->pattern, b->pattern);
+        CHECK_EQ(a->quantizer, b->quantizer);
+        CHECK(a->options == b->options);
+    }
+    const char* kept[] = { "output.weight", "token_embd.weight", "output_norm.weight",
+                           "blk.3.attn_norm.weight", "blk.3.attn_q_norm.weight",
+                           "blk.3.attn_k_norm.weight", "blk.47.ffn_norm.weight",
+                           "blk.47.ssm_conv1d.weight", "blk.47.ssm_a_log", "blk.47.ssm_dt.bias",
+                           "blk.47.ssm_norm.weight", "v.blk.0.qkv.weight", "v.blk.0.proj.weight",
+                           "dflash.norm.weight", "dflash.hidden_norm.weight",
+                           "dflash.blk.0.attn_norm.weight", "dflash.sel_proj.weight",
+                           "dflash.blk.0.attn_conv_proj.weight" };
+    for (const char* n : kept)
+        CHECK(r.match(n) == nullptr);
+}
+
+/* Pin the shipped GLM recipe to the canonical names declared by glm5next and
+ * rad_block_glm_{kda,mla,indexer,router,mhc,vision,mtp}.h. Recipe::match is first-match:
+ * inspect its winning rule, rather than just looking for a suitable rule somewhere in the file.
+ * This is a recipe contract test, not a quantizer/format or IQ8R MTP execution test. */
+TEST(the_glm53_iqr_v4_recipe_decides_the_model_it_was_written_for) {
+    const std::string dir = std::string(__FILE__).substr(
+                                0, std::string(__FILE__).find_last_of('/')) + "/../data/recipes";
+    std::ifstream in(dir + "/glm53-iqr-v4.recipe");
+    REQUIRE(in.good());
+    std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    Recipe r;
+    std::string why;
+    REQUIRE_EQ(r.add_text(text, "glm53-iqr-v4.recipe", &why), RAD_OK);
+
+    // Full option contracts catch, for example, a broad earlier IQ8R or cast rule winning.
+    const std::string iq8r = "rtn:block2=1x*,clamp=sym,codes=i8,group=256,rule=search,"
+                            "scale=u8,scale2=bf16,transform=fwht128";
+    auto trellis = [](const char* rows) {
+        return std::string("gptq:block=1x*,codes=u4,scale=f32,tcq=16,tcq_code=mad,") +
+               "tcq_gain=1.12,tcq_rows=" + rows + ",transform=fwht128";
+    };
+    const std::string gate_up = trellis("512"), down = trellis("1024");
+    auto expect = [&](const std::string& name, const std::string& wanted) {
+        const RecipeRule* m = r.match(name);
+        const std::string actual = m ? m->quantizer + ":" + m->options_text() : "<no rule>";
+        // Include the offending name in the assertion's values, even inside the expert loops.
+        CHECK_EQ(name + ": " + actual, name + ": " + wanted);
+    };
+    auto kept = [&](const std::string& name) { expect(name, "<no rule>"); };
+
+    // 45 trunk layers: three dense FFNs, then 42 x 288 routed experts. Layer 45 is MLA/MoE.
+    // Check both MTP spellings even though IQ8R serving currently requires --max-spec 0.
+    int mla_layers = 0;
+    for (int l = 0; l <= 45; ++l) {
+        const bool mla = l == 45 || l % 4 == 3;
+        if (mla) ++mla_layers;
+        for (const char* scope : { "", "mtp.", "mtp.mtp." }) {
+            if (l != 45 && *scope) continue;
+            const std::string b = std::string(scope) + "blk." + std::to_string(l) + ".";
+            kept(b + "attn_norm.weight");
+            kept(b + "ffn_norm.weight");
+            if (l < 3) {
+                expect(b + "ffn_gate_up.weight", iq8r);
+                expect(b + "ffn_down.weight", iq8r);
+            } else {
+                expect(b + "ffn_gate_up_shexp.weight", iq8r);
+                expect(b + "ffn_down_shexp.weight", iq8r);
+                for (int e = 0; e < 288; ++e) {
+                    const std::string suffix = std::to_string(e) + ".weight";
+                    expect(b + "ffn_gate_up_exps." + suffix, gate_up);
+                    expect(b + "ffn_down_exps." + suffix, down);
+                }
+                kept(b + "glm_router.weight");
+                kept(b + "glm_router.correction");
+            }
+            if (mla) {
+                for (const char* n : { "attn_q_a.weight", "attn_kv_a.weight",
+                                       "attn_q_b.weight", "attn_output.weight" })
+                    expect(b + n, iq8r);
+                // kv_b has a fixed wide reader; it must not hit the IQ8R trunk rules.
+                for (const char* n : { "attn_kv_b.weight", "attn_q_a_norm.weight",
+                                       "attn_kv_a_norm.weight", "index_query.weight",
+                                       "index_key_gate.weight", "index_head.weight",
+                                       "index_norm.weight", "index_norm.bias", "index_ape" })
+                    kept(b + n);
+            } else {
+                // All 34 KDA outputs share MLA's attn_output spelling but must stay wide.
+                for (const char* n : { "attn_qkv.weight", "attn_beta.weight",
+                                       "attn_forget_a.weight", "attn_forget_b.weight",
+                                       "attn_gate_a.weight", "attn_gate_b.weight",
+                                       "attn_output.weight", "ssm_conv.weight", "ssm_a",
+                                       "ssm_dt_bias", "ssm_norm.weight" })
+                    kept(b + n);
+            }
+            if (l != 45) {
+                for (const char* hc : { "hc_attn.", "hc_ffn." })
+                    for (const char* n : { "fn", "scale", "base" }) kept(b + hc + n);
+            }
+        }
+    }
+    CHECK_EQ(mla_layers, 12);  // Eleven trunk MLA layers plus the MTP layer.
+    for (const char* n : { "token_embd.weight", "output.weight", "output_norm.weight",
+                           "mtp.enorm.weight", "mtp.hnorm.weight", "mtp.eh_proj.weight",
+                           "mtp.output_norm.weight" })
+        kept(n);
+
+    // Vision declares its own BF16 linears; a broad *blk.* trunk rule must not catch these.
+    for (int l = 0; l < 24; ++l) {
+        const std::string b = "v.blk." + std::to_string(l) + ".";
+        for (const char* n : { "norm1.weight", "qkv.weight", "qkv.bias", "q_norm.weight",
+                               "k_norm.weight", "proj.weight", "proj.bias", "norm2.weight",
+                               "gate_up.weight", "gate_up.bias", "down.weight", "down.bias" })
+            kept(b + n);
+    }
+    for (const char* n : { "v.patch.weight", "v.patch.bias", "v.post_norm.weight",
+                           "v.downsample.weight", "v.downsample.bias", "v.merger.proj.weight",
+                           "v.merger.norm.weight", "v.merger.norm.bias",
+                           "v.merger.gate_up.weight", "v.merger.down.weight" })
+        kept(n);
 }
 
 RAD_TEST_MAIN()

@@ -74,6 +74,9 @@ set(R3D_UNITS
   # The w8a8 wave-matrix arm at prefill heights (17 <= M <= 127): two 16-row tiles a wave, the
   # weight column reused over the tiles, the group term the reference.
   "r3d_gemm_w8a8_nt_m64|"
+  # The int8 trunk GEMM (i8a8, i8a8h): the same wave-matrix walk over row-major codes, the
+  # activation's scale per (row, group) and a bf16 weight scale, at every M.
+  "r3d_gemm_i8a8|"
   # Paged attention at head_dim 128: the decode leg (one head group a workgroup, 16-token tiles,
   # split-KV) and the prefill leg (a 16-token query tile staged in LDS), over a bf16 or an E4M3
   # cache. The walk is shared; the tile is what a workgroup stages once and every wave consumes.
@@ -198,10 +201,13 @@ endforeach()
 
 # The host sources are declaration only: the row table and the operand descriptions. They are pure
 # host C++ that includes neither r3d.h nor hip_runtime.h, so the tables compile and can be inspected
-# without ROCm. libr3d has no layout source: nothing it serves is repacked, because a dot2 GEMM
-# reads a weight in the order it is stored (see r3d_rows.cpp). There is no fusion source because
-# no fused row exists.
+# without ROCm. On gfx1100 the dense and routed IQR rows add their reversible host weight layouts.
 set(R3D_DECLARATION r3d_rows.cpp r3d_shapes.cpp)
+if(R3D_GPU_TARGETS STREQUAL "gfx1100")
+  list(APPEND R3D_SRC ${CMAKE_CURRENT_SOURCE_DIR}/r3d_gemm_iqr.hip)
+  list(APPEND R3D_SRC "${CMAKE_CURRENT_SOURCE_DIR}/r3dh_moe_iqr.hip")
+  list(APPEND R3D_DECLARATION r3d_iqr_layout.cpp r3dh_moe_iqr_layout.cpp)
+endif()
 
 rad_add_plugin(libr3d kernels
   SOURCES     ${R3D_DECLARATION}
@@ -214,6 +220,9 @@ rad_add_plugin(libr3d kernels
 # (core/plugin/loader.cpp, target_covers). A library built for two archs says two.
 string(REPLACE ";" " " R3D_BUILD_TARGET "${R3D_GPU_TARGETS}")
 target_compile_definitions(libr3d PRIVATE R3D_BUILD_TARGET="${R3D_BUILD_TARGET}")
+if(R3D_GPU_TARGETS STREQUAL "gfx1100")
+  target_compile_definitions(libr3d PRIVATE R3D_DENSE_IQR R3D_EXPERT_IQR)
+endif()
 
 # Catalogue dump: prints every row and, on a card, calls each launch with a minimal valid input, to
 # catch transcription errors in the constraint table. It dlopens the plugin so an undefined symbol
@@ -222,6 +231,9 @@ add_executable(r3d_selftest ${CMAKE_CURRENT_SOURCE_DIR}/r3d_selftest.cpp)
 # Links the HIP runtime to allocate the device buffers it feeds the kernels.
 target_link_libraries(r3d_selftest PRIVATE radiance::abi ${CMAKE_DL_LIBS} ${RAD_HIP_RUNTIME})
 target_include_directories(r3d_selftest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+# The by-value cases mirror libref's arithmetic on the host and compare bit for bit, so the mirrors
+# must round where libref rounds: no fused multiply-add from this compiler either.
+target_compile_options(r3d_selftest PRIVATE -ffp-contract=off)
 # The selftest's device phase (the per-row launch) needs the HIP runtime, which this build has.
 target_compile_definitions(r3d_selftest PRIVATE RAD_HAVE_HIP)
 set_target_properties(r3d_selftest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

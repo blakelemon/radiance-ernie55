@@ -7,28 +7,31 @@ plugin claims.
 
 | plugin | id | quantisation | what it serves |
 |---|---|---|---|
-| `arch/llama_fp8` | `llama` | `fp8_e4m3` | the plain LLaMA decoder under the `fp8_e4m3` descriptor; its linears go through `LinearFP8` (`arch/common/rad_fp8.h`), which refuses a block-fp8 weight at load |
+| `arch/llama_fp8` | `llama` | `fp8_e4m3` | the plain LLaMA decoder under the `fp8_e4m3` descriptor; its linears go through `LinearQ` (`arch/common/rad_linear.h`), which refuses a block-fp8 weight at load |
 | `arch/llama_dense_fp8` | `llama` | *(empty)* | the same graph from a bf16 checkpoint, linears made IQ8R by a recipe (`data/recipes/minicpm5-2b-iq8r.recipe`) or kept bf16. MiniCPM5-2B |
-| `arch/qwen35_bf16` | `qwen35` | *(empty)* | the Qwen3.5/3.6/3.8 dense hybrid, served bf16 |
+| `arch/qwen35_bf16` | `qwen35` | *(empty)* | the Qwen3.5/3.6/3.8 dense hybrid, served bf16. A trunk linear packed losslessly as `bf16x12` (`data/recipes/q38-27b-bf16x12-df2.recipe`) is read by `gemm_nt` at `bf16x12`, with the same bytes. Optional DFlash2 drafter (`rad-convert --draft-model`). At more than one rank a decode step reads the next GEMM's leading weight bytes into the on-die cache beside each all-reduce, and where launches do not chain beside the delta net's recurrent update, as `qwen35_fp8` does (`weight-prefetch: off` declares none) |
 | `arch/qwen35_fp8` | `qwen35` | `fp8_e4m3` | the same under the `fp8_e4m3` descriptor, and the imported quantisations (an int4 W4A16 release, `data/recipes/q38-27b-w4a16.recipe`); a block-fp8 weight is refused at load |
 | `arch/hyv3_bf16` | `hyv3` | *(empty)* | Tencent Hy-Memory-30B-A3B BF16 safetensors; BF16, W4 or W8A8 weights by recipe; TP1/2, BF16 KV |
 | `arch/hyv3_fp8` | `hyv3` | `fp8` | Tencent Hy-Memory-30B-A3B-FP8's descriptor: the same graph, one dense layer then sigmoid-routed MoE; its per-tensor E4M3 linears are a form this build does not serve; TP1/2, bf16 or int8 KV |
 | `arch/hyv3_gguf` | `hyv3` | `gguf_ftype_15` | llama.cpp Hy-Memory Q4_K_M GGUF, dequantized and recipe-converted to native Radiance weights; TP1/2 |
 | `arch/flint` | `flint` | *(empty)* | Recursive Flint (39.8B-A2.5B): 2 dense layers then 47 sigmoid-routed MoE layers (256 experts top-6, ungated 1024-wide shared expert), GQA 32/4 at head_dim 128 with QK RMSNorm, a learned per-head sink on every layer, RoPE on the 35 sliding layers (window 513) and NoPE on the 14 full layers; two KV groups (full and window), TP1/2 (expert parallel); BF16 or int8 KV. Weights by recipe: an IQ8R trunk with rotated int8 experts (`data/recipes/flint-iq8r.recipe`), or u4 attention, int4 experts and plain int8 dense/shared/head (`data/recipes/flint-bf16-q4.recipe`); `docs/FLINT.md` |
 | `arch/qwen35_w8a8` | `qwen35` | `w8a8_fwht128` | `qwen35_fp8` with an int8 trunk: i8 weights with a bf16 scale per 128 of K, rotated by a 128-wide Hadamard, against int8 activations under the same rotation: IQ8R and IQR-V4 (`data/recipes/q38-27b-iq8r.recipe`, `q38-27b-iq4r-s-v4.recipe`) |
+| `plugin/qwen35_exl3` | `qwen35` | `exl3` | the Qwen3.5/3.6/3.8 dense hybrid with EXL3-V3 trellis linears (any rate in 1/8 steps, codebook mad) through `exl3i_dense`, the token table and an R16 head served by `plugin/exl3i`, which serves gfx1201 only; containers from `plugin/exl3quant`; TP1/2/4 ([`plugin/qwen35_exl3/README.md`](../plugin/qwen35_exl3/README.md)) |
 | `arch/qwen35moe_fp8` | `qwen35moe` | `fp8_e4m3` | `qwen35_fp8` with the feed-forward routed |
 | `arch/qwen35moe_w8a8` | `qwen35moe` | `w8a8_fwht128` | `qwen35moe_fp8` with `qwen35_w8a8`'s int8 trunk and rotated int8 experts, the routed arm reading the trunk's own int8 codes (`data/recipes/q36-35b-a3b-iq8r.recipe`) |
 | `arch/clef_bf16` | `clef` | *(empty)* | Cloudflare's clef and clef-flash decision models: `qwen35_bf16`'s trunk with the joint schema head on the card (`arch/common/rad_block_clef.h`), served on `/v1/systemone`; a container selects it with `rad-convert --arch clef` |
 | `arch/clef_fp8` | `clef` | `fp8_e4m3` | the same over `qwen35_fp8`'s trunk |
 | `arch/qwen4exp_fp8` | `qwen4exp` | *(empty)* | Qwen4-Exp (Qwen3.8-Flash-Next), a bf16 checkpoint quantised at convert (`data/recipes/qwen4exp-w4nl64-i8-hc8m.recipe`) or an AutoRound int4 release (`qwen4exp-autoround-i8-hc8m.recipe`) |
-| `arch/glm5next` | `glm5next` | *(empty)* | GLM-5.3-Flash: four mHC residual streams over 34 KDA and 11 sparse latent-attention (MLA) layers with a DSA indexer, 288 experts at top-8 under sigmoid routing, attention and dense layers as the container stores them; its MTP layer is a serial drafter. Pictures through its vision tower (`arch/common/rad_block_glm_vision.h`); bf16 KV |
+| `arch/glm5next` | `glm5next` | *(empty)* | GLM-5.3-Flash: four mHC streams, 34 KDA and 11 sparse MLA layers, 288 experts at top-8; IQR-V4 experts and IQ8R trunk via `data/recipes/glm53-iqr-v4.recipe`, KDA kept bf16. IQ8R serves head form without MTP; bf16/fp8 KV, or i8 through `plugin/glm`. Pictures through `arch/common/rad_block_glm_vision.h` |
+| `arch/deepseek41` | `deepseek41` | *(empty)* | DeepSeek-V4.1-Flash: four hyper-connection streams over latent attention with a sliding window and a two-level sparse top-k of compressed keys, sqrt(softplus)-routed experts with a shared one, Engram n-gram lookups, a DSpark drafter and a vision tower; GGUF blocks of any type the `*_ggml` ops read (a GGUF import, or the release converted with `data/recipes/deepseek41-ud-iq1s.recipe`); bf16 or exact block-scaled fp8 KV; TP1 to TP4 |
 | `arch/bailing_hybrid` | `bailinghybrid` | *(empty)* | Ling-3.0-flash and its fine-tunes (Ling-3.0-flash-Sante) from the bf16 checkpoint: 35 KDA and 7 dense latent-attention (MLA) layers with a rotary part and a head-wise gate, 512 experts at top-8 under group-limited sigmoid routing with an ungated shared expert, the routed experts as the recipe stores them (`data/recipes/ling3-w4a8-rtn.recipe`); its MTP layer is a serial drafter; Ling-3.0-tiny from its bf16 checkpoint with an IQ8R trunk and rotated int8 experts (`data/recipes/ling-3.0-tiny-iq8r.recipe`, TP1/2), and flash on the same trunk with rotated four-bit experts (`data/recipes/ling-3.0-flash-iq8r-w4nl64.recipe`; its clamped layers clamp, then quantise); bf16 KV |
 | `arch/bailing_hybrid_gguf` | `bailinghybrid` | `gguf_ftype_25` | Ling-3.0-tiny (24 layers, MLA every fourth with a 256-wide query LoRA, 128 experts of 512 at top-8) as the IQ4_NL GGUF release, its experts re-quantised by `data/recipes/ling-3.0-tiny-iq4.recipe`; no MTP; bf16 KV |
 | `arch/bailing_hybrid_gguf_q80` | `bailinghybrid` | `gguf_ftype_7` | the same tiny family, Q8_0 GGUF release, served whole |
 | `arch/bailing_hybrid_gguf_q4km` | `bailinghybrid` | `gguf_ftype_15` | the same tiny family, Q4_K_M GGUF release, served whole |
 | `arch/bailing_hybrid_gguf_q5km` | `bailinghybrid` | `gguf_ftype_17` | the same tiny family, Q5_K_M GGUF release, served whole |
 | `arch/bailing_hybrid_gguf_q6k` | `bailinghybrid` | `gguf_ftype_18` | the same tiny family, Q6_K GGUF release, served whole |
-| `arch/nemotronh` | `nemotronh` | *(empty)* | Nemotron-3.5-Bolt-74B-A9B (`nemotron_h_omni` around `nemotron_h_puzzle`), its language model from the bf16 checkpoint: 40 Mamba-2, 40 latent-MoE and 8 NoPE attention blocks in the order `layers_block_type` gives, 240 to 496 ungated relu^2 experts a layer in a 1024-wide latent with a relu^2 shared expert; linears and experts as the recipe stores them; pictures and video through its C-RADIO tower (`arch/nemotronh/radio.h`); bf16 KV |
+| `arch/nemotronh` | `nemotronh` | *(empty)* | Nemotron-3.5-Bolt-74B-A9B (`nemotron_h_omni` around `nemotron_h_puzzle`), its language model from the bf16 checkpoint or NVIDIA's 2-bit release (IQ2_XXS experts and Q8_0 linears as stored): 40 Mamba-2, 40 latent-MoE and 8 NoPE attention blocks in the order `layers_block_type` gives, 240 to 496 ungated relu^2 experts a layer in a 1024-wide latent with a relu^2 shared expert; linears and experts as the recipe stores them; pictures and video through its C-RADIO tower (`arch/nemotronh/radio.h`); bf16 KV |
+| `arch/inkling2` | `inkling2` | *(empty)* | Inkling 2 Mini (`inkling2_loop`), text and images: IQR-V4 (computed trellis) routed experts, or bf16 ones for calibration, rotated int8 attention, an int8 head and token embedding, and incoai's DFlash2 drafter. A 24-layer loop (prelude, core run three times, coda) over 48 applications with their own KV and convolution states, sliding (1024) and full attention, block attention residuals, loop controllers, 128 sigmoid-routed SiTU experts at top-8; vision tower (`--add-vision`) and int8 KV cache ([geometry](#inkling2-inkling-2-mini)) |
 | `arch/lfm2_bf16` | `lfm2` | *(empty)* | LiquidAI's LFM2 and LFM2-VL, bf16 or IQ8R, one rank |
 | `arch/lfm3_bf16` | `lfm3` | *(empty)* | LiquidAI's LFM3 (LFM3-1.7B), bf16 or IQ8R, one rank: LFM2's short convolutions with full and sliding-window (256) GQA attention, sandwich norms, a partial rotary on the full layers and a sigmoid gate per query head. Text only |
 | `arch/spark25_bf16` | `spark25` | *(empty)* | Spark X2.6, bf16 checkpoint, mixed sliding/full attention, TP1 or TP with exact collectives ([geometry](#spark25-spark-x26)). Optional DSpark drafter when the container already holds `draft.*` tensors, TP1 only. |
@@ -39,6 +42,7 @@ plugin claims.
 | `arch/unlimitedocr_bf16` | `unlimitedocr` | *(empty)* | baidu's Unlimited-OCR: a small Llama-MoE decoder with the DeepEncoder vision tower (SAM ViT-B/16, CLIP ViT-L/14 and a projector), bf16 |
 | `arch/nemotron35_embed` | `mistral3` | *(empty)* | Nemotron 3.5 Embed 1B/8B and Rerank 8B: native BF16 bidirectional text/image retrieval with a Pixtral tower, TP1 ([geometry and contracts](#nemotron35_embed-embedding-models)) |
 | `arch/gemma4_bf16` | `gemma4` | `compressed-tensors` | Gemma 4 31B dense, the E2B/E4B form at one rank, and the 12B (`gemma4_unified`, its image and audio embedders in place of a tower), with its vision tower: sliding-window and proportional-RoPE global (`attention_k_eq_v`) attention, GELU ffn, softcapped logits; int4 codes with an f16 scale per 128 from Google's CT-INT4 (QAT) release or from bf16, served w4a8, or int8 codes on the same grid from bf16 (w8a8, the Q8 container). Optional draft model (`rad-convert --draft-model`): Google's assistant, with no cache of its own (`rad_drafter_shared_kv`), or z-lab's DFlash drafter, the block `arch/gemma4` serves (`arch/common/rad_gemma4_dflash.h`), or RedHatAI's DFlash2 speculator (`arch/common/rad_block_dflash2.h`) |
+| `plugin/gemma4_exl3` | `gemma4` | `exl3` | `gemma4_bf16` with EXL3-V3 trunk linears through `exl3i_dense` (`plugin/exl3i`, gfx1201 only): the dense 31B, 12B and E4B, TP1/2/4; a checkpoint with experts is refused ([`plugin/gemma4_exl3/README.md`](../plugin/gemma4_exl3/README.md)) |
 | `arch/gemma3` | `gemma3` | *(empty)* | Gemma 3 dense text (TranslateGemma 27B) from the bf16 checkpoint: sliding-window and global attention at one head geometry, GemmaRMSNorm, GELU ffn; linears bf16, or int8, MXFP4 or asymmetric int4 over an activation scaled per (row, 128), as the recipe stores them. Optional DFlash2 drafter (`rad-convert --draft-model`) |
 | `arch/gemma4` | `gemma4` | *(empty)* | Gemma 4 from Google's bf16 checkpoint (the 26B-A4B MoE and the dense sizes without per-layer embeddings) with the shared BF16 vision tower and z-lab's DFlash drafter; routed experts bf16, or their gate_up rotated int8 (`data/recipes/gemma4-26b-a4b-df-i8.recipe`) |
 | `arch/qwenimage21` | `qwenimage21` | *(empty)* | Qwen-Image 2.1 and 2.1-Turbo, an image generator, from the diffusers pipeline directory; DiT and text encoder bf16 or IQ8R |
@@ -309,6 +313,7 @@ vision: 27 blocks, hidden 1152, 16 heads -> head_dim 72, patch 16, out_hidden_si
 | recurrent state fp32 | `gdn_recurrent_update_k128_v128_bf16_fp32state` |
 | gated attention, interleaved q/gate | `qk_norm_rope_gate` (reads the q/gate interleave off the operand's row pitch) |
 | GDN gated norm over an interleaved z | `gdn_gated_norm_had_quant_i8` (`zgrp`/`zblk`) |
+| a bf16 head at hidden 5120 | `logits_gemm_bf16_cols` (a wave per four vocabulary columns, the bytes of `logits_gemm_bf16`; at the TP2 slice and eight rows 2157 us against 4289 on an R9700) |
 | vision head_dim 72 | `attn_vit_h72_bf16` |
 
 ## Tensor names: the FP8 safetensors checkpoint
@@ -397,7 +402,7 @@ three value heads; libr4d's GDN kernels take `H` and `Hg` separately for this.
   convention reaches the kernel, and must say so.
 - **The GDN output gate is `silu` here and `sigmoid` on Qwen4-Exp.** `RMSNormGated` defaults to silu
   and every Qwen3.5/3.6 release keeps it; Qwen4-Exp sets `output_gate_type: "sigmoid"`. The wrong
-  gate rescales every value head's output. `arch/common/rad_block_gdn_fp8.h` refuses any other
+  gate rescales every value head's output. `arch/common/rad_block_gdn_q.h` refuses any other
   name.
 - **Readings no per-op check can settle.** The rope convention (`neox`, halves, against `gptj`,
   adjacent pairs), which half of each head's `q|gate` pair is the query (the sigmoid accepts
@@ -428,12 +433,12 @@ state it can roll back is `docs/OPS.md`'s `state_form`.
 Qwen's FP8 release states `quant_method: fp8`, `fmt: e4m3`, `activation_scheme: dynamic`, and a
 `weight_scale_inv` beside every quantised weight: DeepSeek-style 128x128 block scaling. The vision
 tower's first several blocks are in `modules_to_not_convert` and stay bf16. `rad-convert` reads
-those codes as stored, and `LinearFP8` refuses a block-fp8 weight at load
+those codes as stored, and `LinearQ` refuses a block-fp8 weight at load
 (`linear_retired`), so the release is served after a recipe re-quantises its linears from their
 exact values; the bf16 release converts to the same int8 containers (`qwen35_w8a8`, below).
 
 Activations are quantised at runtime, so the activation quantiser is an op. That cost is per
-activation, not per linear, which is why the quantiser is its own struct (`ActFP8`) rather than a
+activation, not per linear, which is why the quantiser is its own struct (`ActQ`) rather than a
 step inside the linear.
 
 **The scale plane is a weight operand**: `gemm_nt_q` takes `a, a_scale, b, b_scale`, and `b` and
@@ -450,7 +455,7 @@ unit rather than a branch on `n_expert` because the id is half the selection key
 cannot claim both ids.
 
 The routed experts are served in the format the container stores, read from layer 0's first
-expert (`MoeFP8::probe`, as `qwen4exp` does): the four-bit forms of
+expert (`MoeQ::probe`, as `qwen4exp` does): the four-bit forms of
 [`docs/MOE-W4.md`](MOE-W4.md), whose rotated ones add a rotated copy of the block input (`moe_hr`).
 Block-fp8 and MXFP4 experts are refused at load by the name of the first such weight.
 Experts stored stacked or one by one are both read (`moe_expert_sources`). Plain bf16 experts are
@@ -480,7 +485,7 @@ which normalizes the BF16-rounded sum. The final norm still reads a materialized
 
 The public FP8 checkpoint's index includes scalar per-layer K/V descales from
 `kv_cache_scales.safetensors`; conversion carries them into metadata and the plugin does not read
-them. Its E4M3 linears are a form this build does not serve (`LinearFP8` reads no per-tensor or
+them. Its E4M3 linears are a form this build does not serve (`LinearQ` reads no per-tensor or
 per-row FP8 and refuses block fp8), so the BF16 checkpoint is the source to convert. `kv-cache-dtype: i8` is the int8 cache with its own
 scale per token and head, `bf16` the 16-bit one.
 
@@ -535,7 +540,7 @@ a plain int8 trunk is refused.
   so each dtype's layout hook takes only its own transform.
 - **The producers write the rotated codes** where libr4d declares the `_had_quant_i8g` ops: the
   norms (`rmsnorm_had_quant_i8g`, at two ranks `ar_rmsnorm_had_quant_i8g`) and the gated product
-  (`gated_had_quant_i8g`) write `had_quant_act_i8g`'s bytes into the int8 pair (`ActFP8::q8_rot`),
+  (`gated_had_quant_i8g`) write `had_quant_act_i8g`'s bytes into the int8 pair (`ActQ::q8_rot`),
   so q, k and v share one quantiser and down has none. The attention and delta-net outputs still
   take `had_quant_act_i8g` from the bf16 plane, and so does every linear where the ops are not
   declared (libref and libavx). The MLP's gated fold (`gemm_nt_q_gated`) is libr4d's
@@ -763,13 +768,25 @@ matrices in front of their reads, the shared arm beside the router, more workgro
 
 # `glm5next`: GLM-5.3-Flash
 
-`arch/glm5next` is the language model of GLM-5.3-Flash (`model_type: glm5_next`) as AMD's
-Quark export, `amd/GLM-5.3-Flash-Quark-MXFP4`, lays it out. Quark is an import path, not an execution format:
-the plugin claims the empty descriptor and reads each weight's encoding from the container
-(`data/recipes/glm53-mxfp4.recipe` changes one weight a layer, below). Its vision tower is
-declared beside it when the container carries the tower and the deployment asks for an encoder
-(below). The reference is SGLang's `glm5_next.py` and `glm5_next_nextn.py` at AMD's pinned commit
-654df43; for the tower and its processor, transformers' `glm5_next`.
+`arch/glm5next` serves GLM-5.3-Flash (`model_type: glm5_next`). On 2.x, convert the official
+block-FP8 release, `zai-org/GLM-5.3-Flash`, with `data/recipes/glm53-iqr-v4.recipe`: routed experts
+become IQR-V4, dense/shared feed-forward and MLA q_a, kv_a, q_b and o become IQ8R (group 256,
+fwht128). KDA, the indexer, router, norms, mHC and MLA kv_b stay at their declared wide precision.
+The plugin claims the empty descriptor and reads each weight's encoding from the container.
+
+```sh
+build/bin/rad-convert /srv/models/GLM-5.3-Flash \
+    --recipe data/recipes/glm53-iqr-v4.recipe --max-spec 0 --kv-cache-dtype bf16 \
+    -o /srv/models/glm53-flash-iqr-v4.rad
+```
+
+Serve with `num-speculative-tokens: 0`: IQ8R's MTP wiring is not served. The IQ8R trunk also
+refuses `tp-attn-split: rows`; use the default head form. Block-FP8 and MXFP4 weights are not 2.x
+execution formats. The earlier Quark container is not a substitute for this conversion.
+
+The vision tower is declared when the container carries it and the deployment asks for an encoder
+(below). The architectural references are SGLang's `glm5_next.py` and `glm5_next_nextn.py` at AMD's
+pinned commit 654df43, and transformers' `glm5_next` for the tower and processor.
 
 The plugin is one file over blocks in `arch/common`, one block a file; it declares the buffers
 the blocks share, places them and issues the step's order.
@@ -780,7 +797,7 @@ the blocks share, places them and issues the step's order.
 | `rad_block_glm_kda.h` | `GlmKda`, `KdaState` | the 34 linear layers and their recurrence |
 | `rad_block_glm_mla.h` | `GlmMla`, `MlaLatent` | the 11 sparse MLA layers, in the head form or the row form |
 | `rad_block_glm_indexer.h` | `GlmIndexer`, `DsaCache` | the DSA indexer, its key cache and selection |
-| `rad_block_glm_router.h` | `GlmRouter` | the correction-bias router, through `MoeFP8` |
+| `rad_block_glm_router.h` | `GlmRouter` | the correction-bias router, through `MoeQ` |
 | `rad_block_glm_mtp.h` | `GlmMtp` | the draft head around the plugin's layer 45 |
 | `rad_block_glm_vision.h` | `GlmVision`, `MediaRows` | the tower, and its rows over the embeddings |
 | `rad_glm_tp.h` | `GlmTp`, `SplitF32Proj` | the shards, the one row rule, the split thresholds, the column split of a replicated f32 projection |
@@ -828,58 +845,54 @@ Traps:
   at zero and picks another set whenever a live score is negative (docs/OPS.md).
 - **The SwiGLU is clamped, asymmetrically.** The gate is clipped above at 10 before the SiLU and
   not below; the up projection on both sides. The unclamped FP8 epilogue of the dense
-  feed-forward does not apply, and `MlpFP8` turns it off when a limit is given.
-- **Quark's excluded layers are block FP8, not bf16.** The export is MXFP4 globally and names
-  the attention and MTP layers in `layer_quant_config` as E4M3 with an f32 `weight_scale` per
-  128 x 128, multiplicative. Read as bf16-scaled `fp8a8`, a scale bf16 cannot hold would round;
-  the plugin declares them at `fp8a8f32`. The importer accepts an override only if it is MXFP4 or this
-  block FP8 and refuses any other, a null or empty one included, by name.
+  feed-forward does not apply, and `MlpQ` turns it off when a limit is given.
+- **The source's FP8 label does not cover every weight.** The 2.x recipe quantises selected
+  linears and leaves KDA, MLA kv_b and the other wide weights as stored. In particular, it names
+  each MLA `attn_output` layer: a wildcard would also quantise KDA's output. INT8 KDA was rejected
+  by measurement because its KL grew with position; the served KDA stays bf16.
 - **`head_dim` is 0 in the config.** The KDA and MLA widths come from their own keys; the
   plugin fixes 128 and 256 and refuses a checkpoint whose hidden size, layer, vocabulary,
   stream, expert, `index_topk` or MTP layer counts are not these.
 - **MTP concatenates the normalized embedding first,** the normalized previous hidden second.
 - **No RoPE anywhere** (`qk_rope_head_dim` 0); the indexer's only rotation is the Hadamard.
 
-**KV groups.** Five. `kv-cache-dtype: fp8` narrows `kv_latent` alone to E4M3, stored at
-`kv_store`'s default descale of 1 and read by the `mla_attn` fp8kv rows (docs/OPS.md); the other
-four keep the dtypes below whatever the key, and a cache dtype other than bf16 or fp8 is refused
-at declare.
+**KV groups.** Five. `kv-cache-dtype: fp8` narrows `kv_latent` alone to E4M3 at a descale of 1.
+`i8` stores 512 codes and two f16 half scales a token (516 bytes), read in QK and PV by
+`glm_mla_attn_i8kv`. It requires `server.kernels: glm,libr4d,libavx,libref`, in that order;
+otherwise libr4d's bf16 MLA rows can win selection. The other four groups keep their own dtypes.
+See `plugin/glm/README.md` for the measured KL, speed and reader tests; `docs/OPS.md` for layouts.
 
 | group | kind | per layer | layers |
 |---|---|---|---|
-| `kv_latent` | `RAD_KV_FULL`, bf16 (E4M3 under fp8), 1 head of 256, block 4 | the 512-wide normed latent, its two halves in the K and V slots | 11 MLA + MTP |
+| `kv_latent` | `RAD_KV_FULL`, bf16, fp8 or i8, 1 head of 256, block 4 | the 512-wide normed latent, its two halves in the K and V slots | 11 MLA + MTP |
 | `kv_dsa_index` | `RAD_KV_FULL`, u8, block 4 | one page a pooled key: 128 E4M3 codes and their f32 scale (`dsa_pool`'s cache form) | 11 MLA + MTP |
 | `kv_index_tail` | `RAD_KV_LINEAR`, bf16, `[4 + spec, 256]` | the key and gate rows not yet pooled; the ring is wider by the draft depth so a rejected draft rolls back | 11 MLA + MTP |
 | `kv_kda` | `RAD_KV_LINEAR`, f32, 128 x 128 a head | the recurrent state, 64 / tp heads a rank | 34 KDA |
 | `kv_kda_conv` | `RAD_KV_CONV`, bf16, width 4 | the convolution history, 3 x 8192 / tp channels a rank | 34 KDA |
 
-The latent and the index are replicated: every rank keeps the whole latent cache, and the plugin
-declares both so (`rad_kv_group_replicated`), which lets the host tier (`prefix-cache-mib`) hold
-each once a slot: 49.59 KiB a 4-token block at any rank count (`kv_latent` 48.00 KiB over its 12
-layers, `kv_dsa_index` 1.59 KiB), 12.4 KiB a token, where a copy per rank would make a slot
-396.75 KiB at eight. Under fp8 `kv_latent` is 24.00 KiB a block, 6.4 KiB a token in all. The model is a hybrid, so a prefix-cache hit is usable only from a state
-checkpoint at or below it, and `checkpoint-interval` decides how much of a shared system prompt
-is reused.
+The latent and the index are replicated: every rank keeps the whole cache, and
+`rad_kv_group_replicated` lets the host tier (`prefix-cache-mib`) hold each once per slot.
+The IQ8R container has 11 MLA cache layers; a container with MTP has 12. Prefix reuse in this hybrid
+requires a state checkpoint at or below the hit; `checkpoint-interval` sets those boundaries.
 
-**Linears.** The plugin declares each weight at the form the export stores; libr4d has no
-`mxfp4a8` or `fp8a8f32` row for `moe_gemm_q` or `gemm_nt_q` in this build:
+**2.x linears.** `data/recipes/glm53-iqr-v4.recipe` leaves unmatched weights as stored:
 
-| weights | stored | declared |
+| weights | served form | path |
 |---|---|---|
-| routed and shared experts, layers 3-44 | MXFP4: E2M1, an E8M0 scale per 32 | `moe_gemm_q` mxfp4a8, an E4M3 activation scaled per (row, 128) |
-| MLA q_a, kv_a, q_b, o (trunk and MTP); dense feed-forward, layers 0-2 | E4M3, an f32 scale per 128 x 128 | `gemm_nt_q` fp8a8f32 |
-| MTP layer's experts | E4M3, an f32 scale per 128 x 128 | `moe_gemm_q` fp8a8f32 |
-| MLA kv_b | quantised | decoded to bf16 by the recipe; `mla_project` absorbs and expands with it |
-| KDA's seven projections; indexer wq_b, wk with the pool gate | bf16 | `gemm_nt` |
+| routed experts, layers 3-44 | IQR-V4, four-bit computed trellis, fwht128 | `moe_gemm_q` over rotated int8 activations (`libr4d/r4d_moe_iqr.hip`) |
+| dense layers 0-2; shared experts; MLA q_a, kv_a, q_b, o | IQ8R, group 256, fwht128 | `gemm_nt_q`, IQ8R kernels |
+| MLA kv_b | bf16 | `mla_project` |
+| KDA projections; indexer wq_b, wk and pool gate | bf16 | `gemm_nt` |
 | router, index head gates, mHC projections | f32 | `gemm_nt_f32`, `mhc_pre` |
-| embedding, lm_head, MTP eh_proj | bf16 | `embed_lookup`, `logits_gemm`, `gemm_nt` |
+| norms, embedding, lm_head; vision weights | kept wide | their existing norm, embedding, logits and vision ops |
 
-The text container holds 25845 weights, 171.32 GiB, the one with the tower 26143 and 172.37 GiB;
-at eight ranks each card holds 22.06 GiB of them, 19.67 GiB the routed experts.
+The clamped SwiGLU and rotated-int8 quantiser can fuse through `plugin/glm`'s
+`swiglu_clamped_had_quant_i8g`; `docs/IQR.md` describes the weight formats. These are weight
+formats, separate from the independently selected latent-cache dtype.
 
-**MTP.** The plugin declares checkpoint layer 45 as a serial drafter (`RAD_DRAFT_SERIAL`), depth
-3 unless `num-speculative-tokens` says otherwise (at most 31). Its history pass writes the draft
-layer's latent, index and tail for every row and runs its MoE on the proposal rows only.
+**MTP.** `GlmMtp` implements a serial drafter around layer 45. The IQ8R container above excludes
+it (`rad-convert --max-spec 0`); requesting speculation on that trunk is refused. The legacy draft
+path and its tail rollback do not imply IQ8R MTP support.
 
 **Tensor parallelism.** At 1, 2, 4 or 8 ranks; declare refuses any other. `tests/glm5next_test.cpp`
 declares and steps the whole plugin at 1 and 8 against pinned graph and step hashes (the head form,
@@ -898,11 +911,14 @@ written (`GlmTp::run_of`). The indexer alone also splits a smaller step, from 16
 live blocks reach 2^18 (`GlmTp::kSplitWork`). Below the thresholds, as in decode, the collective
 costs more than it saves and every rank runs the replicated or head-split form.
 
-- The routed and the shared experts split their 2048 width into equal contiguous slices, 256 a
-  rank at eight; each rank computes its slice of every expert, and the block's all-reduce sums
-  them. The dense feed-forward splits its 12288 the same way.
+- At four and eight ranks, routed experts split their 2048 width when every gate/up and down
+  pair is MXFP4 or computed-trellis IQR (format 11): 512 or 256 channels a rank. Recognizing MXFP4
+  here is a layout rule, not a 2.x execution path. At two ranks, with `expert_file_tier`, or with
+  another routed encoding, the plugin keeps whole experts on disjoint ranks. Shared experts stay
+  width-sharded; the block's all-reduce sums partials. Dense feed-forward splits its 12288 width.
 - MLA splits by whole heads: the rows of q_b and kv_b (8 heads a rank at eight) and the columns
-  of o. q_a, kv_a and the latent are replicated. Under `tp-attn-split: rows`
+  of o. q_a, kv_a and the latent are replicated. IQ8R refuses the row form; the row-form results
+  below predate its support. On other trunks, under `tp-attn-split: rows`
   (RadBuildCtx::tp_attn_rows, docs/GUIDE.md §4.7), from the threshold, it splits by rows instead
   (`GlmMla::Form::rows`): each rank takes its run under the row rule, the last run shorter,
   through q_b, absorption, attention with all 64 heads (`mla_attn_rows_bf16`, docs/OPS.md),
@@ -1058,6 +1074,79 @@ the four depths above.
 
 ---
 
+# `deepseek41`: DeepSeek-V4.1-Flash
+
+`arch/deepseek41` serves DeepSeek-V4.1-Flash (GGUF `general.architecture: deepseek41`, the layout
+llama.cpp's converter writes, and the official release `DeepseekV41ForCausalLM`). Every dimension
+comes from the container's metadata, so the same graph serves the released model and a reduced one.
+The plugin claims the empty descriptor and reads each weight's encoding from the container.
+
+The model is `hc` hyper-connection residual streams (`mhc_mix`, `mhc_collapse`, `mhc_post`) over
+latent attention layers. Each attends a sliding window of raw keys and, past the first layers, a
+two-level sparse top-k of compressed keys picked by an indexer (`index_score`, `index_candidates`,
+`index_topk`, `attn_sparse_sink`). The routed experts are sqrt(softplus)-routed
+(`router_scored_topk`) with one shared expert, and Engram n-gram tables are written into the streams
+at a few layers (`token_map`, `ngram_ids`, `stream_gate_add`). The numerics follow DeepSeek's
+reference `inference/model.py`: the window keys, the compressed keys and the index keys are
+quantised and dequantised where the reference does it (`quant_roundtrip`), so the caches hold the
+reference's values.
+
+**Weights.** A GGUF's linears, experts, head and token table stay in llama.cpp's blocks, read by
+`gemm_nt_ggml`, `moe_gemm_ggml`, `logits_gemm_ggml` and `embed_lookup_ggml` ([OPS.md](OPS.md)); on
+gfx1201 `libr4d/r4d_ds41_ggml.hip` serves IQ1_S, IQ2_XXS, IQ3_XXS, IQ4_NL, Q5_K, Q6_K and Q8_0.
+Their decode band takes a multi-row form at the TP2 and TP4 shapes the measured table
+(`libr4d/r4d_ds41_gg_mr_forms.h`, written by `tools/gg_mr_forms.py` from `r4d_selftest --perfmr`)
+holds, with the stock kernel's bytes. The official release converts with
+`data/recipes/deepseek41-ud-iq1s.recipe` (Unsloth's UD-IQ1_S mix as rules for libquant's `ggml`
+quantiser, imatrix-weighted; [GUIDE.md](GUIDE.md) §3.2 has the commands): its fp8 linears with an
+e8m0 scale a 32x32 block, its MXFP4 routed experts and its fp8 Engram tables are read byte for byte,
+and the Engram gate is the product of two release tensors (`RAD_MAP_MUL`). The recipe keeps the
+drafter's routed experts as the release's MXFP4, which this version does not serve, so that container
+serves with `num-speculative-tokens: 0`. The release ships no chat template; the recipe's header says
+which to bake in.
+
+**Ranks.** Any world the head and expert counts allow, TP1 to TP4. Routed experts are expert
+parallel, whole on their rank: an even run of them each (the grouped GEMM takes two parity tables),
+or the counts `expert-split` names in rank order. A rank given few enough experts to hold them all in
+VRAM streams none over its link, so on a board whose cards sit on unequal links the faster cards
+take the rest (two x8 and two x4 cards: `expert-split: "104,88,104,88"` with the fp8 cache, 88 being
+the most a 32 GB card holds whole). The shared expert's 2304 columns split by whole 256-column
+blocks. The four-rank exact all-reduce weights its shards from the cards' PCIe links, so cards at
+half the others' rate receive each message once instead of 1.5 times.
+
+**KV cache.** `kv-cache-dtype: fp8` stores the compressed latent and the index keys as block-scaled
+E4M3 entries (544 bytes for the latent's 1024, 144 for the keys' 256; `abi/rad_kv_fp8.h`). The model
+writes those values already rounded to fp8, so the cache holds the bf16 cache's numbers and the
+output is the same bit for bit, at about half the cache a token. The window and the compressor's tail
+stay bf16 and f32.
+
+**Drafting.** The checkpoint's DSpark drafter runs on the block-drafter protocol at
+`num-speculative-tokens: 5` (the container's `dspark.block_size`; another value is refused). Its
+weights are served in the forms the trunk's are (bf16, GGUF blocks, IQR); a drafter stored as MXFP4
+or block fp8 is refused at load by the name of the first such weight, and `num-speculative-tokens: 0`
+serves the model without it. `dspark-walk: on`
+walks its Markov tables over the whole vocabulary, as the reference does, instead of re-ranking the
+head's top candidates; the trunk verifies, so the output does not change. `weight-sidecar` serves
+the drafter's bf16 linears from a small `rad-sidecar` container (q8_0, about half the bytes); the
+drafter only proposes, so the answers stay the trunk's. Prompt lookup (`spec-ngram`) turns the
+drafter off and also serves.
+
+**Pictures.** The release's vision tower, its 3x3 aligner and the typed image span are declared when
+the container carries the tower and the deployment asks for an encoder (`arch/deepseek41/ds41_vision.h`);
+the Engram gate is shut over the image span.
+
+**EXL3 experts.** An EXL3 container's routed experts (radiance-exl3's `exl3` encoding) are declared
+for `moe_exl3_gate_up` / `moe_exl3_down`, which `exl3/`'s `exl3r4d` serves (built when the build
+targets gfx1201; `exl3ref` is its host reference).
+
+Serve with `placement: expert_tiered` and a `host-pool-mib` that holds every expert VRAM does not:
+at TP2 on 32 GB cards about 60 GiB of experts overflow, so the pool must be at least 61440, and at
+TP4 with an even split about 8 GiB do. Leave `deterministic` unset: the model does not fit in VRAM,
+and a pinned placement stops the engine promoting the hot experts. `data/deepseek41-expert-profile.json`
+is a decode-heavy `expert-profile` for the uncensored container.
+
+---
+
 # `bailing_hybrid`: Ling-3.0-flash and Ling-3.0-tiny
 
 `arch/bailing_hybrid` serves Ling-3.0-flash and Ling-3.0-tiny (`model_type: bailing_hybrid`,
@@ -1066,7 +1155,7 @@ GGUF releases through thin-include wrappers (`arch/bailing_hybrid_gguf` and kin)
 vLLM's `bailing_moe_v3.py` and
 SGLang's; the HF `modeling_bailing_moe_v3.py` agrees except for the SwiGLU clamp (below). The plugin
 reuses GLM-5.3's KDA core (`KdaState`), sigmoid router (`GlmRouter`, with groups) and draft head
-(`GlmMtp`), and `MoeFP8`; its KDA and MLA blocks are in the plugin file.
+(`GlmMtp`), and `MoeQ`; its KDA and MLA blocks are in the plugin file.
 
 ```
 42 layers, hidden 2560, vocab 157184 (embedding and lm_head separate), rope_theta 6e6
@@ -1131,7 +1220,7 @@ Traps:
   SiLU, which at L = 4 caps a large gate at `silu(4) = 3.93` instead of 4. The plugin issues
   `swiglu_step`. HF's reference model ignores the lists entirely; the served form is the one the
   checkpoint is evaluated with. The routed and the shared arm clamp at different values, often in
-  different layers (`MoeFP8::Config::shared_swiglu_limit`).
+  different layers (`MoeQ::Config::shared_swiglu_limit`).
 - **Routing is group-limited.** `router_sigmoid_group_topk`: a group's rank is the sum of its two
   highest `p + bias`, only the experts of the four best groups are candidates. A single-group
   top-8 picks other experts with every shape valid.
@@ -1142,7 +1231,7 @@ Traps:
   row stride.
 - **tiny's query runs a LoRA first.** q_a 1536 -> 256 and its norm precede q_b; the same two-plane
   row maps run over `q_b_proj` against the normed latent, so the parts' GEMMs take K = 256 and read
-  the LoRA's ActFP8 wire (the producer quantises it when the container stores fp8). The `need[]`
+  the LoRA's ActQ wire (the producer quantises it when the container stores fp8). The `need[]`
   gate admits `q_lora_rank` 256 and nothing else.
 - **The cache row is [latent | rotary key].** One KV head of 288, the row's first half in the K
   slot and the second in the V slot, so `kv_store` writes the 576-wide row contiguously and
@@ -2092,7 +2181,7 @@ The tower differs from Qwen-VL's (`rad_block_vit.h`) in five ways, each visible 
   `pair_argmax`); buffers are sized by `max_seqs * steps` and the head reads the predicting rows
   through `out_ids`, so batches draft side by side.
   Its seven matrices are block fp8 / MXFP4 like the trunk's (the recipe's `dspark.*` rules;
-  `DenseFP8`, an E4M3 activation per row and 128 of K), which is what the 53-tensor assistant
+  `DenseQ`, an E4M3 activation per row and 128 of K), which is what the 53-tensor assistant
   release is not: converted without them it stayed bf16 and 4.76 GiB of the 26.5 GiB container,
   read in full every draft step. It also declares a **short block** of 4 rows / 3 drafts
   (`rad_drafter_short_block`; `--draft-short-from 2`), since the same graph is ranged by rows.
@@ -2174,7 +2263,13 @@ kernels), its plain op runs instead (`rmsnorm`, `silu_mul`) and the first linear
 quantises it with `had_quant_act_i8g`: q for the four, gate/up, down. The head is plain int8
 (`codes=i8 group=128 scale=bf16`, `logits_gemm_i8`), which the drafter reads as its own head.
 
-The tower's weights are never quantised: a container that quantises them is refused by name.
+A vision linear is BF16, or int8 codes with a bf16 scale per (row, 128 of K)
+(`codes=i8 group=128 scale=bf16`, `museglimmer-30b-iq4r-s-v4-i8vision.recipe`). The int8 form
+quantises the BF16 activation with `quant_act_i8g` and reads it with `gemm_nt_q` at `i8a8` and
+`w_rb` 1 (`gemm_i8a8_row`): the weight stays the container's row-major bytes, so
+`vision-tower-placement ram` can read it in place. Bias, exact-erf GELU and the residual are
+separate BF16 ops. The patch stem (K 1176), position table, norms and biases stay BF16. Block
+FP8 is retired and refused by name, as is any other vision encoding.
 
 **Context extension.** The architecture takes it by mechanical means, and takes it well: 13 of
 the 52 layers are full-attention **NoPE** (`layer_rope_theta` 0 -- no positions at all) and the 39
@@ -2558,9 +2653,9 @@ same model and this engine 0.8%. The transcripts match word for word.
 `arch/nemotronh` serves the language model of Nemotron-3.5-Bolt-74B-A9B (`model_type:
 nemotron_h_omni`, NemotronH_Omni_Reasoning_V3; the text model is `llm_config`, `nemotron_h_puzzle`)
 from the bf16 checkpoint. The reference is vLLM's `nemotron_h.py` and `mamba_mixer2.py`; NVIDIA's HF
-`modeling_nemotron_h.py` agrees except for the CPU scan (below). The plugin reuses `MoeFP8` for the
-routed arm and `AttnFP8` for attention; its Mamba-2 block and the latent feed-forward around
-`MoeFP8` are in the plugin file.
+`modeling_nemotron_h.py` agrees except for the CPU scan (below). The plugin reuses `MoeQ` for the
+routed arm and `AttnQ` for attention; its Mamba-2 block and the latent feed-forward around
+`MoeQ` are in the plugin file.
 
 ```
 88 blocks, hidden 4096, vocab 131072 (embedding and lm_head separate), RMS eps 1e-5; each block one
@@ -2593,7 +2688,7 @@ Traps:
   1024 channels (8 groups of the 8192), not `norm(y) * w * silu(z)` (the delta net's
   `gdn_gated_rmsnorm`). Served as `act_mul` (silu), a gainless `rmsnorm` over rows of 1024 and
   `mul_weight`; a rank's heads are whole groups.
-- **The router reads the hidden state, the experts the latent.** `MoeFP8` runs at the latent width
+- **The router reads the hidden state, the experts the latent.** `MoeQ` runs at the latent width
   (`Config::router_k` sizes the router, `Wire::route` feeds it); fc2 is linear and has no bias, so
   each rank applies it to its partial latent sum and one all-reduce over the hidden width sums the
   routed and shared arms (`Config::no_reduce`).
@@ -2625,6 +2720,202 @@ greedy text, as `ident.sh` allows ([TOOLS](TOOLS.md)).
 **Vision.** `arch/nemotronh/radio.h` serves the C-RADIO (v4-H) tower and its `mlp1` projector when
 the container holds them (`vision_config.model_type` `radio`): pictures, and video in tubelets of
 two frames, through `core/mm`'s `Radio` family.
+
+**NVIDIA's 2-bit release.** `NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB` is ModelOpt `MIXED_PRECISION`
+safetensors: the routed and shared experts are llama.cpp's IQ2_XXS blocks, the latent, attention and
+head linears Q8_0, the Mamba projections and the LiLiCorr drafter's linears NVFP4.
+`data/recipes/nemotron74-nvidia-24gb-iq8r.recipe` keeps the blocks as the release stores them,
+served by `moe_gemm_ggml`, `gemm_nt_ggml` and `logits_gemm_ggml`. It quantises only the NVFP4
+linears again, since 2.x serves no NVFP4: the Mamba projections to IQ8R, `in_proj`'s dt rows to
+bf16, the drafter's linears to rotated int8. The container holds 26.66 GiB of weights and serves on
+one R9700.
+
+- **Block experts are whole per rank.** A layer's experts are one table of one block type (a layer
+  of two types is refused); at two ranks each holds half of the experts whole, as for bf16 experts.
+- **The routed arm reads the bf16 latent.** Block experts read the latent's bf16 plane, so it is
+  not quantised to E4M3 for them, as for bf16 experts.
+- **The shared expert splits in whole blocks.** Its down projection is read in whole 256-value
+  blocks along K, so the slice unit is also a multiple of the block: 5376 columns are 21 blocks,
+  and two ranks hold 11 and 10 (2816 and 2560 columns).
+- **`in_proj` is read in three row pieces** (z, x|B|C, dt), and the release stores it NVFP4. A row
+  piece of an NVFP4 import is those rows of its codes and of its scale plane (`ckpt_resolve`), so
+  each piece is quantised again on its own.
+- **The head stays Q8_0.** It is declared at the codes' dtype and served by `logits_gemm_ggml`; the
+  drafter's logits read the same head.
+
+---
+
+# `inkling2`: Inkling 2 Mini
+
+`arch/inkling2` serves Inkling 2 Mini (`Inkling2LoopForConditionalGeneration`, `model_type:
+inkling2_loop`) as `data/recipes/inkling2-mini-iq4r-v4.recipe` converts it: the routed experts
+IQR-V4's four-bit computed trellis, fitted by GPTQ against Hessians the plugin records, the
+attention linears rotated int8, the head and the token embedding int8, incoai's DFlash2 drafter, and
+the vision tower bf16 (`rad-convert --add-vision`). The one other form it declares is the bf16
+calibration container (`data/recipes/inkling2-mini-bf16.recipe`), over which those Hessians are
+recorded. Experts in any other form (the release's NVFP4 and MXFP8 kept as stored, rotated int8 or
+int4) and the release's own DSpark drafter (`mtp.safetensors`) are refused by name; rad-convert still
+reads the release's NVFP4 and MXFP8 experts, dequantised, for both recipes. The reference is
+`tests/mkinkling2golden.py`, a float32 torch forward that follows llama.cpp's graph
+(`src/models/inkling2-loop.cpp`) op for op. transformers has no class for the model, and vLLM has no
+loop.
+
+```
+Inkling 2 Mini (text_config inkling2_loop_text; eos 200006)
+  24 physical layers, hidden 2304; a loop: prelude 0..5, core 6..17 run three passes with one set
+    of weights, coda 18..23. 48 layer applications, each with its own KV and convolution state
+  kinds: full attention at physical layers 5, 11, 17 and 23 (8 applications); sliding window of
+    1024 on the other 20 physical layers (40 applications)
+  embed -> rms(embed_norm); final: the AttnRes mix with output_query, rms with `norm`, then the
+    unembed (untied, 201024 rows, 200058 real); logits softcap 30
+attention: 24 query heads, 8 KV heads, head_dim 128 on both kinds (swa_head_dim 128)
+  q = wq_du x ; k, v = conv(wk_dv x), conv(wv_dv x) ; r = wr_du x, d_rel 16 a head
+  q = clip(q * q_l2_clip, 22.627) ; k = clip(k, 22.627) ; v = rms(v), no gain
+  r = clip(r * rel_l2_clip, 8.0)
+  full layers: q and r times tau = 1 + 0.1 ln(max(1, (pos + 1) / 8192))
+  relative bias: r . rel_logits_proj[16, extent] at distance d = i - j, extent 1024 on full layers,
+    the window (1024) on sliding ones
+  sink: one logit per (query, head) from attn_sink_proj; it joins the denominator and has no value
+  out = softmax-weighted v, times sigmoid(gate_attn x), then wo_ud and attn_sconv
+short convolutions: kernel 4, four streams a layer (attn_sconv, k_sconv, v_sconv, mlp_sconv);
+  each is (x + sum of taps) / sqrt(5). K and V of full layers add input-dependent taps
+  (weight_proj of their input), with the divisor sqrt(9)
+attention residuals: a new block starts at every 6th layer (ip % 6 == 0). A layer's attention inputs are
+  a softmax over depth of the block states and the current one: three queries on full layers
+  (q, k, v), one on sliding layers; the MLP input has its own query (mlp_queries[ip])
+loop controllers, core layers 6..17 on passes after the first:
+  control(x, msg) = (1 - tanh(F g)) x + tanh(G g) msg, g = D [rms x | rms msg], gate rank 64
+MoE: 128 experts, top-8, intermediate 1152, router sigmoid over f32 logits; selection adds
+  gate.bias, the weights do not; weights normalised over the eight, times route_scale 8.0
+  SiTU on the expert: a = 4 tanh(g / 4) sigmoid(g) (sigmoid of the raw gate), u = 25 tanh(u / 25),
+    y = (a u) w2; w13 holds gate and up interleaved by row
+  no shared expert; mlp_sconv, then the residual add
+vision: a 23-block ViT tower, a 2 x 2 merge to 2304 (**Pictures** below)
+release quantisation: NVFP4 experts on physical layers 0..19 (w13, w2: u8 codes, e4m3 scale per
+  16 of K, per-expert amax over outer_scale_denominator); MXFP8 experts on 20..23 (e4m3 codes,
+  ue8m0 scale per 32 of K); everything else bf16, except 74 tensors kept f32 (the AttnRes queries
+  among them). rad-convert dequantises the experts for a recipe; none is served as stored
+```
+
+Traps:
+
+- **The relative bias is read at the clipped distance, and it is zero past the extent.** The table
+  has `extent` columns: distance d reads column `clamp(d, 0, extent - 1)`, and the bias is zero
+  where d >= extent (llama.cpp's zero padded column; vLLM's `masked_fill`). Reading the last column
+  past the extent, or not clipping d, still produces fluent text.
+- **There is no RoPE in the text model.** Position enters through the relative bias and tau; a
+  rotary on either kind of layer is a different model.
+- **A controller's message comes from the previous pass's bank, not the current pass.** Pass p > 0
+  takes its messages from the bank of pass p - 1 (that pass's blocks after its first core block,
+  and its output), and restarts from the prelude's output and the prelude's blocks.
+- **Each application has its own KV and convolution state.** The same weights run at three
+  applications of each core layer, so the cache has 48 slots over two KV groups, and a convolution
+  history shared across passes reads the wrong inputs from the second pass on.
+- **Log-scaled tau multiplies q and r, on full layers only.** Sliding layers get neither; scaling q
+  alone, or both on every layer, is fluent and wrong.
+- **The convolution's divisor counts the residual.** It is sqrt(k + 1) for a static convolution and
+  sqrt(2k + 1) for K and V on full layers, where the input-dependent taps add a second term per tap.
+- **The clips come after the gains.** q is multiplied by `q_l2_clip` and r by `rel_l2_clip`
+  before their L2 clips (22.627 and 8.0); the k clip has no gain.
+- **The AttnRes softmax reads the normed states for both scores and values**, and the caller's
+  norm applies its gain afterwards. Mixing the raw states into the values is a different model.
+- **SiTU's sigmoid reads the raw gate.** The cap acts on the gate's tanh and on the up projection
+  only, so `4 tanh(g / 4) sigmoid(g)` is not `sigmoid(4 tanh(g / 4))`.
+
+Kernels (`docs/OPS.md`): `attn_paged_rel` (the bias and the per-row sink, on window and full
+layers), `sconv_res` for the four streams and K and V's dynamic taps, `attn_res_mix` for the AttnRes
+blocks, an f32 router (`gemm_nt_f32`, `router_sigmoid_topk`), the attention linears at `i8a8h`
+(`gemm_nt_q`, the five projections in one `gemm_nt_q_multi` launch at decode heights, against
+`had_quant_act_i8g`'s activation), and the experts: IQR's computed trellis under one f32 scale a row
+and one a 128-K block, at the codes' width, through `moe_gemm_q` at `i8a8h`, which resolves
+`moe_gemm_iqr` from the encoding (two to six bits, gate_up and down at their own widths), with the
+SiTU product through `situ_mul` and `had_quant_act_i8g`; the calibration container's bf16 experts
+through `moe_gemm` and `situ_mul`.
+
+**Pictures.** The vision tower (`model.visual`, 23 pre-norm ViT blocks of 1024 with layer scale, a
+class token, the 32 x 32 learned table resampled per axis, a 2-D rotary at theta 1e4, exact GELU,
+patch 20, a 2 x 2 merge, `proj_out(gelu(proj_in))` to 2304) runs on the card from
+`arch/common/rad_block_inkling2_tower.h`; `rad-convert --add-vision` adds its bf16 weights to a text
+container. The processor (core/mm `Family::Inkling2`) is transformers' `Inkling2ImageProcessor`: no
+resize, a picture's alpha composited onto an 8-pixel checkerboard of 204 and 153, the picture padded
+to whole 40-pixel cells with the raw value -1, values `(u - 255 mean) / (255 std)` in f32 rounded to
+bf16, one `<|unused_200054|>` a cell after `<|content_image|>`, in a message block of its own.
+Traps:
+
+- **Image rows enter the stream raw.** `embed_norm` applies to token rows only; the encoder's rows
+  replace the placeholders after it.
+- **The rotary pairs adjacent channels in each half of a head** (the first half by column + 1, the
+  second by row + 1, the class token at (0, 0)); rope's `axial` pairs across the halves, so q and k
+  rows are stored permuted within each head.
+- **The position table is resampled per axis** (`grid_embed_hw`), not onto the square of the longer
+  side (`grid_embed_cpe`): the two agree only on a square grid.
+
+Against the float32 reference (`tests/mkinkling2vision.py`) on the release's weights, a 630 x 410
+picture (176 cells): relative L2 3.9e-2 over the projector's output, per-row cosine at least 0.9925
+(a bf16 torch run with a bf16 residual stream is 3.2e-2 from the same reference); a 1260 x 820
+picture (672 cells): 5.6e-2 against that run's 5.1e-2 (both measured with the staged pixels at
+vLLM's `gather_patches` arithmetic, which is one bf16 step from the reference's on about a value in
+four). The staged pixels equal the reference processor's `pixel_values`, cast to bf16, bit for
+bit (`tests/mkinkling2procgolden.py`, `mm_test`'s `inkling2_*` cases), a picture with alpha
+included. A JPEG is decoded by FFmpeg, not libjpeg-turbo, so its pixels before the processor can
+differ from PIL's (4:2:0 chroma upsampling most of all).
+
+Checked against llama.cpp origin/master at 29b52d398 (the Inkling 2 Mini commit, #32694) on a
+12-token prompt (ids 371, 151451, 149879, 151194, 149884, 152717, 13, 149917, 151451, 149879,
+153067, 149884): the top-5 sets and their order are identical at all 12 positions, and the largest
+|Δlogp| over the common top-5 entries is 7.5e-4. The same prompt through the float32 torch reference
+(`tests/mkinkling2golden.py real`) gives the same top-5 at every position, with the same bound.
+
+Tensor parallelism (`tp: N`, N dividing the 24 query and 8 KV heads; the plugin's TENSOR PARALLELISM
+comment): each rank takes its query and KV heads (q, k, v, r, the gate, the sink, the clip scales, a
+full layer's dynamic taps and the K/V short convolutions, bf16 or int8 views alike), wo's matching
+columns, a slice of every routed expert's 1152 columns and its vocabulary rows. An IQR expert is
+split by parity class at 128-column blocks (nine: at two ranks five of the experts of its parity and
+four of the others), so gate_up's trellis runs are 128 rows; a bf16 expert is split evenly (576
+columns a rank at two). The depth mixes, controllers, norms and router are replicated. A layer
+application issues two all-reduces (after wo and after moe_gather, before the short convolutions),
+96 a token, plus one for the embedding a step. An int8 wr whose share is not whole 128-row tiles
+(192 rows at two ranks) is held whole and each rank reads its columns of r.
+
+**The container** (`data/recipes/inkling2-mini-iq4r-v4.recipe`, `inkling-2-mini-iq4r-v4.rad`, 14.43
+GiB with the vision tower): the routed experts are IQR-V4's four-bit computed trellis (`tcq=16
+tcq_code=mad`, one f32 scale a row and one a 128-K block, `fwht128`), fitted by GPTQ in act order
+against Hessians recorded by `--calib-corpus` (538415 tokens of code, tool calls, reasoning, English
+web text and German and other languages; the pooled gate_up input of each layer, every expert's own
+down input), served by `moe_gemm_iqr`. The published container's Hessians were recorded over a
+rotated int8 conversion of the release; the calibration container the plugin declares is bf16
+(`data/recipes/inkling2-mini-bf16.recipe`: the release's experts dequantised and rounded to bf16,
+about 53 GB, served at `tp: 2`), and the plugin's CALIBRATION comment and the recipe's header say
+what it records. The attention linears are rotated int8 at a bf16 scale per (row, 128 of K), the
+head unrotated int8 at a bf16 scale per (row, 128). The token embedding is the same unrotated int8
+form, which arch/inkling2 gathers with `embed_lookup` (libr4d's `embed_lookup_iqr`, the codes kept
+at their width and each gathered row decoded), vocabulary-sharded as a bf16 table is: 448.6 MiB
+against 883.4 bf16, and its pinned host copy 224.3 MiB a rank at tp 2. Against the release's own
+form (NVFP4 experts, MXFP8 experts re-quantised, bf16 trunk) in the KL mode over the 97-document
+corpus (115522 positions, top-512 reference): mean KL 0.00663, top-1 agreement 97.60 %, perplexity
+2.896 against 2.884.
+
+**incoai's DFlash2 drafter.** The container is converted with `--draft-model` pointing at
+incoai/Inkling-2-Mini-DFlash2 (a `DFlash2DraftModel`: five layers, the selector, block 8;
+`arch/inkling2/inkling2_dflash2.h`, the block of rad_block_dflash2.h). It is wired as the
+checkpoint's SGLang integration trains it: its `target_layer_ids` 5, 23, 41, 48 are the stream
+entering those applications and the final norm's output, the query block's looked-up rows pass
+through the trunk's `embed_norm`, the candidates come from the trunk's own int8 head (no copy) over
+the 200058 real tokens, and the selector's softcap is taken after the edge correction, which the
+greedy walk's argmax does not see. The drafter's linears are four-bit computed trellis and its down
+projections rotated int8 (their K at two ranks, 3456, is not a whole number of the IQR GEMMs'
+256-column steps), the selector's codebooks bf16. Its five layers keep a window KV group of their
+own (`kv_draft`, 2048); on this model, which keeps linear state, a prefix hit recomputes that window
+unless `checkpoint-draft-window` carries it in the checkpoint slots ([GUIDE §4.6](GUIDE.md)). At tp
+2, depth 7 (ms a step / tokens a step and tok/s at 1, 4 and 8 streams, medians of two rounds):
+essays 14.98 / 2.61, 172; 25.59 / 10.49, 397; 36.42 / 20.96, 550 at a fixed window, and 5.41 tokens
+a step on arithmetic reasoning at one stream. With `draft-window: adaptive` (GUIDE §4.6), which lets
+each sequence verify its block up to the first draft unlikely to be kept, essays reach 190 / 427 /
+658 tok/s, code 240 / 550 / 790 and reasoning 358 / 811 / 1116; serve Inkling with it and
+`num-speculative-tokens: 7`. Greedy text at a fixed window is the same run to run; drafted against
+undrafted text differs (the IQR GEMMs round by batch shape).
+
+---
 
 # `minimaxmusic3`: MiniMax-Music3, songs
 
@@ -2838,9 +3129,10 @@ checkpoint tensors under `codec.` (a `torch.save` archive, read as data and neve
 backbone  Qwen3.5-35B-A3B's language model, unchanged: 40 layers of 2048, three gated delta-net
           layers to one gated attention layer (16 q / 2 kv heads of 256, NeoX rotary on 64 dims
           at theta 1e7), 256 experts of 512 at top-8 and a gated shared expert of 512, (1 + w)
-          norms but the delta net's output norm. Only the routed experts are fp8 (E4M3 at an f32
-          scale a 128 x 128 block, `quant_method: bsgemm-moe`); the rest is bf16. A prompt row is
-          a token; a frame's row is bf16(bf16(E_lm[248099 + c0] + E_cb[4096 + c1]) / sqrt 2):
+          norms but the delta net's output norm. The source's routed experts use E4M3 with one f32
+          scale per 128 x 128 block (`quant_method: bsgemm-moe`). The recipe stores them as rotated
+          int8 with one bf16 scale per 128 columns in each row. The rest of the backbone is bf16.
+          A prompt row is a token; a frame's row is bf16(bf16(E_lm[248099 + c0] + E_cb[4096 + c1]) / sqrt 2):
           code 0 through its semantic token, code 1 through section 1 of the codebook table
 head      the main token over 4097 candidates only, the end of speech (248046) and the 4096
           semantic tokens in id order: the lm_head's rows for them, replicated (the full head is
@@ -2889,8 +3181,8 @@ The passes, which shift the tower by a row against the reference's loop:
 
 Traps (each still speaks, wrongly):
 
-- **The experts' scale planes are f32**, not the bf16 of Qwen3.6-35B-A3B-FP8: the expert format is
-  read per layer (`MoeFP8::probe`), and a block-fp8 expert is refused at load.
+- **The checkpoint metadata describes the source experts.** `MoeQ::probe` reads the stored
+  encoding from each layer's weights. The loader rejects experts still stored in block FP8.
 - **The tower's wqkv is blocked, `[Q | G | K | V]`**, not the backbone's per-head `[q_h | gate_h]`
   pairs; its rotary is GPT-J's adjacent pairs, not the backbone's halves; its q/k norms run with
   `(1 + w)` although its config says `attention_qk_norm: false` (the exporter never wrote it).

@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <initializer_list>
 #include <limits>
 
 namespace rad {
@@ -61,8 +62,46 @@ double state_code(const std::string& s) {
 
 History::Row History::model_row(const json& s, const json* prev, double dt) {
     Row row;
-    put(row, "decode", num(s, "decode_tps"));
-    put(row, "prefill", num(s, "prefill_tps"));
+    /* What the model is doing at this sample, from its live requests and the step under way. The
+     * counters are published when a step ends, so inside a long step they still describe the one
+     * before; the request states and the open step do not lag. */
+    bool in_prefill = false, in_decode = false;
+    if (const json* rq = member(s, "requests"); rq && rq->is_array())
+        for (const json& r : *rq) {
+            const std::string st = text(r, "state");
+            in_prefill |= st == "prefill";
+            in_decode |= st == "decode";
+        }
+    const double open_phase = num(s, "step_open_phase");
+    in_prefill |= open_phase == 0.0 || open_phase == 2.0;
+    auto advanced = [&](std::initializer_list<const char*> fields) {
+        if (!prev) return true;
+        double now = 0, was = 0;
+        for (const char* f : fields) {
+            now += num0(s, f);
+            was += num0(*prev, f);
+        }
+        return now > was;
+    };
+    const bool busy = in_prefill || in_decode || num0(s, "running") > 0 || open_phase >= 0.0
+                      || (prev && advanced({ "steps" }));
+    put(row, "busy", busy ? 1.0 : 0.0);
+    /* The decode and prefill rates are the engine's own recent averages, which hold their last
+     * value while nothing of their kind runs (the decay is keyed to steps of any kind), so with no
+     * work of that kind they read 0. Where such work exists but none of its steps finished since
+     * the last sample (a long prefill step holds decode back) the rate is left out, and the page
+     * draws through those gaps while the model is busy. */
+    if (const double d = num(s, "decode_tps"); std::isfinite(d)) {
+        if (advanced({ "steps_decode" })) put(row, "decode", d);
+        else if (!in_decode) put(row, "decode", 0.0);
+    }
+    if (const double p = num(s, "prefill_tps"); std::isfinite(p)) {
+        if (in_prefill || advanced({ "steps_prefill", "steps_mixed" })) {
+            if (p > 0.0 || !in_prefill) put(row, "prefill", p);
+        } else {
+            put(row, "prefill", 0.0);
+        }
+    }
     put(row, "running", num(s, "running"));
     put(row, "waiting", num(s, "waiting"));
     put(row, "preempted", num(s, "preempted"));
@@ -70,6 +109,12 @@ History::Row History::model_row(const json& s, const json* prev, double dt) {
     put(row, "hit", num(s, "prefix_hit_rate"));
     put(row, "kvUsed", num(s, "kv_bytes_used"));
     put(row, "kvCap", num(s, "kv_bytes_total"));
+    /* The same pool in tokens: held now, what the pool holds at present, and what it could hold
+     * with every block of its carve (VRAM lent to the expert slab included). */
+    put(row, "kvTokUsed", num(s, "kv_tokens_used"));
+    put(row, "kvTokCap", num(s, "kv_tokens_total"));
+    if (const double mx = num(s, "kv_tokens_max"); mx > num0(s, "kv_tokens_total"))
+        put(row, "kvTokMax", mx);
     /* The pool's bytes split by tokens: what finished turns keep for reuse and what running
      * requests read. */
     {
@@ -78,6 +123,8 @@ History::Row History::model_row(const json& s, const json* prev, double dt) {
         const double kept_b = used > 0 ? held * kept / used : 0.0;
         put(row, "kvKept", kept_b);
         put(row, "kvRead", std::max(0.0, held - kept_b));
+        put(row, "kvTokKept", kept);
+        put(row, "kvTokRead", std::max(0.0, used - kept));
     }
     if (const double best = num(s, "step_ns_decode_best"); best > 0) put(row, "stepBest", best / 1e6);
     const json* jobs = member(s, "jobs");
@@ -105,8 +152,24 @@ History::Row History::model_row(const json& s, const json* prev, double dt) {
         }
         if (n) put(row, "prefillRate", sum / n);
     }
+    put(row, "encWait", num(s, "encode_pending"));
     if (!prev || !(dt > 0)) return row;
     const json& p = *prev;
+
+    /* The encoder's share of the time between samples, and its items and patches a second. A
+     * counter that went back (a reload under the same start) is a gap, not a negative rate.
+     * encode_ns grows while a pass runs (Scheduler::take_encodes), so a long pass reads busy on
+     * every sample it spans; the clamp only absorbs the jitter between the sampler's clock and
+     * the server's. Items and patches count when their pass ends. */
+    {
+        auto d = [&](const char* f) {
+            const double v = num(s, f) - num(p, f);
+            return v >= 0 ? v : kNone;
+        };
+        put(row, "encBusy", std::clamp(d("encode_ns") / (dt * 1e9), 0.0, 1.0));
+        put(row, "encRate", d("encode_items") / dt);
+        put(row, "encPatch", d("encode_patches") / dt);
+    }
 
     if (jobs)
         if (const json* pj = member(p, "jobs"); pj && num0(*jobs, "done") > num0(*pj, "done"))
@@ -149,7 +212,9 @@ History::Row History::model_row(const json& s, const json* prev, double dt) {
     {
         const json* ex = member(s, "experts");
         const json* xp = member(p, "experts");
-        if (ex && xp) {
+        /* Nothing to hit or move while every expert sits in VRAM. */
+        const json* tf = ex ? member(*ex, "tiered") : nullptr;
+        if (ex && xp && tf && tf->is_boolean() && tf->get<bool>()) {
             if (const double routed = num0(*ex, "routed") - num0(*xp, "routed"); routed > 0)
                 put(row, "expHit", (num0(*ex, "routed_res") - num0(*xp, "routed_res")) / routed);
             put(row, "expIn", std::max(0.0, (num0(*ex, "promotions") - num0(*xp, "promotions")) / dt));
@@ -172,6 +237,11 @@ History::Row History::fleet_row(const json& f) {
         if (const double v = num(c, "busy"); std::isfinite(v)) row.emplace_back(name("busy"), v);
         if (const double v = num(c, "power_w"); std::isfinite(v)) row.emplace_back(name("power"), v);
         if (const double v = num(c, "temp_c"); std::isfinite(v)) row.emplace_back(name("temp"), v);
+        if (const double v = num(c, "mem_busy"); std::isfinite(v)) row.emplace_back(name("memb"), v);
+        if (const double v = num(c, "sclk_mhz"); std::isfinite(v)) row.emplace_back(name("sclk"), v);
+        if (const double v = num(c, "mclk_mhz"); std::isfinite(v)) row.emplace_back(name("mclk"), v);
+        if (const double v = num(c, "temp_mem_c"); std::isfinite(v)) row.emplace_back(name("tmem"), v);
+        if (const double v = num(c, "fan_pct"); std::isfinite(v)) row.emplace_back(name("fan"), v);
         if (const double v = num(c, "free_bytes"); std::isfinite(v)) row.emplace_back(name("free"), v);
         if (!models || !models->is_array()) continue;
         /* A model's bytes on this card, 0 where it holds none: the stacked memory chart draws a
@@ -250,6 +320,7 @@ void History::track_requests(Model& m, const json& stats, double t) {
         const double pf = num(r, "prefill_s"), ttft = num(r, "ttft_s"), tps = num(r, "tps");
         json h;
         h["id"] = text(r, "id");
+        if (!text(r, "lora").empty()) h["lora"] = text(r, "lora");
         h["prompt"] = num0(r, "prompt");
         h["out"] = num0(r, "output");
         h["ctx"] = num0(r, "ctx");
@@ -291,7 +362,21 @@ void History::model_sample(const std::string& id, const json& stats, double t, s
         m.live.clear();
         m.done.clear();
     }
-    m.series.push(t, model_row(stats, same ? &m.prev : nullptr, t - m.prev_t));
+    Row row = model_row(stats, same ? &m.prev : nullptr, t - m.prev_t);
+    /* The model's cards' figures under the fleet's own column names (busy<c>, memb<c>, ...), from the
+     * latest fleet sample: a page that may read this model but not the fleet still sees what its
+     * cards are doing while no step runs (an encode, a load). */
+    if (const auto it = model_cards_.find(id); it != model_cards_.end() && cards_.is_array())
+        for (const json& c : cards_) {
+            const std::string card = text(c, "card");
+            if (std::find(it->second.begin(), it->second.end(), card) == it->second.end()) continue;
+            static const std::pair<const char*, const char*> kCols[] = {
+                { "busy", "busy" }, { "power_w", "power" }, { "temp_c", "temp" }, { "mem_busy", "memb" },
+                { "sclk_mhz", "sclk" }, { "mclk_mhz", "mclk" }, { "temp_mem_c", "tmem" }, { "fan_pct", "fan" } };
+            for (const auto& [k, col] : kCols)
+                if (const double v = num(c, k); std::isfinite(v)) row.emplace_back(col + card, v);
+        }
+    m.series.push(t, row);
     track_requests(m, stats, t);
     m.prev = stats;
     m.prev_t = t;
@@ -300,6 +385,14 @@ void History::model_sample(const std::string& id, const json& stats, double t, s
 void History::fleet_sample(const json& fleet, double t, std::string body) {
     std::lock_guard<std::mutex> lk(mu_);
     fleet_.push(t, fleet_row(fleet));
+    cards_ = json();
+    if (const json* c = member(fleet, "cards"); c && c->is_array()) cards_ = *c;
+    model_cards_.clear();
+    if (const json* ms = member(fleet, "models"); ms && ms->is_array())
+        for (const json& m : *ms)
+            if (const json* on = member(m, "cards"); on && on->is_array())
+                for (const json& x : *on)
+                    if (x.is_number()) model_cards_[text(m, "id")].push_back(std::to_string(x.get<long long>()));
     fleet_live_ = std::move(body);
 }
 

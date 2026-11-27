@@ -1882,6 +1882,8 @@ static const RadParamSpec pGatedHadQuant[] = {
     P_STR("dtype"),
     P_STRO("act"),
     P_INTO("mode"),                         /* 0 = silu(a)*b, 1 = sigmoid(a)*b */
+    P_F64O("gate_cap"),                     /* SiTU's caps (docs/OPS.md); refused here when set */
+    P_F64O("up_cap"),
 };
 static const RadOperandSpec oGatedHadQuant[] = {
     { "a",     RAD_OPD_IN,  0 },
@@ -2842,7 +2844,9 @@ static const RadOperandSpec oConvNhwc[] = {
 };
 static const RadParamSpec pIm2col[] = { P_INT("M"), P_INT("cin"), P_INT("k"), P_INT("stride"),
                                         P_STR("pad"), P_INT("up"), P_STR("dtype") };
-static const RadParamSpec pL2Norm[] = { P_INT("M"), P_INT("n"), P_STR("act"), P_STR("dtype") };
+static const RadParamSpec pL2Norm[] = {
+    P_INT("M"), P_INT("n"), P_STR("act"), P_STR("dtype"), P_INTO("round_length"),
+};
 static const RadOperandSpec oL2Norm[] = {
     { "x", RAD_OPD_IN, 0 }, { "gamma", RAD_OPD_WEIGHT, 0 }, { "y", RAD_OPD_OUT, 0 },
 };

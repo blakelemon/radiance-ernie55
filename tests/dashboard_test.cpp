@@ -35,6 +35,7 @@ struct StatsScheduler : FakeScheduler {
         r.kv_tokens = 960;
         r.n_draft = 3;
         r.slot = 2;
+        r.lora = "style";
         r.age_s = 4.5;
         r.ttft_s = 0.25;
         r.prefill_s = 0.20;
@@ -47,6 +48,7 @@ struct StatsScheduler : FakeScheduler {
         s.id = 7;
         s.model = "m";
         s.label = "conv-7";
+        s.lora = "style";
         s.n_tokens = 5000;
         s.bytes = 1 << 20;
         s.idle_s = 12.0;
@@ -151,6 +153,10 @@ struct Dash {
         sched.m.draft_depth_seen = 2;
         sched.m.draft_pos_reached[0] = 10; sched.m.draft_pos_accepted[0] = 8;
         sched.m.draft_pos_reached[1] = 8;  sched.m.draft_pos_accepted[1] = 2;
+        sched.m.encode_items = 3;
+        sched.m.encode_patches = 12000;
+        sched.m.encode_ns = 1500000000;
+        sched.m.encode_pending = 1;
         srv.reset(new Server(d, o));
     }
     json get(const char* path) {
@@ -184,6 +190,11 @@ TEST(stats_carries_the_engine_the_requests_and_the_snapshot) {
     CHECK_EQ(s.value("running", (int64_t)0), (int64_t)1);
     CHECK_EQ(s.value("kv_tokens_cached", (int64_t)0), (int64_t)300);
     CHECK_EQ(s.value("kv_tokens_max", (int64_t)0), (int64_t)6000);
+    CHECK_EQ(s.value("kv_tokens_total", (int64_t)0), (int64_t)4000);
+    /* No step runs in this fixture; one that did would carry its phase and age. */
+    CHECK_EQ(s.value("step_open_phase", (int64_t)0), (int64_t)-1);
+    CHECK_NEAR(s.value("step_open_s", -1.0), 0.0, 1e-12);
+    CHECK(s["experts"].value("tiered", false));
     REQUIRE(s["draft_positions"].size() == 2);
     CHECK_NEAR(s["draft_positions"][1]["rate"].get<double>(), 0.25, 1e-12);
     CHECK_EQ(s["draft_positions"][1]["reached"].get<int64_t>(), (int64_t)8);
@@ -209,6 +220,10 @@ TEST(stats_carries_the_engine_the_requests_and_the_snapshot) {
     CHECK_EQ(s["hit_cuts"].value("no_snapshot", (int64_t)0), (int64_t)2);
     CHECK_EQ(s["hit_cuts"].value("resumed_below", (int64_t)0), (int64_t)4);
     CHECK_EQ(s.value("hit_cut_tokens", (int64_t)0), (int64_t)9000);
+    CHECK_EQ(s.value("encode_items", (int64_t)0), (int64_t)3);
+    CHECK_EQ(s.value("encode_patches", (int64_t)0), (int64_t)12000);
+    CHECK_EQ(s.value("encode_ns", (int64_t)0), (int64_t)1500000000);
+    CHECK_EQ(s.value("encode_pending", (int64_t)0), (int64_t)1);
 
     CHECK_EQ(d.srv->router().call("GET", "/graph").status, 501);
     Dash g(true);
@@ -383,7 +398,7 @@ TEST(the_sampler_yields_every_charted_figure_from_the_stats_route) {
     for (const char* k : { "decode", "prefill", "running", "waiting", "preempted", "flight", "hit", "kvUsed", "kvCap",
                            "kvKept", "kvRead", "jobRun", "jobDone", "prefillRate", "reqRate", "stepAny", "step",
                            "accept", "tokStep", "lkAr", "lkUp", "lkDn", "lkSsd", "lkStream", "expHit", "expIn",
-                           "expOut" }) {
+                           "expOut", "encBusy", "encRate", "encPatch", "encWait" }) {
         CHECK(have.count(k) == 1);
         if (!have.count(k)) fprintf(stderr, "    the sampler yields no '%s' from /stats\n", k);
     }

@@ -118,6 +118,9 @@ public:
     /* A load nobody asked for gave up (the fleet's warm-up): a loading model is cold again, and
      * any request that came meanwhile asks for it anew. */
     void abandon(const std::string& name);
+    /* An operator's load request ends a failed model's retry wait: it is Cold again, so the
+     * request that follows reads the new load's outcome, not the last one's. */
+    void retry(const std::string& name);
     /* A Cold model is parked (its memory waits in host RAM), or no longer is. */
     void set_parked(const std::string& name, bool parked);
     /* The load failed: requests waiting get `why` as a 503, and so do new ones until `retry_ms`
@@ -132,6 +135,10 @@ public:
     bool detach(const std::string& name, int wait_ms);
 
     Activity activity(const std::string& name) const;
+    /* The leases a model's name now holds under the name `name:adapter` (the tail a request put
+     * after the colon). 0 when nothing runs under that suffix and 0 for a model that serves no
+     * adapter of that name: the Front counts names, and an unasked name has none. */
+    int64_t adapter_leases(const std::string& name, const std::string& adapter) const;
     /* Every model's name, in the order added. */
     std::vector<std::string> names() const;
 
@@ -162,6 +169,9 @@ public:
     int  port() const { return transport_.port(); }
     void stop();
     bool stopping() const { return stopping_.load(std::memory_order_acquire); }
+
+    /* Forward a per-model HTTP request through the same dispatch path as the listener. */
+    HttpResponse forward(HttpRequest q);
 
     /* The model a request names, as read before any parsing (see the file header), or "". */
     static std::string requested_model(const HttpRequest& q);
@@ -201,6 +211,11 @@ private:
         bool                     removed = false;
         int64_t                  leases = 0;
         int64_t                  waiting = 0;
+        /* Leases taken under the name `name:adapter`, keyed by what the request put after the
+         * colon. The Front knows no adapters -- it counts the name a request asked by, so the
+         * suffix is just the name's tail. Only lease() fills this in; card reads, health reads
+         * and broadcast holds name no adapter. */
+        std::map<std::string, int64_t> adapter_leases;
         uint64_t                 last_used_ns = 0;
         uint64_t                 uses = 0;
         uint64_t                 waits = 0;
@@ -228,16 +243,19 @@ private:
     Got lease(const std::string& model, const std::string& path, int64_t wait_ms,
               uint64_t* until_ns, Entry** out, std::shared_ptr<void>* held, HttpResponse* refusal,
               bool operator_ok);
-    std::shared_ptr<void> lease_entry(Entry* e);
+    /* `adapter` is the tail of the requested name after the colon, empty when the request named
+     * the model itself: the lease then marks no adapter. */
+    std::shared_ptr<void> lease_entry(Entry* e, const std::string& adapter = "");
     std::shared_ptr<void> lease_quiet(Entry* e);
-    HttpResponse forward(HttpRequest q);
     HttpResponse forward_waiting(HttpRequest q, const std::string& model);
     void         forward_socket(const HttpRequest& q, WsConn& c);
     HttpResponse models(const HttpRequest& q);
     HttpResponse health(const HttpRequest& q);
     HttpResponse metrics(const HttpRequest& q);
     void         install_routes(const Router& model_router);
-    /* Leases on every Open entry, for the fleet-wide routes. */
+    /* Quiet leases (not a use of the model, so a scrape or a probe does not hold off an idle TTL)
+     * on every Open entry, and with `include_draining_jobs` on Closing ones too, for the
+     * fleet-wide routes. */
     std::vector<std::pair<Entry*, std::shared_ptr<void>>> hold_open(bool include_draining_jobs = false);
 
     TransportOptions      topts_;

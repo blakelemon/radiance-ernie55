@@ -555,7 +555,7 @@ static bool chain_extends(const std::vector<BlockHash>& shorter,
 }
 
 void IdleTiers::note_session(uint64_t id, const std::vector<BlockHash>& chain, int64_t n_tokens,
-                             uint64_t now_ns, const std::string& label) {
+                             uint64_t now_ns, const std::string& label, int32_t lora_slot) {
     if (chain.empty()) return;
     std::lock_guard lk(mu_);
 
@@ -592,6 +592,7 @@ void IdleTiers::note_session(uint64_t id, const std::vector<BlockHash>& chain, i
         }
         if (newest) {
             newest->last_used_ns = now_ns;
+            newest->last_lora_slot = lora_slot;
             if (!label.empty()) newest->label = label;
             return;
         }
@@ -599,15 +600,15 @@ void IdleTiers::note_session(uint64_t id, const std::vector<BlockHash>& chain, i
 
     Session& s = sessions_[id];
     s.last_used_ns = now_ns;
+    s.last_lora_slot = lora_slot;
     s.n_tokens = n_tokens;
     s.first_seen_ns = first_seen ? first_seen : now_ns;
     s.chain = chain;
     s.label = std::move(kept_label);
     at_root.push_back(id);
     /* Rows under one root are pruned only when the root block goes, and a prompt every request
-     * shares (a decision model's instructions) never goes: the list grew by a row a request and
-     * each insert walked it under the lock the engine threads take (#375: prefill from 9k to
-     * 2.5k tok/s after 500K requests). Past kRootSessions the least recently used row is
+     * shares never goes, so the list grows by a row per request and each insert walks it under
+     * the lock the engine threads take. Past kRootSessions the least recently used row is
      * dropped; a row is bookkeeping, so its blocks stay cached. */
     if (at_root.size() > kRootSessions) {
         uint64_t oldest = 0, oldest_ns = ~uint64_t{0};
@@ -703,6 +704,7 @@ std::vector<IdleTiers::SessionInfo> IdleTiers::sessions(Occupancy* occ) const {
             si.first_seen_ns = kv.second.first_seen_ns;
             si.label = kv.second.label;
             si.last_used_ns = kv.second.last_used_ns;
+            si.last_lora_slot = kv.second.last_lora_slot;
             si.bytes = (int64_t)kv.second.chain.size() * cfg_.entry_bytes;
             out.push_back(std::move(si));
         }

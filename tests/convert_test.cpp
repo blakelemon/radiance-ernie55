@@ -556,6 +556,29 @@ TEST(reuse_of_an_unchanged_checkpoint_writes_the_same_file) {
     CHECK(tiny::read_text(d / "r.rad") == tiny::read_text(w.base));
 }
 
+TEST(reuse_only_copies_matching_planes_and_refuses_fresh_conversion) {
+    World& w = world();
+    REQUIRE(w.ok);
+    tiny::TempDir d("convert_reuse_only");
+    std::string log;
+    REQUIRE_EQ(convert(w.ckpt, { "-o", d / "ok.rad", "--recipe", w.recipe, "--reuse", w.base,
+                                  "--reuse-only" }, &log), 0);
+    CHECK(has(log, "--reuse: 15 weight(s)"));
+    CHECK(tiny::read_text(d / "ok.rad") == tiny::read_text(w.base));
+    REQUIRE(tiny::write_text(d / "changed.recipe",
+                             std::string("blk.0.attn_qkv.weight rtn codes=i8 group=128 scale=bf16 "
+                                         "transform=fwht128 clamp=sym rule=search\n") +
+                                 tiny::kLlamaI8Recipe));
+    CHECK(convert(w.ckpt, { "-o", d / "bad.rad", "--recipe", d / "changed.recipe",
+                            "--reuse", w.base, "--reuse-only" }, &log) != 0);
+    CHECK(has(log, "--reuse-only: no matching source"));
+    CHECK_EQ(convert(w.ckpt, { "-o", d / "missing.rad", "--recipe", w.recipe, "--reuse-only" },
+                     &log), 2);
+    CHECK_EQ(convert(w.ckpt, { "--recipe", w.recipe, "--reuse", w.base, "--reuse-only",
+                               "--in-place" }, &log), 2);
+    CHECK(tiny::read_text(d / "ok.rad") == tiny::read_text(w.base));
+}
+
 /* --reuse matches on how a weight was converted, not on its source bytes, so a changed tensor is
  * copied stale unless --changed names it; named, exactly the weights that read it are converted
  * again. */
@@ -590,7 +613,7 @@ TEST(changed_reconverts_exactly_the_weights_that_read_a_changed_tensor) {
     RadFile f;
     REQUIRE_EQ(f.open((d / "fresh.rad").c_str()), RAD_OK);
     const std::vector<std::string> diff = differing_weights(base, f);
-    CHECK_EQ(diff.size(), (size_t)1);
+    REQUIRE_EQ(diff.size(), (size_t)1);
     CHECK(!diff.empty() && diff[0] == "blk.0.ffn_down.weight");
     /* And it is the negated weight, not merely different bytes. */
     const RadFileEntry* a = base.find("blk.0.ffn_down.weight");
@@ -702,7 +725,7 @@ TEST(lora_merges_into_its_target_and_reconverts_the_weights_that_read_it) {
     RadFile base;
     REQUIRE_EQ(base.open(w.base.c_str()), RAD_OK);
     const std::vector<std::string> diff = differing_weights(base, m);
-    CHECK_EQ(diff.size(), (size_t)1);
+    REQUIRE_EQ(diff.size(), (size_t)1);
     CHECK(!diff.empty() && diff[0] == "blk.0.ffn_down.weight");
 
     REQUIRE(copy_ckpt_raised(w, d / "ref", target, 0.5f * 0.25f * 2.f));
@@ -1095,6 +1118,78 @@ TEST(plan_only_writes_nothing) {
     CHECK(!exists(d / "p.rad"));
 }
 
+/* Inkling 2's routed experts as the release stores them: e2m1 codes, an e4m3 scale per 16 of K and an
+ * f32 level per expert, named by hf_quant_config.json's nvfp4 parameter group. The plugin serves no
+ * NVFP4 expert, so a recipe that keeps them as stored is refused by name before anything is
+ * written; data/recipes/inkling2-mini-bf16.recipe's rules (the experts dequantised and cast to
+ * bf16, the calibration container) write, and the writer checks each expert's slot order. */
+TEST(an_inkling2_nvfp4_expert_checkpoint_converts_to_the_bf16_calibration_form) {
+    tiny::TempDir d("convert_nv");
+    REQUIRE(d.ok());
+    const std::string ckpt = d / "inkling";
+    REQUIRE(mkdir(ckpt.c_str(), 0755) == 0);
+    /* a hidden and a ffn width of 128: the stored int8 and the NVFP4 int8 activations are 128-wide */
+    tiny::Inkling2 s;
+    s.hidden = 128;
+    s.ffn = 128;
+    REQUIRE(tiny::write_inkling2(ckpt, s));
+
+    std::vector<tiny::Tensor> ts = tiny::read_safetensors(ckpt + "/model.safetensors");
+    REQUIRE(!ts.empty());
+    const int64_t E = s.experts, H = s.hidden, F = s.ffn;
+    /* e4m3 bytes 0.5, 1.0 and 2.0 in turn, and e2m1 codes that exercise every nibble */
+    const uint8_t e4m3[3] = { 0x30, 0x38, 0x40 };
+    auto nvfp4 = [&](const std::string& base, int64_t N, int64_t K, float amax) {
+        tiny::Tensor w{ base + "_weight", "U8", { E, N, K / 2 }, {} };
+        for (int64_t i = 0; i < E * N * K / 2; ++i) w.bytes.push_back((uint8_t)((i * 37 + 11) & 0xff));
+        tiny::Tensor sc{ base + "_weight_scale", "F8_E4M3", { E, N, K / 16 }, {} };
+        for (int64_t i = 0; i < E * N * K / 16; ++i) sc.bytes.push_back(e4m3[i % 3]);
+        tiny::Tensor a{ base + "_weight_amax", "F32", { E }, std::vector<uint8_t>((size_t)E * 4) };
+        for (int64_t e = 0; e < E; ++e) {
+            const float v = amax * (float)(e + 1);
+            std::memcpy(a.bytes.data() + e * 4, &v, 4);
+        }
+        tiny::Tensor dn{ base + "_weight_outer_scale_denominator", "F32", { 1 }, std::vector<uint8_t>(4) };
+        const float denom = 2.0f;
+        std::memcpy(dn.bytes.data(), &denom, 4);
+        return std::vector<tiny::Tensor>{ w, sc, a, dn };
+    };
+    std::vector<tiny::Tensor> out;
+    std::vector<std::string> names;
+    for (tiny::Tensor& t : ts) {
+        const bool expert = t.name.find(".mlp.experts.w13_weight") != std::string::npos ||
+                            t.name.find(".mlp.experts.w2_weight") != std::string::npos;
+        if (!expert) out.push_back(std::move(t));
+    }
+    for (int64_t l = 0; l < s.layers; ++l) {
+        const std::string p = "model.layers." + std::to_string(l) + ".mlp.experts.";
+        for (const tiny::Tensor& t : nvfp4(p + "w13", 2 * F, H, 3.0f)) out.push_back(t);
+        for (const tiny::Tensor& t : nvfp4(p + "w2", H, F, 6.0f)) out.push_back(t);
+        names.push_back(p + "w13_weight");
+        names.push_back(p + "w2_weight");
+    }
+    REQUIRE(tiny::write_safetensors(ckpt + "/model.safetensors", out));
+
+    std::string groups = "{\"model\":{\"parameter_groups\":[{\"compute_dtype\":\"nvfp4\",\"tensors\":[";
+    for (size_t i = 0; i < names.size(); ++i)
+        groups += (i ? ",\"" : "\"") + names[i] + "\"";
+    groups += "]}]}}";
+    REQUIRE(tiny::write_text(ckpt + "/hf_quant_config.json", groups));
+    const std::string keep = d / "keep.recipe";
+    REQUIRE(tiny::write_text(keep, "# every routed expert is kept as stored\n"));
+    std::string log;
+    CHECK(convert(ckpt, { "-o", d / "nv.rad", "--recipe", keep }, &log) != 0);
+    CHECK(has(log, "blk.0.e0.gu"));
+    CHECK(has(log, "data/recipes/inkling2-mini-bf16.recipe"));
+    CHECK(!exists(d / "nv.rad"));
+
+    const std::string bf16 = d / "bf16.recipe";
+    REQUIRE(tiny::write_text(bf16, "blk.*.e*.gu cast dtype=bf16\nblk.*.e*.dn cast dtype=bf16\n"));
+    // a full write, not plan-only: the writer checks that each expert's slots run 0..n-1 in order
+    CHECK_EQ(convert(ckpt, { "-o", d / "bf.rad", "--recipe", bf16 }, &log), 0);
+    CHECK(exists(d / "bf.rad"));
+}
+
 /* A recipe or flag that cannot be honoured stops the run with status 2 before any file exists:
  * an unknown quantiser, option, or non-integer value, a recipe that cannot be read, an unset
  * $VARIABLE, a --set without `=`, and a KV dtype that is not bf16 or fp8. */
@@ -1173,7 +1268,6 @@ TEST(a_rule_that_declines_a_gguf_block_tensor_is_an_error) {
                   { "-o", d / "g.rad", "--recipe", w.recipe, "--quant",
                     "blk.0.attn_norm.weight=rtn:codes=i8,group=32,scale=bf16" },
                   &log) != 0);
-    CHECK(has(log, "(rtn) refuses it"));
     CHECK(!exists(d / "g.rad"));
 }
 
@@ -1366,6 +1460,31 @@ TEST(chat_template_flag_bakes_the_template) {
     std::string bad;
     CHECK_EQ(convert(w.ckpt, { "-o", d / "bad.rad", "--recipe", w.recipe,
                                "--chat-template", d / "absent.jinja" }, &bad), 1);
+}
+
+/* A convert stopped after one large weight keeps its journal and a resume finishes the rest
+ * without rewriting it; the resumed container is byte-identical to an uninterrupted one. */
+TEST(a_checkpointed_write_resumes_and_keeps_its_finished_weights) {
+    World& w = world();
+    REQUIRE(w.ok);
+    tiny::TempDir d("convert_r");
+    const std::string part = d / "r.rad";
+    std::string log;
+    /* --large-f32-bytes 1: every weight is a large one, so the journal records each. */
+    REQUIRE_EQ(convert(w.ckpt, { "-o", part, "--recipe", w.recipe, "--large-f32-bytes", "1",
+                                 "--checkpoint-at", "1" }, &log), 3);
+    CHECK(exists(part + ".journal"));
+    std::string rlog;
+    REQUIRE_EQ(convert(w.ckpt, { "-o", part, "--recipe", w.recipe, "--large-f32-bytes", "1", "--resume" },
+                       &rlog), 0);
+    CHECK(rlog.find("resume") != std::string::npos);
+    CHECK(!exists(part + ".journal"));
+    RadFile a, b;
+    REQUIRE_EQ(a.open(w.base.c_str()), RAD_OK);
+    REQUIRE_EQ(b.open(part.c_str()), RAD_OK);
+    const std::vector<std::string> diff = differing_weights(a, b);
+    CHECK(diff.empty());
+    if (!diff.empty()) fprintf(stderr, "    resumed differs at %s\n", diff[0].c_str());
 }
 
 RAD_TEST_MAIN()

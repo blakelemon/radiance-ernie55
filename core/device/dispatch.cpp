@@ -368,6 +368,22 @@ void VMem::release() {
     ext_.clear();
 }
 
+int64_t VMem::committed_bytes(int64_t off, int64_t bytes) const {
+    if (off < 0 || bytes <= 0 || off > size_ || bytes > size_ - off) return 0;
+    const int64_t end = off + bytes;
+    int64_t total = 0;
+    for (const auto& extent : ext_)
+        total += std::max<int64_t>(0, std::min(end, extent.first + extent.second) -
+                                      std::max(off, extent.first));
+    return total;
+}
+
+int64_t VMem::committed_suffix() const {
+    if (ext_.empty()) return 0;
+    const auto& last = ext_.back();
+    return last.first + last.second == size_ ? last.second : 0;
+}
+
 bool VMem::is_committed(int64_t off, int64_t bytes) const {
     if (bytes <= 0) return true;
     if (off < 0 || off + bytes > size_) return false;
@@ -876,6 +892,7 @@ std::string dev_pci_address(int device) {
 }
 std::atomic<int64_t> dev_stuck_exit_ms{60000};
 std::atomic<bool> dev_engine_ready{false};
+std::atomic<int> dev_pinned_numa_node{-1};
 int64_t dev_stuck_ms() {
     const auto f = dev()->stuck_ms;
     return f ? f() : 0;

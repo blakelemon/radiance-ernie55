@@ -17,9 +17,9 @@
  * ============================== The rotation ==============================
  *
  * Unnormalised butterflies at ascending strides 1, 2, 4, ... group/2, pairing i with i+h where
- * (i & h) == 0: the order and pairing of r4d_fwht.h, so the two agree bit for bit. The 1/sqrt(group)
- * is folded into the scale, as the fast kernel does; scaling every element by a constant cannot
- * change its int8 code here.
+ * (i & h) == 0: the order and pairing of r4d_fwht.h, so the two agree bit for bit. The
+ * 1/sqrt(group) is folded into the scale, as the fast kernel does; scaling every element by a
+ * constant cannot change its int8 code here.
  */
 #include "ref_common.h"
 #include "ref_gemm.h"   /* Mat and Scales, for gemm_nt_q_gated */
@@ -104,9 +104,14 @@ int ref_quant_act_i8g(const RadArgs* a, RadStream) {
 
 /* ------------------------------------------------------------------ had_quant_act_i8 */
 /* The rotated int8 row of the had_*_i8 ops: `v(i)` for i < n rotated in blocks of `g`, its codes
- * stored at q[qb + i * qs] against one scale for the whole row (the amax is over the whole rotated
- * row). The rotation is computed twice, for the amax and then for the codes, rather than held.
- * Returns the row's scale, amax / 127 / sqrt(g). */
+ * against one scale for the whole row (the amax is over the whole rotated row). The rotation is
+ * computed twice, for the amax and then for the codes, rather than held. Returns the row's scale,
+ * amax / 127 / sqrt(g).
+ *
+ * The codes are stored in the step order (i8_step_pos), not column order: the card's rotated
+ * quantisers (r4d_gated_had_quant_i8, r4d_rmsnorm_had_quant_i8, r4d_had_quant_act_i8) write
+ * byte i = code of column i8_step_pos(i), and the int8 WMMA reads them so. Needs n a multiple of
+ * 16 (a whole step), which the callers check. */
 template <class V>
 static float had_i8_row(const V& v, int64_t n, int64_t g, const RadTensor* q, int64_t qb,
                         int64_t qs) {
@@ -121,7 +126,8 @@ static float had_i8_row(const V& v, int64_t n, int64_t g, const RadTensor* q, in
     for (int64_t b = 0; b < n; b += g) {
         for (int64_t i = 0; i < g; ++i) buf[i] = v(b + i);
         fwht(buf, g);
-        for (int64_t i = 0; i < g; ++i) st_dt(q->dtype, q->data, qb + (b + i) * qs, buf[i] * inv);
+        for (int64_t i = 0; i < g; ++i)
+            st_dt(q->dtype, q->data, qb + i8_step_pos(b + i) * qs, buf[i] * inv);
     }
     return amax / 127.0f * (1.0f / std::sqrt((float)g));
 }
@@ -133,6 +139,7 @@ int ref_had_quant_act_i8(const RadArgs* a, RadStream) {
     const int64_t g = p_int(a, "group", 0);
     if (n <= 0 || !pow2(g) || n % g != 0) return RAD_E_SHAPE;
     if (g > REF_HAD_MAX) return RAD_E_UNSUPPORTED;
+    if (n % 16) return RAD_E_SHAPE;                 /* whole steps, as quant_act_i8 */
     const int64_t rows = numel(x) / n;
     if (rows <= 0 || numel(q) < rows * n || numel(s) < rows) return RAD_E_SHAPE;
 
@@ -168,6 +175,7 @@ int ref_rmsnorm_had_quant_i8(const RadArgs* a, RadStream) {
     const float wadd = p_f32(a, "wadd", 0.0f);
     if (n <= 0 || !pow2(g) || n % g != 0) return RAD_E_SHAPE;
     if (g > REF_HAD_MAX) return RAD_E_UNSUPPORTED;
+    if (n % 16) return RAD_E_SHAPE;                 /* whole steps, as quant_act_i8 */
     const int64_t rows = numel(x) / n;
     if (rows <= 0 || numel(q) < rows * n || numel(s) < rows || numel(w) < n) return RAD_E_SHAPE;
     if (res && numel(res) < rows * n) return RAD_E_SHAPE;
@@ -220,11 +228,15 @@ int ref_gated_had_quant_i8(const RadArgs* a, RadStream) {
     if (!ga->data || !q->data || !s->data) return RAD_E_INVAL;
     const int64_t n = p_int(a, "n", 0);
     const int64_t g = p_int(a, "group", 0);
-    static const char* kActs[] = { "silu", "sigmoid" };
-    const int act = p_enum(a, "act", kActs, 2, (int)p_int(a, "mode", 0));
+    static const char* kActs[] = { "silu", "sigmoid", "situ" };
+    const int act = p_enum(a, "act", kActs, 3, (int)p_int(a, "mode", 0));
+    const float gcap = p_f32(a, "gate_cap", 0.0f), ucap = p_f32(a, "up_cap", 0.0f);
     if (n <= 0 || !pow2(g) || n % g != 0) return RAD_E_SHAPE;
-    if (act != 0 && act != 1) return RAD_E_INVAL;
+    if (act < 0 || act > 2) return RAD_E_INVAL;
+    if (!(gcap >= 0.0f) || !(ucap >= 0.0f) || !std::isfinite(gcap) || !std::isfinite(ucap))
+        return RAD_E_INVAL;
     if (g > REF_HAD_MAX) return RAD_E_UNSUPPORTED;
+    if (n % 16) return RAD_E_SHAPE;                 /* whole steps, as quant_act_i8 */
     const int64_t rows = numel(q) / n;
     if (rows <= 0 || numel(s) < rows) return RAD_E_SHAPE;
     if (numel(ga) < rows * (up ? n : 2 * n)) return RAD_E_SHAPE;
@@ -238,6 +250,7 @@ int ref_gated_had_quant_i8(const RadArgs* a, RadStream) {
         auto gated = [&](int64_t i) {
             const float gate = ldt(ga, gb + i * gs);
             const float x    = up ? ldt(up, ub + i * us) : ldt(ga, gb + (n + i) * gs);
+            if (act == 2) return act_situ_gate(gate, gcap) * act_situ_up(x, ucap);
             return (act == 1 ? act_sigmoid(gate) : act_silu(gate)) * x;
         };
         stt(s, r * laststride(s), had_i8_row(gated, n, g, q, rowoff(q, r, n), laststride(q)));
@@ -547,7 +560,7 @@ int ref_gram_accum(const RadArgs* a, RadStream) {
  */
 
 /* One group-scaled fp8 row from the values in `v`; constants and scale layout as quant_act_fp8.
- * An int8 `q` (an int8 linear's input, ActFP8::q8_fed) takes quant_act_i8g's codes instead, scale
+ * An int8 `q` (an int8 linear's input, ActQ::q8_fed) takes quant_act_i8g's codes instead, scale
  * amax / 127, as libr4d's fused quantisers write them. */
 static inline void fp8_row(const float* v, int64_t n, int64_t g, const RadTensor* q,
                            const RadTensor* s, int64_t r) {
@@ -666,8 +679,8 @@ int ref_gated_quant_fp8(const RadArgs* a, RadStream) {
  * gate, and an optional parameter would let it resolve for the other.
  *
  * Byte-identical to gemm_nt_q followed by gated_quant_fp8 (ref_test checks it): the product comes
- * from `quant_dot` as gemm_nt_q's does, and both halves are narrowed to bf16 before the gate, as the
- * unfused pair writes and re-reads a bf16 [M, N] tensor.
+ * from `quant_dot` as gemm_nt_q's does, and both halves are narrowed to bf16 before the gate, as
+ * the unfused pair writes and re-reads a bf16 [M, N] tensor.
  *
  * Comparing against a device kernel on the engine's own operands needs the layout inverted first:
  * libr4d stores fp8a8 weights in WMMA fragment order (r4d.fp8.w.frag64) while libref reads [N, K]
@@ -835,7 +848,8 @@ static int ref_markov_greedy(const RadArgs* a, uint32_t logits_dtype) {
         return RAD_E_SHAPE;
 
     const int64_t ls = laststride(logits), ps = laststride(pred), ss = laststride(succ);
-    const int64_t os = laststride(out), tss = laststride(tile_scores), tis = laststride(tile_tokens);
+    const int64_t os = laststride(out), tss = laststride(tile_scores),
+        tis = laststride(tile_tokens);
     REF_PAR_FOR(M * steps * V * R)
     for (int64_t m = 0; m < M; ++m) {
         std::vector<float> previous((size_t)R);

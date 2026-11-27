@@ -649,7 +649,7 @@ is a source like a container: the name map (§2.4) resolves each declared weight
 tensors, concatenations and expert slices included, the reader states their encodings, and the
 same path runs. Trivial means read as stored (the plugin then accepts or refuses the encoding as it
 would a container's: block FP8 and MXFP4 trunk weights are refused, `linear_retired` in
-`arch/common/rad_fp8.h`):
+`arch/common/rad_linear.h`):
 
 - `bf16`, `f16` and `f32`, and the exact widenings between them (a bf16 norm the plugin reads as
   f32);
@@ -769,6 +769,7 @@ Each algorithm pairs with any grid it makes sense for, and a recipe names all th
 | `ggml` | llama.cpp's own searches, imatrix-weighted | its legacy, K- and I-quant types | each type's affine form |
 | `m2xfp4` | M2XFP's weight-side Sg-EM: per group of 32, each subgroup of 8's extra mantissa k in {0..3} and the shared exponent's bias in {-1, 0, 1} (`adaptive=0` pins the bias, `wide=1` widens it to {-2..2}) chosen by least squared error, the OCP exponent and its rounding otherwise the MXFP4 grid's | none of the grid options | its own scheme `m2xfp4`, which it decodes: MXFP4's codes and E8M0 exponent plus a u8 metadata byte a group (arXiv 2601.19213) |
 | `cast` | a float in another float dtype | none | `plain` |
+| `bf16x12` | a lossless repacking of bf16: each exponent a 4-bit offset below its 32-block's largest, a block spanning more than 15 kept whole in an escape table (`esc=`) | none | `bf16x12`, a scheme of its own, decoded by its hook |
 
 The grid is `codes` (integers to 32 bits, fp8/6/4) or `table` (a codebook: NF4, IQ4_NL's values,
 the `w4nl` table Flash-Next's experts are served in and its 32-level `w5nl` and 64-level `w6nl`
@@ -1441,6 +1442,19 @@ text and `string="false"` before JSON; the grammar writes the tag the schema cal
 object family a call is its name and one object holding the arguments: JSON, or a dialect with
 strings between declared delimiters and bare keys, as Gemma 4 writes
 `call:NAME{path:<|"|>/a<|"|>,limit:3}`; values carry their own types.
+
+Two fields describe a format whose turn is a list of messages, each opening with the same header
+(Inkling 2: `<|message_model|><|content_thinking|>...<|end_message|>`, then
+`<|message_model|><|content_text|>...` or, for a call,
+`<|message_model|>NAME<|content_invoke_tool_json|>{"name":"NAME","args":{...}}<|end_message|>`).
+`message_open` names the header: before `reasoning_open` or `content_open` it is punctuation and
+dropped, before anything else it is the call's `name_prefix`. `object_args_key` says the object
+after the name is an envelope that names the call again and holds the arguments under that key;
+the client receives the key's value, and the grammar writes the envelope compactly as the
+template does. A reply that reverses the envelope's keys, names another function or omits the
+envelope is still read, as not strict. Both are read ahead of the parser's automaton by a small
+frame reader that holds at most a header and the opener after it, or the envelope's head and
+tail, so arguments still stream as they arrive. Zero in either is the format as before.
 
 The format comes from the architecture plugin's optional `rad_arch_chat_format` export
 (`abi/rad_builder.h`) when it has one, which covers a template the analysis cannot read. Otherwise

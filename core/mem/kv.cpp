@@ -276,14 +276,14 @@ int KVManager::plan_groups(const std::vector<KVGroupInfo>& groups, const Config&
     /* Then the window behind a checkpoint, after the linear state (see has_window_snapshot). A
      * trunk's window rides in the slot whether or not linear state is beside it: a hit resumes at
      * a snapshot either way, and without the window there it could not resume at all. A drafter's
-     * window rides there only on a model without linear state (set_drafter_window_snapshot). */
-    bool has_state = false;
-    for (const auto& p : plans_) has_state = has_state || p.stateful();
+     * window rides there only where the engine asks (set_drafter_window_snapshot): on a model
+     * without linear state by default, and beside linear state under --checkpoint-draft-window. The
+     * engine owns that policy (Engine::drafter_window_snap). */
     for (size_t i = 1; i < plans_.size(); ++i) {
         KVGroupPlan& p = plans_[i];
         p.drafter = groups[i].drafter;
         p.win_snap = p.kind == RAD_KV_WINDOW && p.window_blocks > 0 && !p.runtime_win &&
-                     (!groups[i].drafter || (snap_drafter_ && !has_state));
+                     (!groups[i].drafter || snap_drafter_);
         if (p.win_snap && !p.zero && p.n_layers > 0)
             window_ck_bytes_ += p.window_blocks * p.bytes_per_block;
     }
@@ -924,7 +924,7 @@ int64_t KVManager::held_top(size_t i) const {
 /* Takes back enough of the loan that `blocks` more can be handed out, without limit: the request
  * is already admitted and the budget says it fits. Recalls the shortfall plus the buffer, so a
  * sequence growing a block at a time does not recall per block. */
-int KVManager::grow_for(int32_t g, int64_t blocks) {
+int KVManager::grow_for(int32_t g, int64_t blocks, bool* waiting_for_fleet) {
     if (g < 0 || g >= (int32_t)plans_.size()) return RAD_E_INVAL;
     const KVGroupPlan& p = plans_[(size_t)g];
     if (!p.paged()) return RAD_OK;
@@ -943,7 +943,7 @@ int KVManager::grow_for(int32_t g, int64_t blocks) {
     int64_t keep = (p.n_blocks - live) * p.block_size;
     if (keep > loan_) keep = loan_;
     if (reclaim_) {
-        const int rc = reclaim_(keep);
+        const int rc = reclaim_(keep, waiting_for_fleet);
         if (rc == RAD_E_FULL) return rc;   /* a flex cache the fleet could not grow: the request waits */
         if (rc < 0) {
             RAD_ERR("KV group '%s': a request needs %lld more blocks and the expert slab could not "
@@ -1118,7 +1118,15 @@ bool KVManager::can_grow(uint64_t id, int64_t n_tokens) const {
         const auto& p = plans_[g];
         if (p.paged()) {
             const int64_t first = s->first_block_pos[g] / p.block_size;
-            const int64_t want  = ceil_div(n_tokens, p.block_size) - first;
+            int64_t want  = ceil_div(n_tokens, p.block_size) - first;
+            /* A window recycles; ensure() and make_room cap the table at the window. Counting
+             * the whole prompt here would refuse every prompt longer than the window pool (about
+             * 4800 tokens for DeepSeek-V4.1's QSA window) while can_ever_fit, which caps, still
+             * says yes, so the admission gate would wait forever. */
+            if (p.kind == RAD_KV_WINDOW) {
+                if (s->win[g].set) want = window_table_len(p, s->win[g], n_tokens) - first;
+                else               want = std::min(want, window_seq_cap(p));
+            }
             int64_t need = want - (int64_t)s->blocks[g].size();
             if (need < 0) need = 0;
             /* ensure() takes one copy-on-write block for a partially filled block; include it
@@ -1512,7 +1520,9 @@ void KVManager::trim_window(uint64_t id, int64_t keep_from) {
     recycle_window(s, keep_from);
 }
 
-int KVManager::ensure(uint64_t id, int64_t n_tokens, int64_t keep_from) {
+int KVManager::ensure(uint64_t id, int64_t n_tokens, int64_t keep_from,
+                      bool* waiting_for_fleet) {
+    if (waiting_for_fleet) *waiting_for_fleet = false;
     Seq* s = find(id);
     if (!s) return RAD_E_NOTFOUND;
     if (n_tokens <= s->n_tokens) return RAD_OK;
@@ -1541,8 +1551,16 @@ int KVManager::ensure(uint64_t id, int64_t n_tokens, int64_t keep_from) {
                 if (bi >= 0 && bi < (int64_t)s->blocks[g].size()
                     && refcount_[g][(size_t)s->blocks[g][(size_t)bi]] > 1) need[g] += 1;
             }
-            if (need[g] > available_blocks((int32_t)g)) return RAD_E_FULL;
-            RAD_TRY(grow_for((int32_t)g, need[g]));
+            if (need[g] > available_blocks((int32_t)g)) {
+                /* The Fleet allowance can grow with no local request running. An impossible
+                 * full-pool requirement, or a state-slot shortage, is not such a wait. */
+                const int64_t full_free = free_blocks((int32_t)g) +
+                    std::max<int64_t>(p.n_blocks - live_blocks((int32_t)g), 0);
+                if (waiting_for_fleet && flex() && lendable((int32_t)g) && need[g] <= full_free)
+                    *waiting_for_fleet = true;
+                return RAD_E_FULL;
+            }
+            RAD_TRY(grow_for((int32_t)g, need[g], waiting_for_fleet));
         } else if (p.stateful() && s->state[g] < 0) {
             if (free_states_[g].empty()) return RAD_E_FULL;
         }
@@ -1892,8 +1910,10 @@ int KVManager::checkpoint_stage_out(int32_t ck, RadStream s) {
     return rad_memcpy_async(dst, stage_, stage_bytes_, s);
 }
 
-bool KVManager::window_rows(uint64_t id, int64_t pos, std::vector<int32_t>* out) const {
+bool KVManager::window_rows(uint64_t id, int64_t pos, std::vector<int32_t>* out,
+                            bool* bad_drafter) const {
     out->clear();
+    if (bad_drafter) *bad_drafter = false;
     const Seq* s = find(id);
     if (!s || pos <= 0) return false;
     /* A runtime window is excluded from window snapshots (set_window): the window length is
@@ -1906,11 +1926,15 @@ bool KVManager::window_rows(uint64_t id, int64_t pos, std::vector<int32_t>* out)
         out->resize(row0 + (size_t)p.window_blocks, -1);
         if (p.zero || p.block_size <= 0 || pos % p.block_size != 0) {
             if (p.zero) continue;
+            if (bad_drafter) *bad_drafter = p.drafter;
             return false;
         }
         const int64_t lo = window_lo(p, pos), hi = pos / p.block_size;
         const int64_t first = s->first_block_pos[g] / p.block_size;
-        if (lo < first || hi - first > (int64_t)s->blocks[g].size()) return false;
+        if (lo < first || hi - first > (int64_t)s->blocks[g].size()) {
+            if (bad_drafter) *bad_drafter = p.drafter;
+            return false;
+        }
         for (int64_t j = lo; j < hi; ++j)
             (*out)[row0 + (size_t)(j - lo)] = s->blocks[g][(size_t)(j - first)];
     }

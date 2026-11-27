@@ -42,6 +42,13 @@ struct IKVManager {
         (void)keep_from;
         return ensure(seq, n_tokens);
     }
+    /* Admission needs to distinguish local exhaustion from a Fleet grant that may arrive
+     * after another model yields memory. The reason belongs to this exact allocation attempt. */
+    virtual int ensure_admission(uint64_t seq, int64_t n, int64_t keep_from,
+                                 bool* waiting_for_fleet) {
+        *waiting_for_fleet = false;
+        return ensure_from(seq, n, keep_from);
+    }
     /* After a committed step, a window group frees what no later query can read
      * (KVManager::trim_window). */
     virtual void trim_window(uint64_t seq, int64_t keep_from) { (void)seq; (void)keep_from; }
@@ -347,6 +354,18 @@ struct KVGeom {
         return (q >= 0 ? (q + 1) * bs : q * bs + 1) - x;
     }
 
+    /* The `len` slots of one affine run starting at position `pos` in block index `bi`, or -1
+     * throughout when the index is outside the table. */
+    static void fill_run(const int32_t* bt, size_t bt_n, int64_t bi, int64_t pos, int64_t len,
+                         int64_t bs, int32_t* out) {
+        if (bi < 0 || (size_t)bi >= bt_n) {
+            for (int64_t k = 0; k < len; ++k) out[k] = -1;
+            return;
+        }
+        const int64_t base = (int64_t)bt[(size_t)bi] * bs + pos % bs;
+        for (int64_t k = 0; k < len; ++k) out[k] = (int32_t)(base + k);
+    }
+
     /* slot() at n consecutive positions pos0, pos0+1, ..., identical values with one division a
      * segment instead of two a token. A segment ends where the block index or the in-block
      * offset would change rule (trunc_steps of (pos - first_pos) and of pos); inside it the slot
@@ -364,12 +383,7 @@ struct KVGeom {
             const int64_t lo = trunc_steps(pos, bs);
             if (lo < len) len = lo;
             if (len > n - done) len = n - done;
-            if (bi < 0 || (size_t)bi >= bt_n) {
-                for (int64_t k = 0; k < len; ++k) out[done + k] = -1;
-            } else {
-                const int64_t base = (int64_t)bt[(size_t)bi] * bs + pos % bs;
-                for (int64_t k = 0; k < len; ++k) out[done + k] = (int32_t)(base + k);
-            }
+            fill_run(bt, bt_n, bi, pos, len, bs, out + done);
             done += len;
         }
     }
@@ -400,12 +414,7 @@ struct KVGeom {
             const int64_t lo = trunc_steps(pos, bs);
             if (lo < len) len = lo;
             if (len > n - done) len = n - done;
-            if (bi < 0 || (size_t)bi >= bt_n) {
-                for (int64_t k = 0; k < len; ++k) out[done + k] = -1;
-            } else {
-                const int64_t base = (int64_t)bt[(size_t)bi] * bs + pos % bs;
-                for (int64_t k = 0; k < len; ++k) out[done + k] = (int32_t)(base + k);
-            }
+            fill_run(bt, bt_n, bi, pos, len, bs, out + done);
             done += len;
         }
     }
@@ -423,6 +432,9 @@ struct KVBinding final : IKVManager {
     void free_sequence(uint64_t s) override         { m->free_sequence(s); }
     int  ensure(uint64_t s, int64_t n) override     { return m->ensure(s, n); }
     int  ensure_from(uint64_t s, int64_t n, int64_t k) override { return m->ensure(s, n, k); }
+    int ensure_admission(uint64_t s, int64_t n, int64_t k, bool* waiting) override {
+        return m->ensure(s, n, k, waiting);
+    }
     void trim_window(uint64_t s, int64_t k) override { m->trim_window(s, k); }
     int64_t runtime_window_tokens(int32_t g) const override { return m->runtime_window_tokens(g); }
     int  set_window(uint64_t s, int64_t lo, int64_t w) override { return m->set_window(s, lo, w); }
@@ -595,9 +607,10 @@ struct PCBinding final : IPrefixCache {
         toks.insert(toks.end(), r.prompt.begin(), r.prompt.end());
         toks.insert(toks.end(), r.output.begin(), r.output.end());
         if (n_tokens > (int64_t)toks.size()) n_tokens = (int64_t)toks.size();
-        /* r.id is the session, the same id reserve_checkpoint keys its snapshots by. */
+        /* r.id is the session, the same id reserve_checkpoint keys its snapshots by.
+         * The slot rides along so the session row knows which adapter answered last. */
         media_keys(r, &mm_, salt_id);
-        return m->insert(r.id, toks, mm_, blocks, n_tokens, r.session_label);
+        return m->insert(r.id, toks, mm_, blocks, n_tokens, r.session_label, r.lora_slot);
     }
     /* Installed by the engine when the idle tiers are on: lands every pending host copy now and
      * returns whether any landed. Runs on the step thread under the scheduler's lock. */

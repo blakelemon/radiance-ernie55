@@ -14,6 +14,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -432,17 +433,13 @@ TEST(salt_makes_the_first_message_unique) {
 }
 
 namespace {
+/* A file of `text` of its own in the test's temporary directory. */
 struct TmpFile {
     std::string path;
-    explicit TmpFile(const std::string& text) {
-        char t[] = "/tmp/diag_test.XXXXXX";
-        const int fd = mkstemp(t);
-        path = t;
-        FILE* f = fdopen(fd, "wb");
-        fwrite(text.data(), 1, text.size(), f);
-        fclose(f);
+    explicit TmpFile(const std::string& text)
+        : path(radtest::make_tmp_dir("corpus") + "/corpus.jsonl") {
+        std::ofstream(path, std::ios::binary) << text;
     }
-    ~TmpFile() { std::remove(path.c_str()); }
 };
 }  /* namespace */
 
@@ -822,14 +819,16 @@ TEST(environment_is_a_fixed_name_list) {
     char home[]       = "HOME=/root";
     char radfake[]    = "RADIATOR=not a prefix of RAD_ with a name";
     char vram[]       = "RADIANCE_HOST_VRAM_MIB=512";
-    char* env[] = { tp, omp, wait, suffix, key, home, radfake, vram, nullptr };
+    char pinned[]     = "RADIANCE_PINNED_NUMA_NODE=1";
+    char* env[] = { tp, omp, wait, suffix, key, home, radfake, vram, pinned, nullptr };
 
     const std::vector<std::string> v = diag::env_allowlist(env);
-    CHECK_EQ(v.size(), (size_t)4);
+    CHECK_EQ(v.size(), (size_t)5);
     CHECK(std::find(v.begin(), v.end(), "RADIANCE_LOG_STEPS") != v.end());
     CHECK(std::find(v.begin(), v.end(), "OMP_NUM_THREADS") != v.end());
     CHECK(std::find(v.begin(), v.end(), "OMP_WAIT_POLICY") != v.end());
     CHECK(std::find(v.begin(), v.end(), "RADIANCE_HOST_VRAM_MIB") != v.end());
+    CHECK(std::find(v.begin(), v.end(), "RADIANCE_PINNED_NUMA_NODE") != v.end());
     /* A suffix on an allowed name is not an allowed name: a prefix list would print this one. */
     for (const std::string& n : v) {
         CHECK(n.find('=') == std::string::npos);            /* names, never values */

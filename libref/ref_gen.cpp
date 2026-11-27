@@ -1,3 +1,4 @@
+#include "rad_unipc_math.h"
 /* ref_gen.cpp -- the image generator's ops (docs/OPS.md, "Image generation").
  *
  * Every explicit rounding follows the upstream model, which runs the diffusion transformer and its
@@ -10,6 +11,7 @@
 #include "ref_common.h"
 #include "ref_gemm.h"
 #include "ref_ops.h"
+#include "rad_umt5_gelu.h"
 #include "rad_philox.h"
 
 #include <algorithm>
@@ -203,7 +205,8 @@ int ref_rms_mod(const RadArgs* a, RadStream) {
         std::vector<float> o((size_t)n);
         int64_t e = seq_of(cu, n_seq, r);
         if (cm) e = (int64_t)ldt(cm, e);
-        rms_mod_row(y, g, s, w, x, r, e, n, eps, gated, z->dtype, o.data(), wadd, once, layer, none);
+        rms_mod_row(y, g, s, w, x, r, e, n, eps, gated, z->dtype, o.data(), wadd, once, layer,
+                    none);
         const int64_t zb = rowoff(z, r, n), zs = laststride(z);
         for (int64_t i = 0; i < n; ++i) stt(z, zb + i * zs, o[(size_t)i]);
     }
@@ -355,7 +358,8 @@ int ref_randn_lanes(const RadArgs* a, RadStream) {
         const int64_t L = ld_int(lane->dtype, lane->data, offlin(lane, e));
         const int64_t len = cu_at(cu, e + 1) - cu_at(cu, e);
         if (L < 0 || len > stride || (L + 1) * stride > dst_rows) return RAD_E_SHAPE;
-        const uint64_t sd = (uint64_t)(uint32_t)ld_int(seed->dtype, seed->data, offlin(seed, 2 * e)) |
+        const uint64_t sd = (uint64_t)(uint32_t)ld_int(seed->dtype, seed->data,
+            offlin(seed, 2 * e)) |
                             ((uint64_t)(uint32_t)ld_int(seed->dtype, seed->data, offlin(seed, 2 * e + 1)) << 32);
         REF_PAR_FOR(len * n * 8)
         for (int64_t k = 0; k < len; ++k) {
@@ -403,7 +407,8 @@ int ref_flow_euler(const RadArgs* a, RadStream) {
         const float s  = ldt(sg, offlin(sg, e)), sn = ldt(sgn, offlin(sgn, e));
         const float w  = ldt(cfg, offlin(cfg, e));
         const int64_t f = ld_int(fl->dtype, fl->data, offlin(fl, e));
-        const uint64_t sd = (uint64_t)(uint32_t)ld_int(seed->dtype, seed->data, offlin(seed, 2 * e)) |
+        const uint64_t sd = (uint64_t)(uint32_t)ld_int(seed->dtype, seed->data,
+            offlin(seed, 2 * e)) |
                             ((uint64_t)(uint32_t)ld_int(seed->dtype, seed->data, offlin(seed, 2 * e + 1)) << 32);
         const float dts = round_dt(dt, sn - s);
         if ((f & kInpaint) && (!inp || !mask)) return RAD_E_INVAL;
@@ -637,7 +642,8 @@ int ref_kd_input(const RadArgs* a, RadStream) {
             const int64_t yb = rowoff(y, b0 + k, n), ys = laststride(y);
             const int64_t pb = pr >= 0 ? rowoff(y, p0 + k, n) : 0;
             for (int64_t c = 0; c < n; ++c) {
-                if (first) stt(st, sb + c * ss, rad_philox_normal(sd, (uint64_t)(k * n + c)) * init);
+                if (first)
+                    stt(st, sb + c * ss, rad_philox_normal(sd, (uint64_t)(k * n + c)) * init);
                 const float v = ldt(st, sb + c * ss) * cin;
                 stt(y, yb + c * ys, v);
                 if (pr >= 0) stt(y, pb + c * ys, v);
@@ -654,9 +660,9 @@ int ref_kd_input(const RadArgs* a, RadStream) {
  *
  * then by the entry's sampler: 0 Euler, x + (sigma_next - sigma)(x - D) / sigma; 1 Euler ancestral
  * (eta 1): the step to sigma_down plus sigma_up times the seed's stream 1 + step; 2 DPM++ 2M:
- * (sigma_next / sigma) x - expm1(-h) D', D' blending D with the lane's last estimate after the first
- * step, and D itself at sigma_next 0. Flag 4 writes D to the preview; every step leaves D in
- * `hist` for the next. */
+ * (sigma_next / sigma) x - expm1(-h) D', D' blending D with the lane's last estimate after the
+ * first step, and D itself at sigma_next 0. Flag 4 writes D to the preview; every step leaves D
+ * in `hist` for the next. */
 int ref_kd_step(const RadArgs* a, RadStream) {
     if (!have(a, 14)) return RAD_E_INVAL;
     const RadTensor *O = &a->t[0], *sg = &a->t[1], *sgn = &a->t[2], *sgp = &a->t[3];
@@ -718,7 +724,8 @@ int ref_kd_step(const RadArgs* a, RadStream) {
                 if (f & kPreview)
                     stt(pv, rowoff(pv, L * stride + k, n) + c * laststride(pv), D);
                 const float nz = sm == kSamplerEulerAncestral && K.sn > 0.0f
-                                     ? rad_philox_normal_s(sd, stream, (uint64_t)(k * n + c)) : 0.0f;
+                                     ? rad_philox_normal_s(sd, stream, (uint64_t)(k * n + c))
+                                         : 0.0f;
                 stt(st, sb + c * ss, kd_next(K, sm, x, D, ldt(hs, hb + c * hss), nz));
                 stt(hs, hb + c * hss, D);
             }
@@ -876,13 +883,16 @@ int ref_l2norm_chan(const RadArgs* a, RadStream) {
     if (rows <= 0 || rows_of(x, n) < rows) return RAD_E_SHAPE;
     const float sq = (float)std::sqrt((double)n);
     const uint32_t dt = y->dtype;
+    const bool round_length = p_int(a, "round_length", 0) != 0;
     REF_PAR_FOR(rows * n)
     for (int64_t r = 0; r < rows; ++r) {
         const int64_t xb = rowoff(x, r, n), xs = laststride(x);
         const int64_t yb = rowoff(y, r, n), ys = laststride(y);
         float ss = 0.0f;
         for (int64_t c = 0; c < n; ++c) { const float v = ldt(x, xb + c * xs); ss += v * v; }
-        const float nrm = std::max(std::sqrt(ss), 1e-12f);
+        const float length = std::sqrt(ss);
+        const float clamped = std::max(length, 1e-12f);
+        const float nrm = round_length ? round_dt(dt, clamped) : clamped;
         for (int64_t c = 0; c < n; ++c) {
             const float n1 = round_dt(dt, ldt(x, xb + c * xs) / nrm);
             const float n2 = round_dt(dt, n1 * sq);
@@ -948,7 +958,8 @@ int ref_s2d_avg_add(const RadArgs* a, RadStream) {
                 float acc = 0.0f;
                 for (int64_t gg = 0; gg < gs; ++gg) {
                     const int64_t g = o * gs + gg;
-                    const int64_t c = g / F, rem = g % F, t = rem / 4, i = (rem % 4) / 2, j = rem % 2;
+                    const int64_t c = g / F, rem = g % F, t = rem / 4, i = (rem % 4) / 2,
+                        j = rem % 2;
                     if (ft == 2 && t == 0) continue;
                     acc += ldt(x, (2 * oy + i) * xr + (2 * ox + j) * cin + c);
                 }
@@ -984,9 +995,11 @@ int ref_to_rgba8(const RadArgs* a, RadStream) {
 }
 
 /* ------------------------------------------------------------------ gelu_tanh, scatter_add_rows */
-int ref_gelu_tanh(const RadArgs* a, RadStream) {
+template<bool Umt5>
+static int gelu_tanh(const RadArgs* a) {
     if (!have(a, 2)) return RAD_E_INVAL;
     const RadTensor *x = &a->t[0], *y = &a->t[1];
+    if (Umt5 && (x->dtype != RAD_BF16 || y->dtype != RAD_BF16)) return RAD_E_DTYPE;
     const int64_t n = p_int(a, "n", 0);
     if (n <= 0) return RAD_E_SHAPE;
     const int64_t rows = rows_of(y, n);
@@ -995,10 +1008,16 @@ int ref_gelu_tanh(const RadArgs* a, RadStream) {
     for (int64_t r = 0; r < rows; ++r) {
         const int64_t xb = rowoff(x, r, n), xs = laststride(x);
         const int64_t yb = rowoff(y, r, n), ys = laststride(y);
-        for (int64_t c = 0; c < n; ++c) stt(y, yb + c * ys, act_gelu_tanh(ldt(x, xb + c * xs)));
+        for (int64_t c = 0; c < n; ++c) {
+            const float value = ldt(x, xb + c * xs);
+            stt(y, yb + c * ys, Umt5 ? rad_umt5::gelu(value, rbf) : act_gelu_tanh(value));
+        }
     }
     return RAD_OK;
 }
+
+int ref_gelu_tanh(const RadArgs* a, RadStream) { return gelu_tanh<false>(a); }
+int ref_gelu_umt5(const RadArgs* a, RadStream) { return gelu_tanh<true>(a); }
 
 /* ------------------------------------------------------------------ gelu_quick */
 /* CLIP's quick_gelu as torch evaluates it in a reduced dtype, three stored tensors:
@@ -1040,7 +1059,8 @@ int ref_scatter_add_rows(const RadArgs* a, RadStream) {
         if (r < 0) continue;
         const int64_t vb = rowoff(v, m, n), vs = laststride(v);
         const int64_t xb = rowoff(x, r, n), xs = laststride(x);
-        for (int64_t i = 0; i < n; ++i) stt(x, xb + i * xs, ldt(x, xb + i * xs) + ldt(v, vb + i * vs));
+        for (int64_t i = 0; i < n; ++i)
+            stt(x, xb + i * xs, ldt(x, xb + i * xs) + ldt(v, vb + i * vs));
     }
     return RAD_OK;
 }
@@ -1071,9 +1091,11 @@ int ref_attn_prefix_self(const RadArgs* a, RadStream) {
     /* The paged prefix (cache, block table, per-sequence prefix lengths), all three or none: with
      * none every sequence's prefix is empty. */
     const RadTensor *kv = t_in(a, 3), *bt = t_in(a, 4), *su = t_in(a, 5);
-    if ((kv == nullptr) != (bt == nullptr) || (kv == nullptr) != (su == nullptr)) return RAD_E_INVAL;
+    if ((kv == nullptr) != (bt == nullptr) || (kv == nullptr) != (su == nullptr))
+        return RAD_E_INVAL;
     const RadTensor *kdes = t_in(a, 7), *vdes = t_in(a, 8);
-    /* The int8 Q.K form: own keys' codes and scales are given; everything else is quantised here. */
+    /* The int8 Q.K form: own keys' codes and scales are given; everything else is quantised
+     * here. */
     const RadTensor *k8 = t_in(a, 9), *ks = t_in(a, 10);
     const char* qk = p_str(a, "qk", "bf16");
     const bool i8 = std::strcmp(qk, "i8") == 0;
@@ -1110,9 +1132,12 @@ int ref_attn_prefix_self(const RadArgs* a, RadStream) {
     const int64_t bt_cs = bt && bt->rank >= 2 ? bt->stride[1] : 1;
     /* Every prefix key must have a block-table entry. */
     for (int64_t s = 0; su && s < n_seq; ++s)
-        if (ld_int(su->dtype, su->data, offlin(su, s)) > max_blocks * block_size) return RAD_E_SHAPE;
-    const int64_t q_rs = row_stride(q, q_heads * head_dim), k_rs = row_stride(k, kv_heads * head_dim);
-    const int64_t v_rs = row_stride(v, kv_heads * head_dim), o_rs = row_stride(o, q_heads * head_dim);
+        if (ld_int(su->dtype, su->data, offlin(su, s)) > max_blocks * block_size)
+            return RAD_E_SHAPE;
+    const int64_t q_rs = row_stride(q, q_heads * head_dim),
+        k_rs = row_stride(k, kv_heads * head_dim);
+    const int64_t v_rs = row_stride(v, kv_heads * head_dim),
+        o_rs = row_stride(o, q_heads * head_dim);
     const int64_t k8_rs = i8 ? row_stride(k8, kv_heads * head_dim) : 0;
     const int64_t ks_rs = i8 ? row_stride(ks, kv_heads) : 0;
     const int64_t sb = kv ? kv->stride[0] : 0, sh = kv ? kv->stride[1] : 0;
@@ -1277,6 +1302,89 @@ int ref_chan_stats(const RadArgs* a, RadStream) {
             const float y = norm ? round_dt(dt, round_dt(dt, x - mu[(size_t)c]) / sd[(size_t)c])
                                  : round_dt(dt, round_dt(dt, x * sd[(size_t)c]) + mu[(size_t)c]);
             stt(Y, yb + c * ys, y);
+        }
+    }
+    return RAD_OK;
+}
+
+int ref_timestep_embed_f64(const RadArgs* a, RadStream) {
+    if (!have(a, 2)) return RAD_E_INVAL;
+    const RadTensor *t = &a->t[0], *y = &a->t[1];
+    if (t->dtype != RAD_F32 || y->dtype != RAD_F32) return RAD_E_DTYPE;
+    const int64_t n = p_int(a, "n", 0);
+    const RadParam* max_period = p_find(a, "max_period");
+    const double period = max_period && max_period->kind == RAD_P_F64 ? max_period->dval : 10000.0;
+    const int64_t rows = y->shape[0], pitch = y->stride[0], half = n / 2;
+    if (n <= 0 || n > INT32_MAX || (n & 1) || !(period > 0.0) || !std::isfinite(period) ||
+        y->rank != 2 || y->shape[1] != n || rows <= 0 || rows > INT32_MAX ||
+        (t->rank != 1 && (t->rank != 2 || t->shape[1] != 1)) || t->shape[0] < rows)
+        return RAD_E_SHAPE;
+    if ((rows > 1 && t->stride[0] != 1) || y->stride[1] != 1 || pitch < n ||
+        pitch > (INT64_MAX / 4 - n) / rows) return RAD_E_STRIDE;
+    const auto* times = static_cast<const float*>(t->data);
+    auto* output = static_cast<float*>(y->data);
+    for (int64_t m = 0; m < rows; ++m) {
+        const double position = times[m];
+        float* out = output + m * pitch;
+        for (int64_t i = 0; i < half; ++i) {
+            const double angle = position * std::pow(period, -static_cast<double>(i) / half);
+            out[i] = static_cast<float>(std::cos(angle));
+            out[half + i] = static_cast<float>(std::sin(angle));
+        }
+    }
+    return RAD_OK;
+}
+
+int ref_flow_unipc_step(const RadArgs* a, RadStream) {
+    if (!have(a, 4)) return RAD_E_INVAL;
+    const RadTensor *v = &a->t[0], *coeff = &a->t[1], *history = &a->t[2], *x = &a->t[3];
+    if ((v->dtype != RAD_F32 && v->dtype != RAD_BF16) || coeff->dtype != RAD_F32 ||
+        history->dtype != RAD_F32 || x->dtype != RAD_F32) return RAD_E_DTYPE;
+    const int64_t n = p_int(a, "n", 0);
+    if (n <= 0 || n > INT32_MAX / 3 || coeff->rank != 1 ||
+        coeff->shape[0] != rad_unipc::COUNT) return RAD_E_SHAPE;
+    if (v->rank != 2 || x->rank != 2 || history->rank != 2 ||
+        v->shape[1] != n || x->shape[1] != n || history->shape[1] != 3 * n)
+        return RAD_E_SHAPE;
+    if (v->stride[1] != 1 || x->stride[1] != 1 || history->stride[1] != 1 ||
+        v->stride[0] < n || x->stride[0] < n || history->stride[0] < 3 * n ||
+        coeff->stride[0] != 1) return RAD_E_STRIDE;
+    const int64_t rows = x->shape[0];
+    if (rows <= 0 || v->shape[0] < rows || history->shape[0] < rows ||
+        rows > (INT64_MAX - n) / x->stride[0] ||
+        rows > (INT64_MAX - n) / v->stride[0] ||
+        rows > (INT64_MAX - 3 * n) / history->stride[0]) return RAD_E_SHAPE;
+    const RadTensor *negative = t_in(a, 4), *guidance = t_in(a, 5);
+    if (bool(negative) != bool(guidance)) return RAD_E_INVAL;
+    if (negative) {
+        if (negative->dtype != v->dtype || guidance->dtype != RAD_F32) return RAD_E_DTYPE;
+        if (negative->rank != 2 || negative->shape[0] < rows || negative->shape[1] != n ||
+            guidance->rank != 1 || guidance->shape[0] != 1) return RAD_E_SHAPE;
+        if (negative->stride[1] != 1 || negative->stride[0] < n) return RAD_E_STRIDE;
+        if (rows > (INT64_MAX - n) / negative->stride[0]) return RAD_E_SHAPE;
+    }
+    const float scale = guidance ? ldt(guidance, 0) : 1.0f;
+    const float* values = static_cast<const float*>(coeff->data);
+    REF_PAR_FOR(rows * n)
+    for (int64_t r = 0; r < rows; ++r) {
+        const int64_t vb = r * v->stride[0], xb = r * x->stride[0];
+        const int64_t hb = r * history->stride[0];
+        for (int64_t c = 0; c < n; ++c) {
+            const int64_t h = hb + c;
+            float last_sample = ldt(history, h);
+            float last_clean = ldt(history, h + n);
+            float older_clean = ldt(history, h + 2 * n);
+            float velocity = ldt(v, vb + c);
+            if (negative) {
+                const float unconditioned = ldt(negative, r * negative->stride[0] + c);
+                velocity = unconditioned + scale * (velocity - unconditioned);
+            }
+            const float next = rad_unipc::advance(values, ldt(x, xb + c), velocity,
+                                                  last_sample, last_clean, older_clean);
+            stt(x, xb + c, next);
+            stt(history, h, last_sample);
+            stt(history, h + n, last_clean);
+            stt(history, h + 2 * n, older_clean);
         }
     }
     return RAD_OK;
