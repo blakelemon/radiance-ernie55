@@ -898,7 +898,7 @@ int r4d_rad_fill            (const RadArgs*, RadStream);
 int r4d_rad_logit_softcap   (const RadArgs*, RadStream);
 int r4d_rad_scale           (const RadArgs*, RadStream);
 int r4d_rad_silu_mul        (const RadArgs*, RadStream);
-int r4d_rad_situ_mul        (const RadArgs*, RadStream);
+int r4d_rad_ernie_situ_mul  (const RadArgs*, RadStream);
 int r4d_rad_situ_mul_quant_fp8(const RadArgs*, RadStream);
 int r4d_shape_situ_mul_quant_fp8(const RadParam*, int, int, RadOpdDesc*);
 int r4d_rad_ernie_router_topk(const RadArgs*, RadStream);

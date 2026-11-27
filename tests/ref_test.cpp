@@ -2571,7 +2571,7 @@ TEST(op_vocabulary) {
         "mhc_mix", "mhc_collapse", "router_scored_topk", "ds41_rope_rows", "quant_roundtrip", "softmax_pool", "attn_sparse_sink", "index_score", "index_candidates", "index_topk", "entry_store", "token_map", "stream_gate_add", "embed_lookup_planes",
         "swiglu_step", "router_sigmoid_group_topk", "mla_attn_paged",
         "kda_update", "ssd_update",
-        "layernorm", "add", "mul", "mul_weight", "silu_mul", "situ_mul", "situ_mul_quant_fp8", "ernie_multimax", "gelu_mul", "act_mul", "seg_mean",
+        "layernorm", "add", "mul", "mul_weight", "silu_mul", "situ_mul", "ernie_situ_mul", "situ_mul_quant_fp8", "ernie_multimax", "gelu_mul", "act_mul", "seg_mean",
         "seg_softmax_pool",
         "seg_mean_bf16_sum",
         "pool_rows", "pool_cols", "point_fourier", "relu", "clamp", "conv2d", "conv2d_unfold",
@@ -3160,12 +3160,13 @@ TEST(op_gelu_mul) {
 
 /* ERNIE's SiTU: silu_mul's fused layout (gate first, up second) with each side soft-clipped before
  * it is combined. beta*tanh(gate/beta) saturates at +-beta and linear_beta*tanh(up/linear_beta) at
- * +-linear_beta; with the clips pushed far past the inputs they vanish and situ_mul is silu_mul. */
-TEST(op_situ_mul) {
+ * +-linear_beta; with the clips pushed far past the inputs they vanish and ernie_situ_mul is
+ * silu_mul. */
+TEST(op_ernie_situ_mul) {
     T gu(RAD_F32, {1, 4}); gu.f({1, 2, 3, 4});      /* gate [1,2], up [3,4] */
     T y(RAD_F32, {1, 2});
     A a; a.t(gu).t(y).i("M", 1).i("n", 2).s("dtype", "f32").d("beta", 1e6).d("linear_beta", 1e6);
-    CHECK_OK(run("situ_mul", a));
+    CHECK_OK(run("ernie_situ_mul", a));
     CHECK_NEAR(y.at(0), 1.0f * 0.73105858f * 3.0f, 1e-5);   /* silu(1) * 3 */
     CHECK_NEAR(y.at(1), 2.0f * 0.88079708f * 4.0f, 1e-5);   /* silu(2) * 4 */
 
@@ -3173,7 +3174,7 @@ TEST(op_situ_mul) {
     T cg(RAD_F32, {1, 2}); cg.f({80, 100});
     T cy(RAD_F32, {1, 1});
     A c; c.t(cg).t(cy).i("M", 1).i("n", 1).s("dtype", "f32").d("beta", 4.0).d("linear_beta", 25.0);
-    CHECK_OK(run("situ_mul", c));
+    CHECK_OK(run("ernie_situ_mul", c));
     CHECK_NEAR(cy.at(0), 4.0f * 24.9832331f, 1e-4);         /* 4*tanh(20)*1 * 25*tanh(4) */
 
     /* A non-positive or non-finite clip is refused, not answered: a zero is a division by zero in
@@ -3181,27 +3182,27 @@ TEST(op_situ_mul) {
      * The output tensor is left untouched by every refused call. */
     T y2(RAD_F32, {1, 2}); y2.f({-7.5f, -8.5f});
     A z; z.t(gu).t(y2).i("M", 1).i("n", 2).s("dtype", "f32").d("beta", 0.0).d("linear_beta", 25.0);
-    CHECK(run("situ_mul", z) < 0);
+    CHECK(run("ernie_situ_mul", z) < 0);
     A z2; z2.t(gu).t(y2).i("M", 1).i("n", 2).s("dtype", "f32").d("beta", 4.0).d("linear_beta", -1.0);
-    CHECK(run("situ_mul", z2) < 0);
+    CHECK(run("ernie_situ_mul", z2) < 0);
     A z3; z3.t(gu).t(y2).i("M", 1).i("n", 2).s("dtype", "f32").d("beta", HUGE_VAL).d("linear_beta", 25.0);
-    CHECK(run("situ_mul", z3) < 0);
+    CHECK(run("ernie_situ_mul", z3) < 0);
     A z4; z4.t(gu).t(y2).i("M", 1).i("n", 2).s("dtype", "f32").d("beta", 4.0).d("linear_beta", 1e300);
-    CHECK(run("situ_mul", z4) < 0);
+    CHECK(run("ernie_situ_mul", z4) < 0);
     CHECK_EQ(y2.at(0), -7.5f); CHECK_EQ(y2.at(1), -8.5f);
 
     /* A gate_up whose width is not 2n would read the up projection as gate: refused. */
     T bad(RAD_F32, {1, 3}); bad.f({1, 2, 3});
     T y3(RAD_F32, {1, 2});
     A w; w.t(bad).t(y3).i("M", 1).i("n", 2).s("dtype", "f32").d("beta", 4.0).d("linear_beta", 25.0);
-    CHECK(run("situ_mul", w) < 0);
+    CHECK(run("ernie_situ_mul", w) < 0);
 }
 
 /* SiTU on a dispatch band (band_rows in ref_common.h): `M` is the ceiling the band was resolved
  * at, the live rows come from the operands, so a decode step's few rows of a band-sized, pitched
  * pair of buffers run unchanged and a call above the ceiling is refused before gate_up is read and
  * before a byte of y is written. */
-TEST(situ_mul_band_processes_live_rows_below_the_ceiling) {
+TEST(ernie_situ_mul_band_processes_live_rows_below_the_ceiling) {
     const int64_t n = 2, band = 8, rows = 2;
     const double beta = 4.0, lbeta = 25.0;
     /* The formula as an independent double oracle, gate first: beta*tanh(g/beta)*sigmoid(g) is the
@@ -3219,7 +3220,7 @@ TEST(situ_mul_band_processes_live_rows_below_the_ceiling) {
     T yfull(RAD_F32, {band, n});
     A full; full.t(gfull).t(yfull).i("M", band).i("n", n).s("dtype", "f32")
                  .d("beta", beta).d("linear_beta", lbeta);
-    CHECK_OK(run("situ_mul", full));
+    CHECK_OK(run("ernie_situ_mul", full));
     for (int64_t r = 0; r < band; ++r)
         for (int64_t i = 0; i < n; ++i)
             CHECK_NEAR(yfull.at(r * n + i),
@@ -3245,7 +3246,7 @@ TEST(situ_mul_band_processes_live_rows_below_the_ceiling) {
     ydec.t.stride[0] = yp;
     A dec; dec.t(gdec).t(ydec).i("M", band).i("n", n).s("dtype", "f32")
                .d("beta", beta).d("linear_beta", lbeta);
-    CHECK_OK(run("situ_mul", dec));
+    CHECK_OK(run("ernie_situ_mul", dec));
     for (int64_t r = 0; r < rows; ++r)
         for (int64_t i = 0; i < n; ++i) {
             CHECK(ydec.at(r * yp + i) == yfull.at(r * n + i));   /* same values as the exact band */
@@ -3277,11 +3278,11 @@ TEST(situ_mul_band_processes_live_rows_below_the_ceiling) {
     const std::vector<uint8_t> yop0 = yop.mem;
     A over; over.t(gop).t(yop).i("M", band).i("n", n).s("dtype", "f32")
                  .d("beta", beta).d("linear_beta", lbeta);
-    CHECK_EQ(run("situ_mul", over), RAD_E_SHAPE);
+    CHECK_EQ(run("ernie_situ_mul", over), RAD_E_SHAPE);
     A over_rg; over_rg.t(gop).t(yop).i("n", n).s("dtype", "f32")
                        .d("beta", beta).d("linear_beta", lbeta);
     over_rg.ps.push_back(RAD_RANGE("M", 1, band));
-    CHECK_EQ(run("situ_mul", over_rg), RAD_E_SHAPE);
+    CHECK_EQ(run("ernie_situ_mul", over_rg), RAD_E_SHAPE);
     CHECK(yop.mem == yop0);
 
     /* A declared ceiling of zero is not a band: the same operands at two live rows are refused,
@@ -3291,10 +3292,10 @@ TEST(situ_mul_band_processes_live_rows_below_the_ceiling) {
     const std::vector<uint8_t> ynd0 = ynd.mem;
     A noceiling; noceiling.t(gdec).t(ynd).i("M", 0).i("n", n).s("dtype", "f32")
                           .d("beta", beta).d("linear_beta", lbeta);
-    CHECK_EQ(run("situ_mul", noceiling), RAD_E_SHAPE);
+    CHECK_EQ(run("ernie_situ_mul", noceiling), RAD_E_SHAPE);
     A noM; noM.t(gdec).t(ynd).i("n", n).s("dtype", "f32")
                .d("beta", beta).d("linear_beta", lbeta);
-    CHECK_EQ(run("situ_mul", noM), RAD_E_SHAPE);
+    CHECK_EQ(run("ernie_situ_mul", noM), RAD_E_SHAPE);
     CHECK(ynd.mem == ynd0);
 }
 
@@ -14624,7 +14625,7 @@ std::vector<Geo> geometries() {
         G("gelu_mul", "M", 3, a.i("M", R).i("n", 8).s("dtype", "f32")),
         G("situ_mul_quant_fp8", "M", 3, a.i("M", R).i("n", 8).i("group", 128).s("dtype", "bf16")
                                         .d("beta", 4.0).d("linear_beta", 25.0)),
-        G("situ_mul", "M", 3, a.i("M", R).i("n", 8).s("dtype", "f32")
+        G("ernie_situ_mul", "M", 3, a.i("M", R).i("n", 8).s("dtype", "f32")
                                 .d("beta", 4.0).d("linear_beta", 25.0)),
         G("ernie_multimax", "M", 3, a.i("M", R).i("n", 8).s("dtype", "f32")),
         G("gelu", "M", 3, a.i("M", R).i("n", 8).s("dtype", "f32")),

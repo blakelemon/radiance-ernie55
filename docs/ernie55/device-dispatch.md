@@ -10,7 +10,7 @@ Final matching rules (supersedes the first-round wording above): storage roles a
 The committed JSON is generated from the tiny 3-6 fixture (4 layers: dense and routed, MLA-DSA and HCA). The production model declares the same operation set with larger
 parameters; the schedule is 6 MLA-DSA + 37 HCA layers (3-6).
 
-Result: every `ernie_*` operation (20 distinct) and `situ_mul` has no libr4d row: each is listed as missing with a `dev-*` follow-up story. Generic operations
+Result: every `ernie_*` operation (20 distinct) and `ernie_situ_mul` has no libr4d row: each is listed as missing with a `dev-*` follow-up story. Generic operations
 (rmsnorm, embed_lookup, kv_store, the sampler family, ...) have a device row that accepts the fixture shapes; moe_gemm is listed missing at the fixture shapes (N, K of 4 or 5 against its multiple-of-64 rule: the production geometry is re-evaluated by running the tool on the production graph). The GPU stories 4-2, 6-8 and 7-3 stay on hold.
 
 Three decisions, recorded in `device-dispatch-decisions.json` and pinned by the sealed 4-1 contract:

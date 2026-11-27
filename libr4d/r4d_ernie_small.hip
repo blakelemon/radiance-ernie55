@@ -1,11 +1,12 @@
-/* r4d_ernie_small.hip -- ERNIE 5.5 Flash's small device operations (epic 4-3). Written from ERNIE's own equations (libref's ref_situ_mul, the pinned vLLM-ERNIE
+/* r4d_ernie_small.hip -- ERNIE 5.5 Flash's small device operations (epic 4-3). Written from ERNIE's own equations (libref's ref_ernie_situ_mul, the pinned vLLM-ERNIE
  * `situ_and_mul`) and checked against ERNIE's oracles and an independent double-precision one; not adapted from upstream PR 266.
+ * (The op is `ernie_situ_mul`: upstream v2.3.0 has its own, unrelated `situ_mul` with gate_cap/up_cap.)
  * SPDX-License-Identifier: Apache-2.0
  *
- * SiTU gated product (situ_mul): y[r, i] = beta * tanh(g / beta) * sigmoid(g) * linear_beta * tanh(u / linear_beta), with g = gate_up[r, i] and u = gate_up[r, n + i]: the GATE IS THE
+ * SiTU gated product (ernie_situ_mul): y[r, i] = beta * tanh(g / beta) * sigmoid(g) * linear_beta * tanh(u / linear_beta), with g = gate_up[r, i] and u = gate_up[r, n + i]: the GATE IS THE
  * FIRST HALF of silu_mul's fused [M, 2n] plane. Both clips are finite and strictly positive (ERNIE 4 and 25); anything else is refused before a byte is written.
  * f32 arithmetic, one rounding to bf16 at the store (round to nearest even), as libref rounds once to y's dtype. A large finite gate is safe: tanh saturates to +-1 and
- * the sigmoid to 0 or 1, so the product stays within +-(beta * linear_beta). The product is formed gate * up in f32 as libref's ref_situ_mul forms it, so with clip
+ * the sigmoid to 0 or 1, so the product stays within +-(beta * linear_beta). The product is formed gate * up in f32 as libref's ref_ernie_situ_mul forms it, so with clip
  * constants far from ERNIE's (4 and 25), say below 2^-20, a gate factor can underflow before the multiply; the supported range is ERNIE's.
  */
 #include <hip/hip_runtime.h>
@@ -176,7 +177,7 @@ __global__ __launch_bounds__(128) void ernie_router_topk_kernel(RouterArgs A) {
 extern "C" {
 
 /* operands: gate_up [M, 2n] bf16, y [M, n] bf16 (out); params M, n, beta, linear_beta, dtype */
-int r4d_rad_situ_mul(const RadArgs* a, RadStream stream) {
+int r4d_rad_ernie_situ_mul(const RadArgs* a, RadStream stream) {
     using namespace r4d_ernie_small;
     if (!a || !a->t || a->n_t < 2) return RAD_E_INVAL;
     const RadTensor &gu = a->t[0], &y = a->t[1];

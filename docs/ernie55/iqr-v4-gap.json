@@ -9071,12 +9071,12 @@
    "neighbours": []
   },
   {
-   "op": "situ_mul",
+   "op": "ernie_situ_mul",
    "status": "rows_present_unverified",
    "status_4_1": "missing",
    "status_at_production_geometry": "not probed",
    "rows": [
-    "situ_mul_bf16"
+    "ernie_situ_mul_bf16"
    ],
    "neighbours": [
     "silu_mul_bf16 / swiglu_step_bf16 / swiglu_clamped_bf16 (SiLU family; SiTU has no row)"
@@ -9116,7 +9116,7 @@
  "extra_gaps": [
   {
    "kernel": "situ_had_quant (SiTU gate then rotated int8 quantise)",
-   "why": "gemm_iqr_gated and gated_had_quant_i8g fold SiLU only (act silu); SiTU has no row, so the routed w2 and shared/dense down inputs need situ_mul plus had_quant_act_i8g as two launches, or a new fused row",
+   "why": "gemm_iqr_gated and gated_had_quant_i8g fold SiLU only (act silu); SiTU has no row, so the routed w2 and shared/dense down inputs need ernie_situ_mul plus had_quant_act_i8g as two launches, or a new fused row",
    "classes": [
     "routed w2",
     "shared w2",

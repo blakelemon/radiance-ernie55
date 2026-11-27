@@ -1222,7 +1222,7 @@ int ref_gelu_mul(const RadArgs* a, RadStream) {
     return RAD_OK;
 }
 
-/* ------------------------------------------------------------------ situ_mul */
+/* ------------------------------------------------------------------ ernie_situ_mul */
 /* y[.., i] = beta * tanh(gate / beta) * sigmoid(gate) * linear_beta * tanh(up / linear_beta), the
  * SiTU gated product ERNIE's dense, shared and routed feed-forwards run (the pinned vLLM
  * activation's `situ_and_mul`). The layout is silu_mul's fused [M, 2*n] plane -- the GATE is the
@@ -1233,7 +1233,7 @@ int ref_gelu_mul(const RadArgs* a, RadStream) {
  * to +-1 and the sigmoid to 0 or 1, so every term stays within +-(beta * linear_beta) and the
  * product cannot overflow. The whole term is f32 and stored once in y's dtype, so a bf16 call
  * rounds the final product and nothing in between. */
-int ref_situ_mul(const RadArgs* a, RadStream) {
+int ref_ernie_situ_mul(const RadArgs* a, RadStream) {
     if (!have(a, 2)) return RAD_E_INVAL;
     const RadTensor *gu = &a->t[0], *y = &a->t[1];
     /* `M` is the row band's ceiling, not this call's row count (see band_rows in ref_common.h):

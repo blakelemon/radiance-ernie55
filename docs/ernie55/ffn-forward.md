@@ -24,7 +24,7 @@ sequence, per target layer `l`:
 h0           = hc_enter(embed_lookup(token_embd, tokens))            first layer: embedding broadcast into hc streams
 x, post, comb = ernie_mhc_pre_rms(h, blk.l.ffn_hc.{fn,scale,base}, blk.l.ffn_norm.weight)
 gate = x @ Wg^T ; up = x @ Wu^T            (two gemm_nt into the halves of one [rows, 2I] plane)
-a    = situ_mul([gate | up]) ; y = a @ Wd^T
+a    = ernie_situ_mul([gate | up]) ; y = a @ Wd^T
 h    = mhc_post(y, h, post, comb)
 pooled = seg_mean over the sequence's rows of the final hc*H streams, f32
 ```
@@ -43,7 +43,7 @@ runs only its shared expert, whose output the real model adds to the routed expe
   no scale of its own, fed the layer's normed `x` (the original hidden state at full width, not the
   `moe_latent_size` input of the routed experts). Weights `blk.l.ffn_{gate,up,down}_shexp.weight`
   (checkpoint `shared_experts.{w1,w3,w2}`). The shared output is combined with the routed output in 2-8.
-* SiTU is `situ_mul` of story 1-1: `beta*tanh(g/beta)*sigmoid(g) * linear_beta*tanh(u/linear_beta)`
+* SiTU is `ernie_situ_mul` of story 1-1: `beta*tanh(g/beta)*sigmoid(g) * linear_beta*tanh(u/linear_beta)`
   in f32, one rounding to BF16, gate first.
 * The mHC `ffn` branch: `_mhc_args("ffn")` is `(fn, scale, base, rms_norm_eps, hc_eps, hc_eps,
   hc_post_alpha = 2.0, hc_sinkhorn_iters)`: the projection `eps` and the fused norm's `rms_eps` are

@@ -19,7 +19,7 @@ The constraint arrays are parsed from libr4d/r4d_rows.cpp itself (C_EQ/C_LE/C_GE
 import argparse, collections, json, re, struct, sys
 from pathlib import Path
 
-GROUP_MACROS = {"R4D_FP8_BLOCK": 128, "R4D_I8_GROUP_WIDE": 256, "R4D_W4_GROUP": 128}
+GROUP_MACROS = {"R4D_I8_GROUP": 128, "R4D_I8_GROUP_WIDE": 256, "R4D_W4_GROUP": 128}
 M_BANDS = (1, 16, 64, 2048)
 FORMATS = ("iqr_v4", "iq8r", "bf16")
 SIZES = {"F8_E4M3": 1, "BF16": 2, "F32": 4, "F16": 2, "I64": 8, "I32": 4, "F8_E8M0": 1}
@@ -193,7 +193,7 @@ NEIGHBOURS = {
     "ernie_vha_mix": [],
     "ernie_hca_compress": [],
     "ernie_hca_union_attn": ["attn_paged / attn_paged_sink (rows with macro-built names, unparsed by 4-1)"],
-    "situ_mul": ["silu_mul_bf16 / swiglu_step_bf16 / swiglu_clamped_bf16 (SiLU family; SiTU has no row)"],
+    "ernie_situ_mul": ["silu_mul_bf16 / swiglu_step_bf16 / swiglu_clamped_bf16 (SiLU family; SiTU has no row)"],
 }
 
 # (regex on the layer-normalised checkpoint name, attributes). First match wins; the shape of the checkpoint class gives (N, K) for gemms.
@@ -376,7 +376,7 @@ def build_gap(classes, rows, dispatch, production=None):
     )
     # the distinct missing kernels the serving path needs beyond the 4-1 ernie_* set
     extra = [
-        dict(kernel="situ_had_quant (SiTU gate then rotated int8 quantise)", why="gemm_iqr_gated and gated_had_quant_i8g fold SiLU only (act silu); SiTU has no row, so the routed w2 and shared/dense down inputs need situ_mul plus had_quant_act_i8g as two launches, or a new fused row", classes=["routed w2", "shared w2", "dense down"]),
+        dict(kernel="situ_had_quant (SiTU gate then rotated int8 quantise)", why="gemm_iqr_gated and gated_had_quant_i8g fold SiLU only (act silu); SiTU has no row, so the routed w2 and shared/dense down inputs need ernie_situ_mul plus had_quant_act_i8g as two launches, or a new fused row", classes=["routed w2", "shared w2", "dense down"]),
         dict(kernel="quantised-activation producers after the ERNIE fused ops", why="ernie_mhc_pre_rms and ernie_vha_mix write bf16; IQ8R/IQR GEMMs read rotated int8 (i8a8h). had_quant_act_i8g / rmsnorm_had_quant rows exist (n multiple of 128), the plugin graph must add them", classes=["every IQR/IQ8R gemm and moe_gemm input"]),
         dict(kernel="IQR trellis run vs N", why="IQR rows need N a multiple of the trellis run (tcq_rows); kv_a N=576 allows 64, q_b/kv/gate widths allow 256-1024, the 128-wide indexer key allows 128", classes=["attn kv_a", "indexer wk"]),
         dict(kernel="PLUGIN: arch/ernie55 declares BF16 gemm_nt / moe_gemm only and refuses quantised weights", why="rad-convert --plan-only with the IQR-V4 expert rule stops at declare: 'checkpoint tensor model.layers.1.block_sparse_moe.experts.0.w1.weight ... is u4 [2048, 2048], but this model needs bf16 [2048, 2048] (or block-fp8 of that shape)' (arch/ernie55/ernie55.cpp:293, :645). The graph builds gemm_nt dtype bf16 (:1083) and moe_gemm at bf16 (:1414); IQ8R/IQR need gemm_nt_q / moe_gemm_q at i8a8h, a had_quant_act_i8g producer after each norm and the f32 hc.fn cast rules", classes=["every IQR-V4 and IQ8R class"]),

@@ -47,7 +47,7 @@ Per routed layer, after `ernie_mhc_pre_rms`: the shared expert as in 2-7 (output
 `gemm_nt_f32` twice (router halves into the two halves of an f32 `[T, 2E]` logits plane),
 `ernie_router_topk` (the correction bias and the learned scale are its weights), `moe_scatter`,
 `gemm_nt` (fc1), `moe_gemm` for gate and for up (token-ordered activation, into the halves of one
-`[T*k, 2F]` plane), `situ_mul`, `moe_gemm` for down (sorted order), `moe_gather`, `rmsnorm`
+`[T*k, 2F]` plane), `ernie_situ_mul`, `moe_gemm` for down (sorted order), `moe_gather`, `rmsnorm`
 (`rms_norm_eps`), `gemm_nt` (fc2), `add` with the shared output, then `mhc_post` as before. Every op
 already existed; no libref op was added. `moe_gemm` reads a weight table of one run of consecutive handles
 per projection, so `declare_routed` now declares each layer's experts by projection (all gates, all ups,

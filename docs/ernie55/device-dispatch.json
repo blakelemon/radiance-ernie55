@@ -6343,7 +6343,7 @@
    }
   },
   {
-   "op": "situ_mul",
+   "op": "ernie_situ_mul",
    "count": 2,
    "target": "gfx1201",
    "abi": 43,
@@ -6357,7 +6357,7 @@
    },
    "cache_layout": {},
    "host": {
-    "kernel": "ref_situ_mul",
+    "kernel": "ref_ernie_situ_mul",
     "library": "libref",
     "max_rows": 64
    },
@@ -6365,11 +6365,11 @@
     "status": "missing",
     "kernels": [],
     "match": "op+dtype+shape",
-    "missing_reason": "no libr4d row for operation situ_mul"
+    "missing_reason": "no libr4d row for operation ernie_situ_mul"
    },
    "fallback": {
     "kind": "host",
-    "kernel": "ref_situ_mul",
+    "kernel": "ref_ernie_situ_mul",
     "library": "libref"
    },
    "operand_schema": {
@@ -6392,15 +6392,15 @@
    "follow_up": {
     "kind": "no device row: a new kernel",
     "story": "dev-situ-mul",
-    "host_parity": "device situ_mul against the libref reference ref_situ_mul within the recorded parity band",
+    "host_parity": "device ernie_situ_mul against the libref reference ref_ernie_situ_mul within the recorded parity band",
     "code_map": [
      "libref/ref_elementwise.cpp",
-     "libr4d/r4d_rows.cpp (new row for situ_mul)"
+     "libr4d/r4d_rows.cpp (new row for ernie_situ_mul)"
     ]
    }
   },
   {
-   "op": "situ_mul",
+   "op": "ernie_situ_mul",
    "count": 2,
    "target": "gfx1201",
    "abi": 43,
@@ -6414,7 +6414,7 @@
    },
    "cache_layout": {},
    "host": {
-    "kernel": "ref_situ_mul",
+    "kernel": "ref_ernie_situ_mul",
     "library": "libref",
     "max_rows": 64
    },
@@ -6422,11 +6422,11 @@
     "status": "missing",
     "kernels": [],
     "match": "op+dtype+shape",
-    "missing_reason": "no libr4d row for operation situ_mul"
+    "missing_reason": "no libr4d row for operation ernie_situ_mul"
    },
    "fallback": {
     "kind": "host",
-    "kernel": "ref_situ_mul",
+    "kernel": "ref_ernie_situ_mul",
     "library": "libref"
    },
    "operand_schema": {
@@ -6449,15 +6449,15 @@
    "follow_up": {
     "kind": "no device row: a new kernel",
     "story": "dev-situ-mul",
-    "host_parity": "device situ_mul against the libref reference ref_situ_mul within the recorded parity band",
+    "host_parity": "device ernie_situ_mul against the libref reference ref_ernie_situ_mul within the recorded parity band",
     "code_map": [
      "libref/ref_elementwise.cpp",
-     "libr4d/r4d_rows.cpp (new row for situ_mul)"
+     "libr4d/r4d_rows.cpp (new row for ernie_situ_mul)"
     ]
    }
   },
   {
-   "op": "situ_mul",
+   "op": "ernie_situ_mul",
    "count": 2,
    "target": "gfx1201",
    "abi": 43,
@@ -6471,7 +6471,7 @@
    },
    "cache_layout": {},
    "host": {
-    "kernel": "ref_situ_mul",
+    "kernel": "ref_ernie_situ_mul",
     "library": "libref",
     "max_rows": 192
    },
@@ -6479,11 +6479,11 @@
     "status": "missing",
     "kernels": [],
     "match": "op+dtype+shape",
-    "missing_reason": "no libr4d row for operation situ_mul"
+    "missing_reason": "no libr4d row for operation ernie_situ_mul"
    },
    "fallback": {
     "kind": "host",
-    "kernel": "ref_situ_mul",
+    "kernel": "ref_ernie_situ_mul",
     "library": "libref"
    },
    "operand_schema": {
@@ -6506,10 +6506,10 @@
    "follow_up": {
     "kind": "no device row: a new kernel",
     "story": "dev-situ-mul",
-    "host_parity": "device situ_mul against the libref reference ref_situ_mul within the recorded parity band",
+    "host_parity": "device ernie_situ_mul against the libref reference ref_ernie_situ_mul within the recorded parity band",
     "code_map": [
      "libref/ref_elementwise.cpp",
-     "libr4d/r4d_rows.cpp (new row for situ_mul)"
+     "libr4d/r4d_rows.cpp (new row for ernie_situ_mul)"
     ]
    }
   }
@@ -6565,7 +6565,7 @@
    "ernie_vha_mix",
    "gemm_nt",
    "moe_gemm",
-   "situ_mul"
+   "ernie_situ_mul"
   ],
   "ops_distinct": 48,
   "device_ready_verified": [

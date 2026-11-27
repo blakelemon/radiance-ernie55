@@ -2242,7 +2242,7 @@ static const RadOperandSpec oErnieMlaSparse[] = {
     { "q", RAD_OPD_IN, 0 }, { "q_rope", RAD_OPD_IN, 0 }, { "kv", RAD_OPD_IN, 0 },
     { "slots", RAD_OPD_IN, 0 }, { "sink", RAD_OPD_WEIGHT, 0 }, { "out", RAD_OPD_OUT, 0 }
 };
-static const RadParamSpec pSituMul[] = { P_INT("M"), P_INT("n"), P_STR("dtype"), P_F64("beta"), P_F64("linear_beta") };
+static const RadParamSpec pErnieSituMul[] = { P_INT("M"), P_INT("n"), P_STR("dtype"), P_F64("beta"), P_F64("linear_beta") };
 static const RadParamSpec pSwigluClamped[] = { P_INT("M"), P_INT("n"), P_F64("limit"),
                                                P_STR("dtype") };
 static const RadParamSpec pDsaPool[] = { P_INT("M"), P_INT("n"), P_INT("ratio"), P_STR("dtype"),
@@ -3825,7 +3825,7 @@ static const RadOpSchema kSchemas[] = {
     SCHEMA("ernie_mla_project", pErnieMlaProject, oErnieMlaProject, "ERNIE MLA kv_b_proj absorb/expand projection (bf16)."),
     SCHEMA("ernie_mla_sparse_attn", pErnieMlaSparse, oErnieMlaSparse, "ERNIE MLA absorbed sparse latent attention with per-head sink (bf16 cache, or kv_layout fp8_ds_mla)."),
     SCHEMA("ernie_mla_latent_store", pErnieMlaLatentStore, oErnieMlaLatentStore, "ERNIE MLA latent row writer for the fp8_ds_mla cache (E4M3 codes, f32 power-of-two tile scales, bf16 rope)."),
-    SCHEMA("situ_mul", pSituMul, oGateUp,
+    SCHEMA("ernie_situ_mul", pErnieSituMul, oGateUp,
            "y[.., i] = beta * tanh(gate / beta) * sigmoid(gate) * linear_beta * tanh(up / linear_beta), ERNIE SiTU gated product; GATE IS THE FIRST HALF of the fused [M, 2n] plane; beta and linear_beta finite and positive (ERNIE 4 and 25); f32 arithmetic, one rounding to y dtype."),
     SCHEMA("silu_mul", pMnDtype, oGateUp,
            "y[.., i] = silu(gate_up[.., i]) * gate_up[.., n + i]. The GATE IS THE FIRST HALF, "
@@ -7932,13 +7932,13 @@ static const RadKernelInfo kKernels[] = {
   ROW(cErnieMlaLatentStore), NOTUNE,
   nullptr, nullptr, r4d_rad_ernie_mla_latent_store, nullptr, nullptr, nullptr,
   r4d_shape_ernie_mla_latent_store },
-{ "situ_mul_bf16", "situ_mul", "elem",
+{ "ernie_situ_mul_bf16", "ernie_situ_mul", "elem",
   "ERNIE SiTU gated product over a fused [M, 2n] gate_up",
   "n >= 1, 1 <= M <= 65535; the gate is the first half; beta and linear_beta finite and positive; pitched rows",
   "bf16 in and out, fp32 arithmetic, one rounding",
   RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY,
   ROW(cBf16Row), NOTUNE,
-  nullptr, nullptr, r4d_rad_situ_mul, nullptr, nullptr, nullptr,
+  nullptr, nullptr, r4d_rad_ernie_situ_mul, nullptr, nullptr, nullptr,
   r4d_shape_silu_mul },
 { "silu_mul_bf16", "silu_mul", "elem",
   "silu-gated product over a fused [M, 2n] gate_up",

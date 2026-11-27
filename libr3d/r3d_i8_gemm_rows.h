@@ -8,7 +8,8 @@ namespace r3d_i8_gemm {
 inline constexpr RadParamSpec params[]{
     {"M", RAD_P_INT, RAD_REQUIRED}, {"N", RAD_P_INT, RAD_REQUIRED}, {"K", RAD_P_INT, RAD_REQUIRED},
     {"group", RAD_P_INT, RAD_REQUIRED}, {"dtype", RAD_P_STR, RAD_REQUIRED}, {"pb1", RAD_P_INT, RAD_OPTIONAL},
-    {"pb2", RAD_P_INT, RAD_OPTIONAL}, {"split_n", RAD_P_INT, RAD_OPTIONAL}, {"w_rb", RAD_P_INT, RAD_OPTIONAL}};
+    {"pb2", RAD_P_INT, RAD_OPTIONAL}, {"split_n", RAD_P_INT, RAD_OPTIONAL}, {"w_rb", RAD_P_INT, RAD_OPTIONAL},
+    {"mvm_max", RAD_P_INT, RAD_OPTIONAL}};
 inline constexpr RadOperandSpec operands[]{
     {"a", RAD_OPD_IN, 0}, {"a_scale", RAD_OPD_IN, 1}, {"b", RAD_OPD_WEIGHT, 0}, {"b_scale", RAD_OPD_WEIGHT, 0},
     {"y", RAD_OPD_OUT, 0}, {"a_sum", RAD_OPD_IN, 1}, {"b_ref", RAD_OPD_WEIGHT, 1}};

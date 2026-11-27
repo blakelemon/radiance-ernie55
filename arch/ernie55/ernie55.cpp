@@ -76,7 +76,7 @@
  * Anything invalid is refused with the offending key named and RAD_E_INVAL.
  */
 #include <arch/rad_arch.h>
-#include <arch/rad_fp8.h>
+#include <arch/rad_linear.h>
 #include "ernie55_pins.h"
 
 #include <algorithm>
@@ -375,7 +375,7 @@ static int plain(RadBuilder* b, const char* name, const char* src, uint32_t stor
 }
 
 /* A linear: BF16 as one weight, or the block-fp8 the release ships as a codes view and a scale
- * view of one stored weight (the layout of arch/common/rad_fp8.h's LinearFP8). */
+ * view of one stored weight (the layout of arch/common/rad_linear.h's LinearQ). */
 static int linear(RadBuilder* b, const char* name, const char* src, int64_t rows, int64_t cols,
                   const RadWeightGroup& g, Names& nm, int access = RAD_ACCESS_PER_TOKEN,
                   const char* note = nullptr, rad_weight* out = nullptr,
@@ -1292,7 +1292,7 @@ static int declare_dspark_weights(RadBuilder* b, const Config& c, const HcaConfi
  * SiTU-GLU on the same normed x with no gate and no scale of its own; its output is later added to
  * the routed experts' (story 2-8), which this program does not run. The first layer's residual is the
  * embedding broadcast into hc identical streams (hc_enter). Gate and up stay two GEMMs into the two
- * halves of one [rows, 2I] plane, the layout `situ_mul` reads (gate first).
+ * halves of one [rows, 2I] plane, the layout `ernie_situ_mul` reads (gate first).
  *
  * Every layer here is the feed-forward half alone: attention does not exist yet, so the attention
  * branch of the real layer is absent and h passes unchanged into the feed-forward branch. */
@@ -2647,7 +2647,7 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
                 if (!m.qa_xl.valid() || !m.qa_eact.valid()) return RAD_E_SHAPE;
                 RAD_ARCH_TRY(make_qop(m.xl, T, m.qa_xl, &R.qop_xl));
             }
-            y.act = rw(b, RAD_OP(b, "situ_mul",
+            y.act = rw(b, RAD_OP(b, "ernie_situ_mul",
                                  RAD_PARAMS(RAD_RANGE("M", 1, T), RAD_INT("n", I),
                                             RAD_STR("dtype", "bf16"), RAD_F64("beta", f.beta),
                                             RAD_F64("linear_beta", f.linear_beta)),
@@ -2683,7 +2683,7 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
                 R.dn_q = table_mx(Lt, Fe, "sorted", 1, rh.dn_c0, rh.dn_s0, rh.dn_c1, rh.dn_s1, m.qa_eact, m.edn);
                 R.down = R.dn_q;
             } else {
-                R.act = rw(b, RAD_OP(b, "situ_mul",
+                R.act = rw(b, RAD_OP(b, "ernie_situ_mul",
                                      RAD_PARAMS(RAD_RANGE("M", 1, P), RAD_INT("n", Fe), RAD_STR("dtype", "bf16"),
                                                 RAD_F64("beta", f.beta), RAD_F64("linear_beta", f.linear_beta)),
                                      RAD_NOWEIGHTS), {m.egu}, {m.eact});
@@ -2730,7 +2730,7 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
                 if (y.need_qx) RAD_ARCH_TRY(make_qop(m.x, T, m.qa_x, &y.qop_x));
                 RAD_ARCH_TRY(make_qgemm(2 * I, H, w.q_gu, m.x, m.qa_x, m.gu[y.kind], &y.q_gu));
                 y.gate_op = y.up_op = y.q_gu.op;
-                y.act = rw(b, RAD_OP(b, "situ_mul",
+                y.act = rw(b, RAD_OP(b, "ernie_situ_mul",
                                      RAD_PARAMS(RAD_RANGE("M", 1, T), RAD_INT("n", I),
                                                 RAD_STR("dtype", "bf16"), RAD_F64("beta", f.beta),
                                                 RAD_F64("linear_beta", f.linear_beta)),
@@ -2756,7 +2756,7 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
             } else {
                 y.gate_op = rw(b, gemm(I, H, y.gate), {m.x}, {m.gu[y.kind]});
                 y.up_op = rw(b, gemm(I, H, y.up), {m.x}, {m.gu[y.kind]});
-                y.act = rw(b, RAD_OP(b, "situ_mul",
+                y.act = rw(b, RAD_OP(b, "ernie_situ_mul",
                                      RAD_PARAMS(RAD_RANGE("M", 1, T), RAD_INT("n", I),
                                                 RAD_STR("dtype", "bf16"), RAD_F64("beta", f.beta),
                                                 RAD_F64("linear_beta", f.linear_beta)),
@@ -2814,7 +2814,7 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
                 R.fc1 = rw(b, gemm(Lt, H, rh.in), {m.x}, {m.xl});
                 R.gate = table(Fe, Lt, "token", std::vector<rad_weight>(rh.ge), m.xl, m.egu);
                 R.up = table(Fe, Lt, "token", std::vector<rad_weight>(rh.ue), m.xl, m.egu);
-                R.act = rw(b, RAD_OP(b, "situ_mul",
+                R.act = rw(b, RAD_OP(b, "ernie_situ_mul",
                                      RAD_PARAMS(RAD_RANGE("M", 1, P), RAD_INT("n", Fe), RAD_STR("dtype", "bf16"),
                                                 RAD_F64("beta", f.beta), RAD_F64("linear_beta", f.linear_beta)),
                                      RAD_NOWEIGHTS), {m.egu}, {m.eact});
@@ -3156,7 +3156,7 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
                                                          RAD_INT("topk", K), RAD_INT("renormalize", *renorm ? 1 : 0)),
                                               RAD_WEIGHTS(rh.bias, rh.scale)),
                                     {m.lg}, {m.ids, m.rw, m.sorted, m.eoff, m.ecnt});
-                dy.act = rw(b, RAD_OP(b, "situ_mul",
+                dy.act = rw(b, RAD_OP(b, "ernie_situ_mul",
                                       RAD_PARAMS(RAD_RANGE("M", 1, qrows), RAD_INT("n", I), RAD_STR("dtype", "bf16"),
                                                  RAD_F64("beta", f.beta), RAD_F64("linear_beta", f.linear_beta)),
                                       RAD_NOWEIGHTS), {m.gu[1]}, {m.act[1]});
@@ -3217,7 +3217,7 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
                     R.gate = dtable(Fe, Lt, "token", rh.ge, m.xl, m.egu);
                     R.up = dtable(Fe, Lt, "token", rh.ue, m.xl, m.egu);
                 }
-                R.act = rw(b, RAD_OP(b, "situ_mul",
+                R.act = rw(b, RAD_OP(b, "ernie_situ_mul",
                                      RAD_PARAMS(RAD_RANGE("M", 1, P), RAD_INT("n", Fe), RAD_STR("dtype", "bf16"),
                                                 RAD_F64("beta", f.beta), RAD_F64("linear_beta", f.linear_beta)),
                                      RAD_NOWEIGHTS), {m.egu}, {m.eact});

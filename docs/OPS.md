@@ -240,7 +240,7 @@ at once. Run it before adding a kernel plugin; the loader names only the first c
 | `conv1d_dw` | `M`(range) `n` `k` `cu_div`/opt `dtype` | `x`, `w`w, `cu_seqlens` → `y`; `b`w? |
 | `rel_sinusoid` | `M`(range) `n` `max_timescale`:f64/opt `dtype` | → `y` |
 | `gelu_mul` | `M`(range) `n` `dtype` | `gate_up` → `y` (splits `[M,2n]` into gelu·up, tanh approx) |
-| `situ_mul` | `M`(range) `n` `dtype` `beta`:f64 `linear_beta`:f64 | `gate_up` → `y` (splits `[M,2n]` into gate·up, both clipped) |
+| `ernie_situ_mul` | `M`(range) `n` `dtype` `beta`:f64 `linear_beta`:f64 | `gate_up` → `y` (splits `[M,2n]` into gate·up, both clipped) |
 | `ernie_multimax` | `M`(range) `n` `dtype` | `x`, `ranges`w, `coefficients`w → `y` (four learned hinge terms, all f32) |
 | `seg_sinusoid` | `M`(range) `n` `period` `max_timescale`:f64/opt `cu_div`/opt `dtype` | `cu_seqlens` → `y` |
 | `gelu` / `silu` | `M`(range) `n` `dtype` | `x` → `y` |
@@ -284,7 +284,7 @@ host deployment runs the chain.
 `gelu_pytorch_tanh`, while the unary `gelu` is the exact erf form. Both split the fused `gate_up`
 with the gate in the first half.
 
-**`situ_mul`** is `silu_mul`'s layout (the fused `[M, 2n]` `gate_up`, gate first, up second) with
+**`ernie_situ_mul`** is `silu_mul`'s layout (the fused `[M, 2n]` `gate_up`, gate first, up second) with
 ERNIE's SiTU activation in place of the SiLU: `beta * tanh(gate / beta) * sigmoid(gate) *
 linear_beta * tanh(up / linear_beta)` in f32, rounded once to `y`'s dtype. Each side is soft-clipped
 before it is combined -- the gate to `+-beta`, with the logistic sigmoid gating the clipped value,

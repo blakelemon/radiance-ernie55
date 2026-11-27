@@ -1148,13 +1148,13 @@ int ref_gelu_mul_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out)
     o.t(D, { M, n });          /* y */
     return o.finish("gelu_mul", operand, out);
 }
-int ref_situ_mul_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
+int ref_ernie_situ_mul_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {
     const uint32_t D = act_dt(p, n_p);
     const int64_t M = gi(p, n_p, "M", 0), n = gi(p, n_p, "n", 0);
     Opd o;
     o.t(D, { M, 2 * n });      /* gate_up -- the gate is the FIRST half, up the second */
     o.t(D, { M, n });          /* y */
-    return o.finish("situ_mul", operand, out);
+    return o.finish("ernie_situ_mul", operand, out);
 }
 
 int ref_situ_mul_quant_fp8_shape(const RadParam* p, int n_p, int operand, RadOpdDesc* out) {

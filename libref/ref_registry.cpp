@@ -284,8 +284,8 @@ static const RadParamSpec pMulWeight[] = { P_INT("M"), P_INT("n"), P_STR("dtype"
 static const RadParamSpec pMnCap[] = { P_INT("M"), P_INT("n"), P_F64("cap"), P_STR("dtype") };
 /* `beta` and `linear_beta` are the two SiTU clipping constants, both required and strictly
  * positive (ERNIE uses 4 and 25); the launch refuses a non-positive or non-finite one. */
-static const RadParamSpec pSituMul[] = { P_INT("M"), P_INT("n"), P_STR("dtype"),
-                                         P_F64("beta"), P_F64("linear_beta") };
+static const RadParamSpec pErnieSituMul[] = { P_INT("M"), P_INT("n"), P_STR("dtype"),
+                                              P_F64("beta"), P_F64("linear_beta") };
 static const RadParamSpec pSituMulQuantFp8[] = { P_INT("M"), P_INT("n"), P_INT("group"), P_STR("dtype"),
                                                  P_F64("beta"), P_F64("linear_beta") };
 static const RadOperandSpec oSituMulQuantFp8[] = { OPD("gate_up"), OUT("q"), OUT("scale") };
@@ -1851,7 +1851,7 @@ static const RadOpSchema kSchemas[] = {
   "gated feed-forwards are trained with the tanh form and the unary gelu is the exact erf one." },
 { "situ_mul_quant_fp8", ARR(pSituMulQuantFp8), ARR(oSituMulQuantFp8),
   "Fused ERNIE SiTU gated product followed by group-128 E4M3 quantization." },
-{ "situ_mul", ARR(pSituMul), ARR(oGateUp),
+{ "ernie_situ_mul", ARR(pErnieSituMul), ARR(oGateUp),
   "y[i] = beta * tanh(gate_up[i] / beta) * sigmoid(gate_up[i]) * linear_beta * "
   "tanh(gate_up[n + i] / linear_beta), ERNIE's SiTU gated product, on silu_mul's fused [M, 2n] plane "
   "with the GATE STILL THE FIRST HALF. The gate is soft-clipped to +-beta and the up projection to "
@@ -3402,9 +3402,9 @@ SIMPLE("ref_situ_mul_quant_fp8", "situ_mul_quant_fp8", "elem",
        "fused SiTU gated product and group-128 E4M3 quantization", DT_FLOAT, ref_situ_mul_quant_fp8),
 SIMPLE("ref_ernie_add_mhc_post", "ernie_add_mhc_post", "norm",
        "fused residual add and mhc_post update", DT_FLOAT, ref_ernie_add_mhc_post),
-SIMPLE("ref_situ_mul", "situ_mul", "elem",
+SIMPLE("ref_ernie_situ_mul", "ernie_situ_mul", "elem",
        "SiTU gated product over a fused gate_up: beta-clip(gate) * sigmoid(gate) * "
-       "linear_beta-clip(up), ERNIE", DT_FLOAT, ref_situ_mul),
+       "linear_beta-clip(up), ERNIE", DT_FLOAT, ref_ernie_situ_mul),
 SIMPLE("ref_ernie_multimax", "ernie_multimax", "elem",
        "ERNIE's learned piecewise logit transform: four hinge terms, two linear + two quadratic, "
        "identity inside the learned ranges", "f32 only (logits and the learned ranges and "

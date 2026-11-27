@@ -1,4 +1,4 @@
-/* tests/r4d_emu: ERNIE's small device operations (r4d_ernie_small.hip) on the host SIMT emulator. situ_mul is checked against a double-precision SiTU rounded once to bf16
+/* tests/r4d_emu: ERNIE's small device operations (r4d_ernie_small.hip) on the host SIMT emulator. ernie_situ_mul is checked against a double-precision SiTU rounded once to bf16
  * (at most one bf16 ulp apart, 90% exact), pitches and the rows past M are untouched, and every refusal leaves y exactly as it was. `t file gu.bin M n beta lb y.bin` runs one
  * case from a file for the independent oracle of the acceptance test. */
 #include "rad_abi.h"
@@ -20,7 +20,7 @@ static int run_situ(std::vector<uint16_t>& gu, std::vector<uint16_t>& y, int M, 
     p[2].key = "beta"; p[2].kind = RAD_P_F64; p[2].dval = beta; p[3].key = "linear_beta"; p[3].kind = RAD_P_F64; p[3].dval = lb;
     p[4].key = "dtype"; p[4].kind = RAD_P_STR; p[4].sval = dt ? dt : "bf16";
     RadArgs a{}; a.t = t; a.n_t = 2; a.p = p; a.n_p = 5;
-    return r4d_rad_situ_mul(&a, nullptr);
+    return r4d_rad_ernie_situ_mul(&a, nullptr);
 }
 
 static double situ_ref(double g, double u, double beta, double lb) { return beta * std::tanh(g / beta) * (1.0 / (1.0 + std::exp(-g))) * lb * std::tanh(u / lb); }
@@ -202,6 +202,6 @@ int main(int argc, char** argv) {
         ++cases;
         if (run_situ(gu, y, M, n, n, n, 4, 25) != RAD_E_SHAPE || y != y0) { ++fails; std::printf("FAIL short pitch accepted\n"); }
     }
-    std::printf("situ_mul: %d cases, %d failure(s)\n", cases, fails);
+    std::printf("ernie_situ_mul: %d cases, %d failure(s)\n", cases, fails);
     return (fails != 0) | router_main();
 }
