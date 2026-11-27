@@ -46,6 +46,16 @@ void usage() {
         "                     launch overhead and clock ramp would otherwise dominate.\n"
         "      --max-tok N    the max_tok declare is run at (default 8192)\n"
         "      --max-seqs N   the max_seqs declare is run at (default 256)\n"
+        "      --max-num-batched-tokens N, --max-num-seqs N\n"
+        "                     the server flags of those names, accepted as aliases of --max-tok\n"
+        "                     and --max-seqs, so the server's flag values can be pasted unchanged\n"
+        "      --max-model-len N  the context bound the declare is run at (default: the file's\n"
+        "                     n_ctx_train, as a server run without --max-model-len). Declare at\n"
+        "                     the length the server runs: a reference program that bounds\n"
+        "                     max_tok x context (ERNIE 5.5: indexer score plane, 2^30 scores)\n"
+        "                     refuses the full training context. Collective rows are keyed by\n"
+        "                     message-size band, so their geometry does not depend on this value;\n"
+        "                     the declare must merely succeed.\n"
         "      --tp N         tensor-parallel width to declare at (default 1). The shapes a\n"
         "                     sharded deployment runs are not the shapes tp=1 runs.\n"
         "      --kv-cache-dtype T  bf16 (default) or i8 -- attention bands are gated on it.\n"
@@ -332,6 +342,7 @@ int main(int argc, char** argv) {
     int      reps = 5, iters = 32;
     int64_t  max_tok = 8192;
     int64_t  max_seqs = 256;
+    int64_t  max_model_len = 0;          /* 0 = the file's n_ctx_train */
     int      tp = 1, spec = -1;          /* -1 = the container's own drafter depth */
     int      kv_dtype = RAD_DT_INVALID;  /* RAD_I8 = the engine's --kv-cache-dtype i8 */
     int      wire_lossy = 0;             /* the engine's --tp-wire wht6 */
@@ -358,6 +369,10 @@ int main(int argc, char** argv) {
         else if (a == "--iters")   iters = (int)num("--iters", 1, INT32_MAX);
         else if (a == "--max-tok") max_tok = num("--max-tok", 1, INT64_MAX);
         else if (a == "--max-seqs") max_seqs = num("--max-seqs", 1, INT64_MAX);
+        else if (a == "--max-num-batched-tokens")
+            max_tok = num("--max-num-batched-tokens", 1, INT64_MAX);
+        else if (a == "--max-num-seqs") max_seqs = num("--max-num-seqs", 1, INT64_MAX);
+        else if (a == "--max-model-len") max_model_len = num("--max-model-len", 1, INT64_MAX);
         else if (a == "--tp")      tp   = (int)num("--tp", 1, INT32_MAX);
         else if (a == "--kv-cache-dtype") {
             const char* v = next("--kv-cache-dtype");
@@ -435,6 +450,7 @@ int main(int argc, char** argv) {
     (void)rad_tools_probe(plugins, meta, &probe);
     ctx.max_spec = spec >= 0 ? spec : probe.draft_depth;
     ctx.max_seqs = max_seqs; ctx.max_ctx = meta.n_ctx_train; ctx.scope = "";
+    if (max_model_len > 0) ctx.max_ctx = max_model_len;
 
     /* Peer access, measured before selection, as Engine does: collectives constrain device.p2p
      * (abi/rad_types.h), and with the fact unset neither the peer-to-peer row nor its host-memory

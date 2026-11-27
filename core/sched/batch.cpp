@@ -465,15 +465,22 @@ int BatchBuilder::layout(Program& prog, const Config& cfg) {
                             "group", b.name.c_str(), (unsigned)b.decl.kv);
                     return RAD_E_INVAL;
                 }
-                d.conv_grp = (int32_t)b.decl.kv;
+                d.kv_grp = (int32_t)b.decl.kv;
             } else if (n_conv_ == 1) {
-                d.conv_grp = conv_group_;
+                d.kv_grp = conv_group_;
             } else {
                 RAD_ERR("derived buffer '%s' runs 'conv_state_index' with %d RAD_KV_CONV "
                         "groups declared; set RadBufDecl::kv to the one it reads",
                         b.name.c_str(), n_conv_);
                 return RAD_E_INVAL;
             }
+        } else if (std::strcmp(d.name, "kv_block_origin") == 0) {
+            if (b.decl.kv == 0 || b.decl.kv >= kvgeom_.g.size() || !kvgeom_.g[b.decl.kv].paged) {
+                RAD_ERR("derived buffer '%s' runs 'kv_block_origin'; set RadBufDecl::kv to a "
+                        "paged KV group", b.name.c_str());
+                return RAD_E_INVAL;
+            }
+            d.kv_grp = (int32_t)b.decl.kv;
         }
         derived_.push_back(d);
         derived_bytes_ = align_up(derived_bytes_ + n * (int64_t)sizeof(int32_t), k_carve_align);
@@ -481,12 +488,12 @@ int BatchBuilder::layout(Program& prog, const Config& cfg) {
 
     /* Buffers declaring the same derivation keep separate arena slots but share one computation
      * per step (run_derivations copies the result; §8). Sorted by (derivation, group), since
-     * run_derivations shares a result only with the previous entry and different conv groups
+     * run_derivations shares a result only with the previous entry and different KV groups
      * give different answers. */
     std::sort(derived_.begin(), derived_.end(),
               [](const Derived& a, const Derived& b) {
                   return a.fn_index != b.fn_index ? a.fn_index < b.fn_index
-                                                  : a.conv_grp < b.conv_grp;
+                                                  : a.kv_grp < b.kv_grp;
               });
 
     mm_on_ = prog.encoder.modalities != 0 || prog.audio_encoder.modalities != 0;
@@ -636,11 +643,12 @@ int BatchBuilder::run_derivations(const StepPlan& plan, Set& s) {
 
         /* The group's own slots and window depth; `conv_state_index` computes a cursor inside
          * that group's rolling window. */
-        const int32_t grp = d.conv_grp;
+        const int32_t grp = d.kv_grp;
         in.conv_slot   = (grp >= 0) ? s.h_convslot + (int64_t)grp * max_seqs_ : nullptr;
         in.conv_window = (grp >= 0 && grp < (int32_t)conv_window_.size()) ? conv_window_[grp] : 1;
+        in.kv_block_origin = (grp >= 0) ? s.h_first + (int64_t)grp * max_seqs_ : nullptr;
 
-        if (d.fn_index == last_fn && d.conv_grp == last_grp && last) {
+        if (d.fn_index == last_fn && d.kv_grp == last_grp && last) {
             d.produced = last->produced;
             std::memcpy(host, s.h_derived + last->off, (size_t)d.produced * sizeof(int32_t));
         } else {
@@ -654,7 +662,7 @@ int BatchBuilder::run_derivations(const StepPlan& plan, Set& s) {
             }
             d.produced = n;
             last_fn = d.fn_index;
-            last_grp = d.conv_grp;
+            last_grp = d.kv_grp;
             last = &d;
         }
 

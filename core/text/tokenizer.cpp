@@ -874,6 +874,7 @@ std::string step_describe(const VocabStep& s) {
                                                   : fmt("Whitespace(flags=%u)", s.flags);
         case RAD_PRE_PUNCTUATION:  return fmt("Punctuation(behavior=%lld)", (long long)s.iarg);
         case RAD_PRE_DIGITS:
+            if (s.flags & 2) return fmt("Digits(rtl_group=%lld)", (long long)(s.iarg > 0 ? s.iarg : 3));
             return fmt("Digits(individual=%d)", (s.flags & 1) ? 1 : 0);
         case RAD_PRE_BYTE_FALLBACK: return "ByteFallback";
         case RAD_PRE_END_OF_WORD:   return fmt("EndOfWordSuffix('%s')", s.arg0.c_str());
@@ -1394,6 +1395,39 @@ int encode_normalized(const Vocab& v, const TokEncoder& e, std::vector<int32_t>&
                 break;
             case RAD_PRE_DIGITS:
                 apply_split(p, *st.re, TOK_SPLIT_ISOLATED, false, sc);
+                if (st.step.flags & 2) {
+                    const size_t grp = st.step.iarg > 0 ? (size_t)st.step.iarg : 3;
+                    sc.next.clear();
+                    std::vector<uint32_t> offs;
+                    for (const TokSpan& sp : p.spans) {
+                        const std::string_view v = p.at(sp);
+                        if (v.empty() || st.re->match_at(v, 0) != (int64_t)v.size()) {
+                            sc.next.push_back(sp);
+                            continue;
+                        }
+                        offs.clear();
+                        for (size_t bi = 0; bi < v.size(); ++bi) {
+                            const unsigned char ch = (unsigned char)v[bi];
+                            if (ch < 0x80 || (ch & 0xC0) == 0xC0) offs.push_back((uint32_t)bi);
+                        }
+                        const size_t ncp = offs.size();
+                        offs.push_back((uint32_t)v.size());
+                        if (ncp <= grp) {
+                            sc.next.push_back(sp);
+                            continue;
+                        }
+                        size_t pos = 0;
+                        const size_t rem = ncp % grp;
+                        if (rem) {
+                            sc.next.push_back({ sp.begin + offs[0], sp.begin + offs[rem] });
+                            pos = rem;
+                        }
+                        for (; pos < ncp; pos += grp) {
+                            sc.next.push_back({ sp.begin + offs[pos], sp.begin + offs[pos + grp] });
+                        }
+                    }
+                    p.spans.swap(sc.next);
+                }
                 break;
             case RAD_PRE_BYTE_FALLBACK:
                 /* Declares how an unknown piece is encoded, not a split; bpe_word handles it. */

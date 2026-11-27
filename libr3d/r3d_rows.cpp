@@ -229,6 +229,8 @@ static const RadOperandSpec oDequant[] = { { "q", RAD_OPD_IN, 0 }, { "scale", RA
 
 /* --- gemm --- */
 static const RadParamSpec pGemm[] = { P_INT("M"), P_INT("N"), P_INT("K"), P_STR("dtype") };
+/* gemm_nt alone takes libr4d's `row_identity` (docs/OPS.md); accepted and ignored here. */
+static const RadParamSpec pGemmRI[] = { P_INT("M"), P_INT("N"), P_INT("K"), P_STR("dtype"), P_INTO("row_identity") };
 
 /* pGemmNt/oGemmNt (gemm_nt_f32) reuse pGemm/oGemm above: the pair is byte-identical to
  * libr4d's, and the loader compares positionally. */
@@ -240,7 +242,7 @@ static const RadOperandSpec oGemm[] = { { "a", RAD_OPD_IN, 0 }, { "b", RAD_OPD_W
  * no row here serves. */
 static const RadParamSpec pGemmQ[] = { P_INT("M"), P_INT("N"), P_INT("K"), P_INT("group"),
                                        P_STR("dtype"), P_INTO("pb1"), P_INTO("pb2"),
-                                       P_INTO("split_n"), P_INTO("w_rb") };
+                                       P_INTO("split_n"), P_INTO("w_rb"), P_INTO("mvm_max") };
 static const RadOperandSpec oGemmQ[] = { { "a", RAD_OPD_IN, 0 }, { "a_scale", RAD_OPD_IN, 1 },
                                          { "b", RAD_OPD_WEIGHT, 0 },
                                          { "b_scale", RAD_OPD_WEIGHT, 0 },
@@ -742,7 +744,7 @@ static const RadOpSchema kSchemas[] = {
     SCHEMA("dequant", pQuant, oDequant,
            "y = code * scale, the read of a container's own quantised weight: `group`-wide f32 "
            "scales against E4M3, E5M2 or int8 codes."),
-    SCHEMA("gemm_nt", pGemm, oGemm, "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate."),
+    SCHEMA("gemm_nt", pGemmRI, oGemm, "y[M,N] = a[M,K] @ b[N,K]^T, f32 accumulate."),
     SCHEMA("gemm_nt_f32", pGemm, oGemm,
            "BF16 activations times F32 weights, F32 accumulation and output; preserves routing "
            "and index gate precision."),

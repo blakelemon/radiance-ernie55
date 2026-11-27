@@ -245,6 +245,14 @@ const RadParamSpec pGemmNt[] = {
     {"K", RAD_P_INT, RAD_REQUIRED},
     {"dtype", RAD_P_STR, RAD_REQUIRED},
 };
+/* gemm_nt alone takes libr4d's `row_identity` (docs/OPS.md): accepted and ignored here. */
+const RadParamSpec pGemmNtRI[] = {
+    {"M", RAD_P_INT, RAD_REQUIRED},
+    {"N", RAD_P_INT, RAD_REQUIRED},
+    {"K", RAD_P_INT, RAD_REQUIRED},
+    {"dtype", RAD_P_STR, RAD_REQUIRED},
+    {"row_identity", RAD_P_INT, RAD_OPTIONAL},
+};
 const RadOperandSpec oGemmNt[] = {
     {"a", RAD_OPD_IN, 0},
     {"b", RAD_OPD_WEIGHT, 0},
@@ -252,7 +260,7 @@ const RadOperandSpec oGemmNt[] = {
 };
 
 const RadOpSchema kSchemas[] = {
-    {"gemm_nt", pGemmNt, 4, oGemmNt, 3, "C[M,N] = A[M,K] @ B[N,K]^T, unquantised."},
+    {"gemm_nt", pGemmNtRI, 5, oGemmNt, 3, "C[M,N] = A[M,K] @ B[N,K]^T, unquantised."},
 };
 
 const RadConstraint cNt[] = {

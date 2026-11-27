@@ -19,6 +19,7 @@ struct DeriveInput {
     const int32_t*  cu_seqlens = nullptr;   /* [n_seq+1] */
     const int32_t*  positions = nullptr;    /* [n_tok] absolute position per token */
     const int32_t*  conv_slot = nullptr;    /* [n_seq] the conv group's state slot, -1 if none */
+    const int32_t*  kv_block_origin = nullptr;  /* [n_seq] absolute first position of the group's block table */
     int64_t         n_tok = 0;
     int64_t         n_seq = 0;
     int64_t         state_chunk = 1;        /* the resolved linear-state chunk length */

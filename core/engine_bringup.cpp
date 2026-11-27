@@ -4,6 +4,7 @@
  *
  * Separate from engine.cpp (the hot step loop), with which it shares only the Engine's fields.
  */
+#include <cerrno>
 #include "engine_priv.h"
 #include "rad_internal.h"
 #include "engine_hostmem.h"
@@ -975,6 +976,29 @@ int Engine::load_plugins() {
     const Plugin* ap = reg_->plugin(plugins_.arch_plugin);
     arch_step_ = ap ? ap->arch_step : nullptr;
     arch_pass_key_ = ap ? ap->arch_pass_key : nullptr;
+    kernel_poll_.clear();
+    for (const Plugin& p : reg_->plugins())
+        if (p.kernel_poll_error || (p.kernel_poll_source && p.kernel_poll_fold)) {
+            KernelPoll kp;
+            kp.name = p.name; kp.legacy = p.kernel_poll_error;
+            if (p.kernel_poll_source && p.kernel_poll_fold) { kp.source = p.kernel_poll_source; kp.fold = p.kernel_poll_fold; }
+            kernel_poll_.push_back(kp);
+        }
+    if (const char* e = std::getenv("RADIANCE_POLL_KERNEL_ERRORS"); e && *e) {
+        /* An integer and nothing else: a word ("yes", "on") read by strtol is 0, which would switch the poll off without a word. Anything that is not 1 says so at startup. */
+        char* end = nullptr;
+        errno = 0;
+        const long n = std::strtol(e, &end, 10);
+        while (end && (*end == ' ' || *end == '\t')) ++end;
+        if (end == e || (end && *end) || errno == ERANGE || n < 0) {
+            RAD_ERR("RADIANCE_POLL_KERNEL_ERRORS='%s' is not a non-negative integer (1 polls the kernels' refusals every step, N every Nth step, 0 never)", e);
+            return RAD_E_INVAL;
+        }
+        kernel_poll_every_ = n > 1000000 ? 1000000 : (int)n;
+        if (kernel_poll_every_ != 1 && !kernel_poll_.empty())
+            RAD_WARN("RADIANCE_POLL_KERNEL_ERRORS=%ld: kernel refusals are not checked on every step%s; the tokens of a step whose kernels refused a launch can be served",
+                     n, kernel_poll_every_ == 0 ? " (never)" : "");
+    }
     return RAD_OK;
 }
 

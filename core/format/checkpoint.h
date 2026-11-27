@@ -188,7 +188,7 @@ public:
      * An unreadable form of these stays None, with the reason in import_refusal(). The
      * quantization_config keys are then renamed `imported_quantization_config.*`, since they
      * describe the tool, not a served format. */
-    enum class Import { None, Gptq, QuarkMx, CtInt4, ParoMx, ParoM2, ParoI5, ParoI4, Nvfp4, CtFp8,
+    enum class Import { None, Gptq, QuarkMx, PreviewMx, CtInt4, ParoMx, ParoM2, ParoI5, ParoI4, Nvfp4, CtFp8,
                         ModelOpt };
     Import imports() const { return import_; }
     /* The form `name` is read in: a drafter merged by add_draft ships its own quantisation (a

@@ -1292,6 +1292,97 @@ int Engine::fail_loop(int st) {
     return st;
 }
 
+/* The copies of the kernel libraries' verdict logs and the events behind them, on EVERY rank's own stream (fix series 5, M-a and M-b). Called where the step's work has been
+ * issued on all ranks: the trunk set where the ids' copy is fenced ahead of the drafter's passes, the end set at the step's end event. Rank 0's own copy goes before its event
+ * is recorded, so the wait the step loop already makes covers it. A rank's copy is behind everything that rank's stream was given for the step (a second compute lane is joined
+ * into the stream at the end of every pass, Ctx::lane_join), and reaches the host by rad_memcpy_async into pinned memory, as the step's own outputs do. Only where the library
+ * answers kernel_poll_source (a validating build) and only on the steps the cadence polls: with validation off nothing is issued here. */
+int Engine::poll_issue(PollSet& set) {
+    for (auto& v : set.ent) for (auto& e : v) e.pending = false;
+    set.legacy_due = false;
+    if (!poll_due()) return RAD_OK;
+    set.legacy_due = true;
+    if (set.ent.size() != kernel_poll_.size()) set.ent.assign(kernel_poll_.size(), std::vector<PollEnt>(ranks_.size()));
+    const int home = ranks_[0]->device;
+    int rc = RAD_OK;
+    for (size_t k = 0; k < kernel_poll_.size() && rc >= 0; ++k) {
+        if (!kernel_poll_[k].source) continue;
+        for (size_t i = 0; i < ranks_.size() && rc >= 0; ++i) {
+            Rank& rk = *ranks_[i];
+            if (ranks_.size() > 1 || i != 0) { rc = rad_dev_set(rk.device); if (rc < 0) break; }
+            void* dev = nullptr;
+            int64_t bytes = 0;
+            const int has = kernel_poll_[k].source(rk.device, &dev, &bytes);
+            if (has < 0) { rc = RAD_E_DEVICE; break; }
+            if (has == 0 || !dev || bytes <= 0) continue;
+            PollEnt& e = set.ent[k][i];
+            if (!e.host || e.bytes < bytes) {
+                if (e.host) rad_dev_free(e.host, RAD_MEM_HOST_PINNED);
+                e.host = rad_dev_alloc(bytes, RAD_MEM_HOST_PINNED);
+                e.bytes = e.host ? bytes : 0;
+                if (!e.host) { rc = RAD_E_NOMEM; break; }
+            }
+            if (!e.ev) { rc = rad_event_create_as(&e.ev, RAD_EVENT_HOST_WAIT); if (rc < 0) break; }   /* not LOCAL: the host reads the copy on this event's strength */
+            rc = rad_memcpy_async(e.host, dev, bytes, rk.ctx.stream());
+            if (rc >= 0) rc = rad_event_record(e.ev, rk.ctx.stream());
+            if (rc >= 0) { e.pending = true; e.bytes = std::max<int64_t>(e.bytes, bytes); }
+        }
+    }
+    const int back = rad_dev_set(home);
+    return rc < 0 ? rc : back;
+}
+
+void Engine::poll_fini() {
+    for (PollSet* s : { &poll_trunk_, &poll_end_ })
+        for (auto& v : s->ent)
+            for (auto& e : v) {
+                if (e.ev) rad_event_destroy(e.ev);
+                if (e.host) rad_dev_free(e.host, RAD_MEM_HOST_PINNED);
+                e = PollEnt{};
+            }
+}
+
+/* `end_of_step`: poll the end set (everything the step issued, the draft passes included); otherwise the trunk set when the ids were read ahead of the drafter's passes
+ * (StepOut::early), else the end set. Waits for each rank's own event, then folds that rank's copy. */
+int Engine::poll_kernel_errors(const RadBatch* b, const char* where, bool end_of_step) {
+    if (kernel_poll_.empty() || kernel_poll_every_ <= 0 || (b->step % kernel_poll_every_) != 0) return RAD_OK;
+    PollSet& set = end_of_step ? poll_end_ : poll_trunk_;
+    for (size_t k = 0; k < kernel_poll_.size(); ++k) {
+        const KernelPoll& kp = kernel_poll_[k];
+        auto fail = [&](int bits, int device) {
+            if (bits < 0) {
+                RAD_ERR("step %d: kernel library '%s' could not report its launch verdicts (%s)", b->step, kp.name.c_str(), where);
+                return RAD_E_DEVICE;
+            }
+            if (device >= 0)
+                RAD_ERR("step %d: a device kernel in '%s' ran a launch the reference kernel refuses (verdict bits 0x%x on device %d, %s); the engine stops: its outputs are not valid",
+                        b->step, kp.name.c_str(), (unsigned)bits, device, where);
+            else
+                RAD_ERR("step %d: a device kernel in '%s' ran a launch the reference kernel refuses (verdict bits 0x%x, %s); the engine stops: its outputs are not valid",
+                        b->step, kp.name.c_str(), (unsigned)bits, where);
+            return RAD_E_SHAPE;
+        };
+        bool read_by_engine = false;   /* a library that answers kernel_poll_source for no rank (validation off, no launch yet) has nothing to copy; its own poll is asked instead */
+        if (kp.source && k < set.ent.size())
+            for (size_t i = 0; i < ranks_.size(); ++i) read_by_engine = read_by_engine || set.ent[k][i].pending;
+        if (read_by_engine) {
+            for (size_t i = 0; i < ranks_.size(); ++i) {
+                PollEnt& e = set.ent[k][i];
+                if (!e.pending) continue;
+                e.pending = false;
+                const int sy = rad_event_sync(e.ev);
+                if (sy < 0) { RAD_ERR("step %d: waiting for rank %zu's verdict copy: %s", b->step, i, rad_strerror(sy)); return sy; }
+                const int bits = kp.fold(ranks_[i]->device, e.host, e.bytes);
+                if (bits != 0) return fail(bits, ranks_[i]->device);
+            }
+        } else if (kp.legacy) {
+            const int bits = kp.legacy();
+            if (bits != 0) return fail(bits, -1);
+        }
+    }
+    return RAD_OK;
+}
+
 int Engine::step_loop() {
     /* The batch is built on rank 0's stream into rank 0's memory, so this thread binds rank 0's
      * device; the backend's current device is thread-local and starts at device 0. */
@@ -1386,6 +1477,7 @@ int Engine::step_loop() {
             continue;
         }
         idle = 0;
+        poll_step_ = b->step;
         if (t_on) phase_mark(PH_PLAN);
 
         clear_fresh_states();
@@ -1608,6 +1700,9 @@ int Engine::step_loop() {
         st = embedding_ ? collect_pooled(b, so) : collect_step(b, so);
         if (t_on) phase_mark(PH_COLLECT);
         if (st < 0) return fail_loop(st);
+        /* The card has finished what the readback waited for: ask the kernels what they refused, before this step's tokens are committed. */
+        st = poll_kernel_errors(b, "after the step's readback", /*end_of_step=*/!so.early);
+        if (st < 0) return fail_loop(st);
         /* The step's sampler chain, verify op included, has returned: one line at the first
          * coupled verify that actually completed. */
         couple_verify_evidence(b->step);
@@ -1682,6 +1777,8 @@ int Engine::step_loop() {
             if (st < 0) { RAD_ERR("step %d: waiting for its draft passes: %s", b->step,
                                   rad_strerror(st)); return fail_loop(st); }
             so.early = false;
+            st = poll_kernel_errors(b, "after the draft passes", /*end_of_step=*/true);
+            if (st < 0) return fail_loop(st);
         }
 
         /* The drafter for the next step already ran on the card; what remains is to check its
@@ -1760,6 +1857,7 @@ int Engine::collect_issue(StepOut& so, bool fence) {
         return RAD_OK;
     }
     if (fence && early_ids_) {
+        RAD_TRY(poll_issue(poll_trunk_));   /* every rank's trunk work is behind its copy; the drafter's passes are not */
         RAD_TRY(rad_event_record(tok_end_, r0.ctx.stream()));
         so.early = true;
     }
@@ -1882,6 +1980,7 @@ void Engine::stream_report(const char* when, const StreamRead& r, const StreamRe
 int Engine::mark_step_end(const RadBatch* b, StepOut& so) {
     if (embedding_) RAD_TRY(collect_pooled_issue(b, so));
     else if (so.n_rows > 0 && !so.rb) RAD_TRY(collect_issue(so));
+    RAD_TRY(poll_issue(poll_end_));   /* behind every rank's work of the step, before rank 0's end event so that event covers rank 0's copy */
     return rad_event_record(step_end_, ranks_[0]->ctx.stream());
 }
 

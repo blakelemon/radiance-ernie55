@@ -435,13 +435,16 @@ typedef struct RadBufDecl {
     int         kind;                  /* RAD_BUF_* */
     int         domain;                /* RAD_DOMAIN_DEVICE or RAD_DOMAIN_HOST */
     const char* derive;                /* RAD_BUF_DERIVED: the derivation the core runs */
-    /* The KV group a derivation is about, or 0 for the only one of its kind.
+    /* The KV group a derivation reads, when needed.
      *
      * `conv_state_index` computes a read cursor inside a rolling window, so it needs that group's
      * slot per sequence and window depth, and a model may declare several (Qwen4-Exp's PLE layer
      * has two conv states of different depths and dtypes beside the gated delta net's). 0 with
      * more than one group of the kind a derivation reads is refused: the wrong window depth gives
      * a plausible cursor and a convolution that reads history it never wrote.
+     *
+     * `kv_block_origin` requires the handle of a paged group and gives the absolute position
+     * represented by column zero of that group's block table, one entry per sequence.
      *
      * Trailing and zero-defaulted, so a plugin built against the older struct is unchanged. */
     rad_kvgroup kv;

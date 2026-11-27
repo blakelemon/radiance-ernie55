@@ -878,6 +878,14 @@ static const RadParamSpec pGemmNt[] = {
     { "K",     RAD_P_INT, RAD_REQUIRED },
     { "dtype", RAD_P_STR, RAD_REQUIRED },
 };
+/* gemm_nt alone takes libr4d's `row_identity` (docs/OPS.md): accepted and ignored here. */
+static const RadParamSpec pGemmNtRI[] = {
+    { "M",     RAD_P_INT, RAD_REQUIRED },
+    { "N",     RAD_P_INT, RAD_REQUIRED },
+    { "K",     RAD_P_INT, RAD_REQUIRED },
+    { "dtype", RAD_P_STR, RAD_REQUIRED },
+    { "row_identity", RAD_P_INT, RAD_OPTIONAL },
+};
 static const RadOperandSpec oGemmNt[] = {
     { "a", RAD_OPD_IN,     0 },
     { "b", RAD_OPD_WEIGHT, 0 },
@@ -940,6 +948,8 @@ static const RadParamSpec pGemmNtQ[] = {
      * per-row scale plane holds each block's value in every row, and the trellis forms that need
      * the count are IQR dtypes, which no row here serves. */
     { "w_rb",  RAD_P_INT, RAD_OPTIONAL },
+    /* libr4d's fp8a8 matvec bound (docs/OPS.md): accepted and ignored here. */
+    { "mvm_max", RAD_P_INT, RAD_OPTIONAL },
 };
 /* docs/OPS.md's `gemm_nt_q` is `a`, `a_scale`, `b`w, `b_scale`w -> `y`. Two of libhalo's six
  * quantised GEMMs need a seventh operand. RadLayout can declare aux streams beside a weight, but
@@ -3681,7 +3691,7 @@ static const RadOpSchema kSchemas[] = {
            "y is [world_size * numel] with rank r's contribution at offset r * numel. The bytes are "
            "moved and never summed: the vocab-parallel sampler's payload is (u32 token id, f32 "
            "logit) pairs and an id lane read as f32 is a denormal."),
-    SCHEMA("gemm_nt", pGemmNt, oGemmNt,
+    SCHEMA("gemm_nt", pGemmNtRI, oGemmNt,
            "C[M,N] = A[M,K] @ B[N,K]^T, unquantised."),
     SCHEMA("gemm_nt_q", pGemmNtQ, oGemmNtQ,
            "C[M,N] = A[M,K] @ dequant(Bq)[N,K]^T. `dtype` names the operand COMBINATION, so one "

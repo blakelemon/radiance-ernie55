@@ -240,6 +240,7 @@ void Engine::step_state_fini() {
     step_end_ = nullptr;
     if (tok_end_) rad_event_destroy(tok_end_);
     tok_end_ = nullptr;
+    poll_fini();
 }
 
 /* ------------------------------------------------------------------ the serial driver

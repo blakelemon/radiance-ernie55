@@ -215,7 +215,32 @@ int read_pretok(const json& n, std::vector<VocabStep>& out, const char* origin) 
         const json* seq = get(n, "pretokenizers");
         if (!seq) seq = get(n, "pre_tokenizers");
         if (!seq || !seq->is_array()) return RAD_OK;
-        for (const json& c : *seq) RAD_TRY(read_pretok(c, out, origin));
+        auto is_ernie_rtl_digits = [&](size_t i) -> bool {
+            if (i + 3 >= seq->size()) return false;
+            const json &a = (*seq)[i], &b = (*seq)[i + 1], &c = (*seq)[i + 2], &d = (*seq)[i + 3];
+            if (str_or(a, "type", "") != "Digits" || bool_or(a, "individual_digits", false)) return false;
+            auto match_split = [](const json& o, const char* want) {
+                if (str_or(o, "type", "") != "Split" || bool_or(o, "invert", false) ||
+                    str_or(o, "behavior", "Isolated") != "Isolated") return false;
+                std::string pat; bool is_re = false;
+                return read_pattern(o, &pat, &is_re) && is_re && pat == want;
+            };
+            return match_split(b, R"(\p{Nd}{1,510}(?=(?>\p{Nd}{510})*(?:\P{Nd}|$))|\G\p{Nd}{510})") &&
+                   match_split(c, R"(\A\p{Nd}{1,2}(?=\p{Nd}{3}+\z))") &&
+                   match_split(d, R"(\A\p{Nd}{3}|\G\p{Nd}{3})");
+        };
+        for (size_t i = 0; i < seq->size(); ++i) {
+            if (is_ernie_rtl_digits(i)) {
+                VocabStep ds;
+                ds.kind = RAD_PRE_DIGITS;
+                ds.flags = 2u;   /* isolate \p{Nd}+ runs and group right-to-left by iarg digits */
+                ds.iarg = 3;
+                out.push_back(ds);
+                i += 3;
+                continue;
+            }
+            RAD_TRY(read_pretok((*seq)[i], out, origin));
+        }
         return RAD_OK;
     }
     if (t == "ByteLevel") {

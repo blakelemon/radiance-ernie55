@@ -136,7 +136,8 @@ uint32_t st_dtype(const std::string& s) {
     if (s == "BOOL") return RAD_BOOL;
     if (s == "F8_E4M3") return RAD_F8E4M3;
     if (s == "F8_E5M2") return RAD_F8E5M2;
-    /* F64 and F8_E8M0 have no RAD_ equivalent; refused by name at use rather than approximated. */
+    if (s == "F8_E8M0") return RAD_E8M0;
+    /* F64 has no RAD equivalent; refused by name at use rather than approximated. */
     return RAD_DT_INVALID;
 }
 

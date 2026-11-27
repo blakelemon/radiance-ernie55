@@ -16,6 +16,7 @@
 #include <fstream>
 #include <sstream>
 #include <map>
+#include <regex>
 
 namespace rad {
 
@@ -1297,7 +1298,10 @@ void Checkpoint::detect_import() {
         return false;
     };
     const std::string qm = qc("quant_method");
-    if (qm == "auto-round") {
+    if (qm == "fp8" && qc("expert_dtype") == "mxfp4") {
+        /* Preview keeps ordinary FP8 weights and declares MXFP4 only for routed experts. */
+        import_ = Import::PreviewMx;
+    } else if (qm == "auto-round") {
         /* AutoRound's GPTQ-compatible export; its own `auto_round` packing is not read. */
         const std::string pf = qc("packing_format");
         if (pf == "auto_round:auto_gptq") import_ = Import::Gptq;
@@ -1516,7 +1520,7 @@ void Checkpoint::detect_import() {
     /* Rename the tool's quantization_config: plugins read that key as the served format
      * (qwen35_fp8 checks quant_method is "fp8"), while an imported checkpoint states each weight's
      * encoding. It stays in the container as provenance. */
-    if (import_ != Import::None)
+    if (import_ != Import::None && import_ != Import::PreviewMx)
         for (std::string& k : meta_.keys)
             if (k.rfind("quantization_config.", 0) == 0) k = "imported_" + k;
 }
@@ -1533,6 +1537,32 @@ int Checkpoint::import_piece(const std::string& name, const SrcTensor** codes,
     if (auto hit = imported_.find(name); hit != imported_.end()) {
         *codes = hit->second.first;
         *scale = hit->second.second;
+        return RAD_OK;
+    }
+
+    if (im == Import::PreviewMx) {
+        /* Only routed expert w1/w2/w3 use the preview's packed-I8 + E8M0 form: the trunk's
+         * (model.layers.L) and the DSpark drafter's (model.mtp.L), which ships the same form. */
+        static const std::regex expert(R"(^model\.(layers|mtp)\.[0-9]+\.block_sparse_moe\.experts\.[0-9]+\.w[123]\.weight$)");
+        if (!std::regex_match(name, expert)) return RAD_E_NOTFOUND;
+        const SrcTensor* w = find(name);
+        if (!w) return RAD_E_NOTFOUND;
+        const SrcTensor* e = find(name + "_scale_inv");
+        const char* sf = meta_.get("quantization_config.scale_fmt");
+        if (!sf || std::string(sf) != "ue8m0")
+            return refuse(RAD_E_FORMAT, "preview MXFP4 requires ue8m0 scales");
+        if (!e || w->rad_dtype != RAD_I8 || e->rad_dtype != RAD_E8M0)
+            return refuse(RAD_E_FORMAT, "'" + name + "' requires I8 codes and an F8_E8M0 scale companion");
+        if (w->shape.size() != 2 || e->shape.size() != 2 || w->shape[0] <= 0 ||
+            w->shape[1] <= 0 || w->shape[1] % 16 || e->shape[0] != w->shape[0] ||
+            e->shape[1] != w->shape[1] / 16 || w->shape[1] > INT64_MAX / 2)
+            return refuse(RAD_E_SHAPE, "'" + name + "' needs one E8M0 scale per 32 logical columns");
+        SrcTensor c = *w; c.rad_dtype = RAD_FP4E2M1;
+        c.shape = {w->shape[0], w->shape[1] * 2};
+        SrcTensor x = *e;
+        sliced_.push_back(std::move(c)); *codes = &sliced_.back();
+        sliced_.push_back(std::move(x)); *scale = &sliced_.back();
+        imported_[name] = {*codes, *scale};
         return RAD_OK;
     }
 

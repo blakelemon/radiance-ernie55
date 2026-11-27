@@ -515,6 +515,31 @@ private:
     void                          quiet_service();
     std::atomic<bool>             serving_{false};
     int  fail_loop(int st);
+    /* Kernel libraries that report what their device kernels refused (Plugin::kernel_poll_error), asked by poll_kernel_errors() where the step loop has already waited for
+     * the card: after collect_step (before the step's tokens are committed) and, when the ids were read ahead of the drafter's passes, after the wait for those. One poll is
+     * a few small device-to-host copies per device on a private stream, and it never waits on the engine's streams, so a step issued ahead keeps running.
+     * RADIANCE_POLL_KERNEL_ERRORS=N polls every Nth step (default 1; 0 turns polling off, to time its cost); the kernels' own switch is R4D_ERNIE_VALIDATE=0. A
+     * nonzero reply fails the step loop with RAD_E_SHAPE, the code the reference kernel returns for the same launch. */
+    int  poll_kernel_errors(const RadBatch* b, const char* where, bool end_of_step);
+    struct KernelPoll {
+        std::string name;
+        int (*legacy)(void) = nullptr;                                  /* Plugin::kernel_poll_error: one call, the library reads its own logs */
+        int (*source)(int, void**, int64_t*) = nullptr;                 /* Plugin::kernel_poll_source / _fold: the engine reads the logs through each rank's own queue */
+        int (*fold)(int, const void*, int64_t) = nullptr;
+    };
+    std::vector<KernelPoll> kernel_poll_;
+    int  kernel_poll_every_ = 1;
+    /* The engine's own readback of the logs (M-a, M-b). Per library and rank: a pinned host copy of the device's log and an event recorded behind the copy on that rank's stream.
+     * Two sets: `trunk` is issued where the sampled ids' copy is fenced ahead of the drafter's passes (tok_end_), `end` at the step's end event (step_end_), so a poll after the
+     * ids waits for the trunk's work of EVERY rank and no more (the read-ahead of the ids is not given up), and the poll after the draft passes for everything. Copies and
+     * events exist only for a library that answers kernel_poll_source and only on steps the cadence polls; with validation off the library answers 0 and nothing is issued. */
+    struct PollEnt { void* host = nullptr; int64_t bytes = 0; RadEvent ev = nullptr; bool pending = false; };
+    struct PollSet { std::vector<std::vector<PollEnt>> ent; bool legacy_due = false; };   /* [library][rank] */
+    PollSet poll_trunk_, poll_end_;
+    int  poll_step_ = -1;      /* the step whose work the step loop is issuing (set where the batch is taken) */
+    bool poll_due() const { return !kernel_poll_.empty() && kernel_poll_every_ > 0 && poll_step_ >= 0 && (poll_step_ % kernel_poll_every_) == 0; }
+    int  poll_issue(PollSet& set);
+    void poll_fini();
 
     /* This step's scored rows (Request::token_scores): a logits row and the result it fills.
      * Written by the scheduler thread while the ranks are parked, read by them during the step,

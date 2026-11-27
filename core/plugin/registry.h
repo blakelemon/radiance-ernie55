@@ -116,6 +116,23 @@ struct Plugin {
 
     RadPluginCloseFn close = nullptr;
     RadPluginFreedFn freed = nullptr;   /* rad_plugin_freed, optional */
+
+    /* Optional, kernel libraries only: `int rad_kernel_poll_error(void)`. A device kernel cannot refuse a launch the way a reference kernel does (its launch is asynchronous
+     * and its operands are device memory), so it detects what the reference would have refused on the device and records it. The engine calls this where it already waits
+     * for the card (after a step's readback, before the step's tokens are committed): it returns the bit set of the violations raised since its previous call, 0 for none,
+     * negative if the library could not read them. Library-defined bits; the engine only names them. Null: the library reports nothing. */
+    int (*kernel_poll_error)(void) = nullptr;
+
+    /* Optional, kernel libraries only, the form the engine prefers (fix series 5, M-a and M-b): the library says WHERE it keeps each device's verdict log and how to read it, and
+     * the engine copies it through its own queue of that device, behind that rank's step work, and waits for that rank's own event. A device kernel's writes then reach the host by
+     * the same path as the step's outputs (rad_memcpy_async on the rank's stream into pinned host memory, then an event), and the check is ordered after EVERY rank's work of the
+     * step, not rank 0's alone.
+     *   `int rad_kernel_poll_source(int device, void** dev_ptr, int64_t* bytes)`: 1 and the device address and size of the log of `device` (a launch has run there), 0 if it has none
+     *      (validation off, or no gated launch yet on that device), negative on error. Called by the engine on the step-loop thread with `device` selected.
+     *   `int rad_kernel_poll_fold(int device, const void* copy, int64_t bytes)`: the verdict bits of the events in `copy` (a host copy of the log) since the previous fold for `device`,
+     *      0 for none, negative if the copy is not a log. Library-defined bits, as for kernel_poll_error. */
+    int (*kernel_poll_source)(int device, void** dev_ptr, int64_t* bytes) = nullptr;
+    int (*kernel_poll_fold)(int device, const void* copy, int64_t bytes) = nullptr;
 };
 
 /* ------------------------------------------------------------------ one selection question */

@@ -294,9 +294,9 @@ private:
 
     struct Derived {
         rad_buf     handle = 0;
-        /* Conv group this derivation is about, or -1. From RadBufDecl::kv, or the only conv
-         * group when the plugin left it 0 and there is exactly one. */
-        int32_t     conv_grp = -1;
+        /* KV group this derivation is about, or -1. A conv derivation may default to the sole
+         * conv group. */
+        int32_t     kv_grp = -1;
         const char* name = nullptr;
         int         fn_index = -1;
         int64_t     off = 0;            /* byte offset into a set's derived region */

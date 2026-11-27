@@ -207,6 +207,12 @@ int Registry::commit_(Staged& s, int order) {
     p.handle       = s.handle;
     p.close        = dl_fn<RadPluginCloseFn>(s.handle, "rad_plugin_close");
     p.freed        = dl_fn<RadPluginFreedFn>(s.handle, "rad_plugin_freed");
+    if (p.kind == RAD_PLUGIN_KERNEL)
+    {
+        p.kernel_poll_error = dl_fn<int (*)(void)>(s.handle, "rad_kernel_poll_error");
+        p.kernel_poll_source = dl_fn<int (*)(int, void**, int64_t*)>(s.handle, "rad_kernel_poll_source");
+        p.kernel_poll_fold = dl_fn<int (*)(int, const void*, int64_t)>(s.handle, "rad_kernel_poll_fold");
+    }
 
     std::vector<const RadOpSchema*> staged_schemas;
     std::vector<std::pair<const RadKernelInfo*, int>> staged_rows;   /* the row and its index */

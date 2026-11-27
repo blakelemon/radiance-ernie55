@@ -302,6 +302,8 @@ static const RadOperandSpec oDequantW4[] = { WGT("wq"), WGT("ws"), OUT("y") };
 
 /* ---- gemm --------------------------------------------------------------------------------- */
 static const RadParamSpec pGemm[]       = { P_INT("M"), P_INT("N"), P_INT("K"), P_STR("dtype") };
+/* gemm_nt alone takes libr4d's `row_identity` (docs/OPS.md); accepted and ignored here. */
+static const RadParamSpec pGemmRI[]     = { P_INT("M"), P_INT("N"), P_INT("K"), P_STR("dtype"), P_INTO("row_identity") };
 static const RadOperandSpec oGemm[]     = { OPD("a"), WGT("b"), OUT("y") };
 static const RadParamSpec pGemmBias[]   = { P_INT("M"), P_INT("N"), P_INT("K"), P_STR("dtype"),
                                            P_STRO("act") };
@@ -311,7 +313,7 @@ static const RadOperandSpec oGemmBias[] = { OPD("a"), WGT("b"), WGT("bias"), OPD
 /* `split_n` and `w_rb` are libr4d's (docs/OPS.md); accepted and ignored here. */
 static const RadParamSpec pGemmQ[]        = { P_INT("M"), P_INT("N"), P_INT("K"), P_INT("group"),
                                               P_STR("dtype"), P_INTO("pb1"), P_INTO("pb2"),
-                                              P_INTO("split_n"), P_INTO("w_rb") };
+                                              P_INTO("split_n"), P_INTO("w_rb"), P_INTO("mvm_max") };
 static const RadParamSpec pGemmQBias[]    = { P_INT("M"), P_INT("N"), P_INT("K"), P_INT("group"),
                                               P_STR("dtype") };
 static const RadOperandSpec oGemmQ[]      = { OPD("a"), OPD_O("a_scale"), WGT("b"), WGT("b_scale"),
@@ -1158,7 +1160,7 @@ static const RadOpSchema kSchemas[] = {
 { "gated_quant_fp8", ARR(pGatedQuantFp8), ARR(oGatedQuantFp8),
   "act(gate) * up over a packed [M, 2n] plane, gate half first, then the E4M3 quantiser over the "
   "bf16-narrowed product. `act` is silu or sigmoid, silu by default." },
-{ "gemm_nt", ARR(pGemm), ARR(oGemm),
+{ "gemm_nt", ARR(pGemmRI), ARR(oGemm),
   "C = A B^T, f32 accumulate, cache-blocked with a register-blocked microkernel; it sums in a "
   "different order from libref's straight loop." },
 { "gemm_nt_bias", ARR(pGemmBias), ARR(oGemmBias),

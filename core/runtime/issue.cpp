@@ -350,9 +350,15 @@ int Ctx::resolve_weight_table(rad_op h, int operand, rad_weight first, int64_t n
     ce.key = key;
     ce.slot = slot;
     WeightTable& t = wtabs_[slot];
-    /* While recording, the refresh is host work: cut the tape and name the table, so a play
-     * refreshes it on this lane with whatever the mover has changed by then. */
-    if (rec_) {
+    /* While recording, a table refresh is host work: when weights can move (`residency_ != nullptr`),
+     * cut the tape and name the table so each replay refreshes it on this lane with whatever the
+     * mover has changed by then. When all weights are permanently VRAM-resident (`residency_ ==
+     * nullptr`), `w_tmpl_` is immutable after bind_weights and `sync_residency` is a no-op, so once
+     * uploaded a table can never become dirty again; skipping `kTapeTable` keeps the pass in one
+     * continuous AQL tape, and any first-issue upload runs live under `tape_pause` so the initial
+     * recording and subsequent audits match identically. */
+    const bool need_refresh = !t.checked || t.full || !t.pend.empty();
+    if (rec_ && residency_) {
         tape_cut();
         TapeStep st;
         st.kind = kTapeTable;
@@ -361,11 +367,13 @@ int Ctx::resolve_weight_table(rad_op h, int operand, rad_weight first, int64_t n
         st.a = (int32_t)slot;
         st.b = (int32_t)h;
         rec_->steps.push_back(st);
-        tape_pause(true);
     }
     int rc = RAD_OK;
-    if (!t.checked || t.full || !t.pend.empty()) rc = table_refresh(h, operand, t);
-    if (rec_) tape_pause(false);
+    if (need_refresh) {
+        if (rec_) tape_pause(true);
+        rc = table_refresh(h, operand, t);
+        if (rec_) tape_pause(false);
+    }
     if (rc < 0) return rc;
     return weight_table_tensor(h, operand, t, w_tmpl_[first], out);
 }

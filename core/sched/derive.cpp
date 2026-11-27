@@ -39,6 +39,15 @@ static int d_conv_state_index(const DeriveInput& in, int32_t* out, int64_t cap, 
     return RAD_OK;
 }
 
+/* [n_seq] -- absolute position represented by column zero of the named group's block table. */
+static int d_kv_block_origin(const DeriveInput& in, int32_t* out, int64_t cap, int64_t* n_out) {
+    if (in.n_seq > cap) return RAD_E_FULL;
+    if (!in.kv_block_origin) return RAD_E_STATE;
+    std::memcpy(out, in.kv_block_origin, (size_t)in.n_seq * sizeof(int32_t));
+    *n_out = in.n_seq;
+    return RAD_OK;
+}
+
 /* ------------------------------------------------------- the linear-state chunk walk */
 /* Chunked linear-attention kernels tile each sequence in fixed chunks from the sequence's own
  * origin, not the step's token array. A chunk never crosses a sequence boundary, and interior
@@ -122,6 +131,8 @@ static const DeriveRow g_rows[] = {
     { "projection_on_rows", d_projection_on_rows,
       "[n_tok] 1 where this token's request applies the loaded control vector, 0 for the stock "
       "model" },
+    { "kv_block_origin", d_kv_block_origin,
+      "[n_seq] absolute first position of the named paged KV group's block table" },
 };
 
 int derive_index(const char* name) {
