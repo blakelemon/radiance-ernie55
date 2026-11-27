@@ -90,15 +90,10 @@ function debugGraph(tp, env = {}) {
   return out;
 }
 
-// The declared graph only: the `==== declared graph:` section (Engine::dump prints it last, as one block), with
-// any engine log line (a single capital letter then a space: `I `, `W `, `E `, `D `) dropped. Plugin notes
-// ("radiance: ernie55: ...") are printed before the dump, so slicing from the banner drops them too -- which is
-// what lets the TP 1 on-vs-unset comparison hold even though the "on" run prints a "requested but off" note.
-function graphText(text) {
-  const lines = text.split('\n');
-  const start = lines.findIndex(l => l.startsWith('==== declared graph:'));
-  return (start >= 0 ? lines.slice(start) : lines).filter(l => !/^[IWED] /.test(l)).join('\n');
-}
+// The declared graph only (ck.graphText): the `==== declared graph:` section with engine log lines and the
+// `radiance: ` plugin notes dropped (the notes are concatenated after stdout, so slicing from the banner does
+// not drop them) and the run-dependent `---- unresolved:` table sorted. Shared with dspark_kv_window.test.cjs.
+const graphText = ck.graphText;
 // The row split's slot-list gather moves i32 rows as f32 bytes (make_ag_max(..., "f32")); it is the only f32
 // all_gather the program declares, so counting f32 all_gather op headers counts the indexer gathers.
 const nF32Gather = g => (g.match(/^all_gather\b[^\n]*dtype=f32/gm) || []).length;
@@ -127,7 +122,7 @@ test('(a) TP2 declare, switch off (unset and 0): no indexer all_gather, graph eq
   assert.equal(unset.status, 0, unset.text.slice(-800));
   assert.equal(zero.status, 0, zero.text.slice(-800));
   assert.equal(graphText(zero.text), graphText(unset.text), 'the declared program changed with the switch set to 0');
-  assert.equal(nF32Gather(graphText(unset.text)), 0, 'the OFF graph declares an indexer (f32) all_gather');
+  // The program already declares f32 all_gathers at TP 2 (the drafter's candidate gathers), so the indexer's gather is checked as a delta in case (b), not as an absolute count here.
 });
 
 // (b) declare with the switch on: TP 2 turns it on (the log line, the extra f32 gather); TP 1 is inert.

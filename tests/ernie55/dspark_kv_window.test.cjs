@@ -53,17 +53,13 @@ function debugGraph(spec, env = {}) {
   return out;
 }
 
-// The declared graph only, with the engine's interleaved log lines dropped. debugGraph returns
-// stdout+stderr merged, and an engine log line (e.g. the "I kernel libraries on the search path ...
-// not loaded" note) is emitted at a slightly different position between two identical runs, so the raw
-// text of two runs differs by line order even when the declared program is byte-identical -- the flake
-// this helper removes. The engine prefixes every log line with a single capital letter and a space
-// (`I `, `W `, `E `, `D `); dropping those lines leaves the `==== declared graph:` section and only it,
-// which is what "the program is unchanged" means. Assertions that read a log line (the window-group
-// note, the pool line, a warning) stay on the raw text and are not passed through here.
-function graphText(text) {
-  return text.split('\n').filter(l => !/^[IWED] /.test(l)).join('\n');
-}
+// The declared graph only (ck.graphText), with the engine's interleaved log lines and the `radiance: ` plugin
+// notes dropped and the run-dependent `---- unresolved:` table sorted. debugGraph returns stdout+stderr merged,
+// and an engine log line (e.g. the "I kernel libraries on the search path ... not loaded" note) is emitted at a
+// slightly different position between two identical runs, so the raw text of two runs differs by line order even
+// when the declared program is byte-identical -- the flake this helper removes. Assertions that read a log line
+// (the window-group note, the pool line, a warning) stay on the raw text and are not passed through here.
+const graphText = ck.graphText;
 
 // The geometry serveGroups serves every group report with. The pool is sized against the WORST CASE:
 // SG_SEQS sequences each at the model's max-model-len (serveX's default len, ck.MAXLEN). The full

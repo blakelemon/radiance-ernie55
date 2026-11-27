@@ -267,6 +267,30 @@ function serveX(rad, nspec, xenv, {seqs = 8, tokens = 128, len = MAXLEN, tp = 1,
 }
 
 
+// The declared graph only, from a debugGraph() result (stdout+stderr merged). Two identical runs differ in
+// two ways that are not the program: (1) engine log lines (a single capital letter then a space: `I `, `W `,
+// `E `, `D `) float to different positions, and plugin notes (`radiance: ...`, printed on stderr) are
+// concatenated after stdout, so slicing from the banner alone does not drop them; (2) the `---- unresolved:`
+// table is emitted in a run-dependent order. This keeps the `==== declared graph:` section (or the whole text
+// if that banner is absent), drops the log and `radiance: ` lines, and for the `---- unresolved:` section keeps
+// its header but SORTS the table lines (the section runs to the next `---- `/`==== ` header or the end), so two
+// runs of the same program compare equal. Assertions that read a log line or the unsorted graph body stay on the
+// raw text and are not passed through here.
+function graphText(text) {
+  const all = text.split('\n');
+  const start = all.findIndex(l => l.startsWith('==== declared graph:'));
+  const lines = (start >= 0 ? all.slice(start) : all)
+    .filter(l => !/^[IWED] /.test(l) && !/^radiance: /.test(l));
+  const ui = lines.findIndex(l => l.startsWith('---- unresolved:'));
+  if (ui < 0) return lines.join('\n');
+  let end = lines.length;
+  for (let i = ui + 1; i < lines.length; i++) {
+    if (/^(---- |==== )/.test(lines[i])) { end = i; break; }
+  }
+  const table = lines.slice(ui + 1, end).sort();
+  return [...lines.slice(0, ui), lines[ui], ...table, ...lines.slice(end)].join('\n');
+}
+
 const rnd = (seed, len) => { let s = seed >>> 0; const o = []; for (let i = 0; i < len; i++) { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; o.push((s >>> 8) % VOCAB); } return o; };
 async function genFull(srv, prompt, n) {
   const r = await h.complete(srv, prompt, {max_tokens: n, logprobs: 3});
@@ -277,4 +301,4 @@ async function genFull(srv, prompt, n) {
     top: c.map(x => (x.top_logprobs || []).map(t => t.id + "@" + t.logprob).join(",")),
     drafted: T.draft_n || 0, accepted: T.draft_n_accepted || 0};
 }
-module.exports = {selfCheckBf16, f2bf, bf2f, h, VOCAB, BLOCK, MAIN, NDRAFT, TAPS, GEO, HGEO, MAXLEN, DSPARK_RULES, buildCheckpoint, convertDspark, serveX, genFull, rnd};
+module.exports = {selfCheckBf16, f2bf, bf2f, h, VOCAB, BLOCK, MAIN, NDRAFT, TAPS, GEO, HGEO, MAXLEN, DSPARK_RULES, buildCheckpoint, convertDspark, serveX, genFull, rnd, graphText};
