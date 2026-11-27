@@ -101,9 +101,15 @@ Speed:
 
 Memory and context:
 
-- The latent KV is now the largest per-token cost (about 3.9 of 5.0 KB per token per card). A
-  partitioned latent layout is designed and costed but not built; integer latent formats
-  (`RADIANCE_ERNIE55_KV_LATENT_FMT=i8gN` and wider) exist and are not yet judged for quality.
+- Decode context parallelism (DCP) for the latent cache. Today every card holds a full copy of the MLA
+  latent cache, the largest per-token cost (about 3.9 of 5.0 KB per token per card). MLA attention
+  reads at most 2,176 selected rows per query, so each row can live on one card only (row `s` on rank
+  `s % 8`) and be gathered before attention. Designed and costed, not built. Estimates: about 3.4 KB
+  per token per card freed (3.4 GiB per million tokens), taking the pool from about 1.4 full
+  1M-token sessions to about 4-5; cost about +0.4-1.6% prefill at 8K-30K, +9-25% on a whole 1M
+  prompt, and +1-11% decode for one stream at 1M (more if concurrent rows select different history).
+- Integer latent formats (`RADIANCE_ERNIE55_KV_LATENT_FMT=i8gN` and wider) exist and are not yet
+  judged for quality.
 - Routed experts in a four-bit format (the IQR-V4 plan) would free most of a card's memory; it needs
   plugin support for the encodings and calibration data.
 
