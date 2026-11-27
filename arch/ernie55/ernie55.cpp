@@ -110,6 +110,9 @@ static inline int64_t a16_max_rows() { return g_a16_max; }
 /* RADIANCE_ERNIE55_DSPARK_KV_WINDOW=1: the drafter's KV group (kv_dspark) is a sliding window of the drafter's attention window instead of a full-context group. The drafter's attention reads only [anchor - window + 1, total) through seqused and the block table, which the core rebases for a window group, so its output is bit-identical. Default off. */
 static bool dspark_kv_window_from_env() { const char* v = getenv("RADIANCE_ERNIE55_DSPARK_KV_WINDOW"); return v && v[0] == '1' && v[1] == '\0'; }
 
+/* RADIANCE_ERNIE55_KV_REPLICATED=1: the tier keeps one copy of the MLA latent cache (kv_latent) and the indexer key cache (kv_dsa_index), written by rank 0 and read by every rank, instead of every rank's copy. Every rank computes both whole: the latent is projected from the unsharded mqa down-projection and the index key from the unsharded indexer q/k weights, so the rows agree bit for bit. Default off. */
+static bool kv_replicated_from_env() { const char* v = getenv("RADIANCE_ERNIE55_KV_REPLICATED"); return v && v[0] == '1' && v[1] == '\0'; }
+
 /* Diagnostic pin, neutral unless set: ERNIE_ROUTER_SPLIT=1 routes a one-row step through ernie_router_topk + moe_scatter, the ops
  * every other row count uses, instead of the fused ernie_router_topk_scatter, so the router is not a source of M=1 versus M>1
  * difference. */
@@ -2003,7 +2006,7 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
         return out->op ? RAD_OK : RAD_E_INVAL;
     };
 
-    const bool ds_on = quant_fwd && target && m.hca && m.moe && dsc && dh && ctx->max_spec > 0;
+    const bool ds_on = quant_fwd && target && m.hca && m.moe && dsc && dh && rad_ctx_draft_head(ctx);
     if (ds_on) {
         /* The block is `depth` positions: the anchor and depth - 1 mask rows. Scheduler::block_begin refuses a block below 2, so a depth-1 drafter would
          * run its context pass for nothing and never propose; refuse it here, by name, instead of drafting silently nothing (review, kv-context-multiseq). */
@@ -2396,6 +2399,8 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
                 if (m.lat_fp8) { d.dtype = RAD_U8; d.head_dim = (a.lat + m.lat_lo + 4 * (a.lat / m.lat_qb) + 2 * a.rope) / 2; }
                 m.kvl = rad_decl_kv_group(b, nm.f("kv_latent"), &d);
                 if (!m.kvl) return RAD_E_INVAL;
+                /* Every rank computes the whole latent, so the tier keeps it once a slot. */
+                if (kv_replicated_from_env()) RAD_ARCH_TRY(rad_kv_group_replicated(b, m.kvl));
             }
             RAD_ARCH_TRY(rad_bind_layer_kv(b, (int)l, m.kvl));
             if (m.lat_fp8 && !m.lat_i8)
@@ -2429,6 +2434,8 @@ static int declare_ffn(RadBuilder* b, const RadBuildCtx* ctx, const Config& c, c
                 m.kvi = rad_decl_kv_group(b, nm.f("kv_dsa_index"), &d);
                 if (!m.kvi) return RAD_E_INVAL;
                 RAD_ARCH_TRY(rad_kv_group_dense_read(b, m.kvi));
+                /* The indexer key is unsharded on every rank too (see kv_latent). */
+                if (kv_replicated_from_env()) RAD_ARCH_TRY(rad_kv_group_replicated(b, m.kvi));
             }
             RAD_ARCH_TRY(rad_bind_layer_kv(b, (int)l, m.kvi));
             At.ikey = rw(b, RAD_OP(b, "ernie_idx_key",
@@ -3436,7 +3443,7 @@ static int declare(RadBuilder* b, const RadModelMeta* meta, const RadBuildCtx* c
         }
         DsparkConfig dsc;
         DsparkHandles dh;
-        const bool use_dspark = (ds_key == 1 && ctx->max_spec > 0);
+        const bool use_dspark = (ds_key == 1 && rad_ctx_draft_head(ctx));
         if (use_dspark) {
             const int dss = read_dspark_config(meta, c, &dsc, &why);
             if (dss < 0) { fprintf(stderr, "radiance: ernie55: invalid DSpark config: %s\n", why.c_str()); return dss; }
