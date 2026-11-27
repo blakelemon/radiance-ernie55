@@ -28,6 +28,15 @@ __device__ const uint8_t* entry(const void* base, long step, int e) {
 /* E2M1 values are exactly representable in E4M3. Stage those codes directly,
  * use FP8 WMMA, and fold each 32-wide E8M0 scale into the F32 accumulator.
  * No persistent expansion or checkpoint relayout is needed. */
+// Row d = 0 as immediates, for kernels that fold the E8M0 scale in F32 and need the exact e2m1
+// values: no table load, v_perm_b32 takes the two words as literals. tests/r4d_emu/test_moemx
+// holds them to row 0 of the table.
+#define R4D_MXFP4_MAG0_LO 0x3c383000u
+#define R4D_MXFP4_MAG0_HI 0x4c484440u
+static __device__ __forceinline__ void r4d_mxfp4_unpack8_exact(unsigned int wv, unsigned int* lo,
+                                                               unsigned int* hi) {
+  r4d_mxfp4_unpack8_t(wv, R4D_MXFP4_MAG0_LO, R4D_MXFP4_MAG0_HI, lo, hi);
+}
 /* Eight codes of a packed word to their E4M3 bytes in k order, by table (r4d_mxfp4.h, v_perm on
  * the magnitude): the bytes of the bytewise arithmetic decode in about a third of the
  * instructions. */

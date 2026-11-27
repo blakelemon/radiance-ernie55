@@ -898,16 +898,7 @@ else()
               -I${CMAKE_SOURCE_DIR}/abi -I${R4D_DIR})
     set(objs "")
     foreach(src ${R4D_EMU_HIP} ${R4D_EMU}/ref_host.cpp ${R4D_EMU}/cfg_host.cpp ${R4D_EMU}/emu/emu.cpp
-                ${R4D_EMU}/test_attn.cpp ${R4D_EMU}/test_pick.cpp ${R4D_EMU}/test_norm.cpp
-                ${R4D_EMU}/test_escale.cpp ${R4D_EMU}/test_qsa.cpp ${R4D_EMU}/test_lora.cpp
-                ${R4D_EMU}/test_f32.cpp ${R4D_EMU}/test_mhc.cpp
-                ${R4D_EMU}/test_kda.cpp ${R4D_EMU}/test_mla.cpp
-                ${R4D_EMU}/test_moefuse.cpp ${R4D_EMU}/test_kvres.cpp
-                ${R4D_EMU}/test_dsa.cpp ${R4D_EMU}/test_lili.cpp
-                ${R4D_EMU}/test_vit.cpp ${R4D_EMU}/test_sconv.cpp
-                ${R4D_EMU}/test_l2clip.cpp ${R4D_EMU}/test_rel.cpp ${R4D_EMU}/test_attnres.cpp
-                ${R4D_EMU}/test_inkling.cpp ${R4D_EMU}/test_ds41mr.cpp
-                ${R4D_EMU}/test_ds41walk.cpp ${R4D_EMU_TEST_SOURCES})
+                ${R4D_EMU_TEST_SOURCES})
       get_filename_component(stem ${src} NAME_WE)
       set(lang "")
       if(src MATCHES "\\.hip$")

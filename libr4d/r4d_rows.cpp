@@ -5726,6 +5726,10 @@ static const RadConstraint cGemmNtF32[] = { C_GE("M", 1),         C_LE("M", 6553
                                             C_GE("N", 1),         C_LE("N", 65536),
                                             C_GE("K", 1),         C_LE("K", 16384),
                                             C_IN("dtype", "bf16") };
+static const RadConstraint cGemmNtF32Pair[] = { C_GE("M", 1),         C_LE("M", 65535),
+                                                C_GE("N", 1),         C_LE("N", 512),
+                                                C_GE("K", 1),         C_LE("K", 16384),
+                                                C_IN("dtype", "bf16") };
 static const RadConstraint cDsaScore[] = {
     C_GE("M", 1),      C_LE("M", 65535), C_EQ("n", 128),           C_EQ("heads", 32),
     C_GE("blocks", 1), C_GE("seqs", 1),  C_IN("dtype", "fp8_e4m3")
@@ -7711,7 +7715,7 @@ static const RadKernelInfo kKernels[] = {
   r4d_shape_gemm_nt_f32 },
 { "gemm_nt_f32_pair_bf16", "gemm_nt_f32_pair", "gemm", "Paired F32 routing/compressor projection",
   "N<=512, K<=16384; pitched rows", "bf16 input, bf16/f32 weight pair, f32 output pair",
-  RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY, ROW(cGemmNtF32), NOTUNE,
+  RAD_DOMAIN_DEVICE, R4D_PRIO_ONLY, ROW(cGemmNtF32Pair), NOTUNE,
   nullptr, nullptr, r4d_rad_gemm_nt_f32_pair, nullptr, nullptr, nullptr,
   r4d_shape_gemm_nt_f32_pair },
 { "dsa_pool_fp8", "dsa_pool", "attn", "learned compressed index keys in wave-local registers",

@@ -2571,7 +2571,7 @@ TEST(op_vocabulary) {
         "mhc_mix", "mhc_collapse", "router_scored_topk", "ds41_rope_rows", "quant_roundtrip", "softmax_pool", "attn_sparse_sink", "index_score", "index_candidates", "index_topk", "entry_store", "token_map", "stream_gate_add", "embed_lookup_planes",
         "swiglu_step", "router_sigmoid_group_topk", "mla_attn_paged",
         "kda_update", "ssd_update",
-        "layernorm", "add", "mul", "mul_weight", "silu_mul", "situ_mul", "ernie_situ_mul", "situ_mul_quant_fp8", "ernie_multimax", "gelu_mul", "act_mul", "seg_mean",
+        "layernorm", "add", "mul", "mul_weight", "silu_mul", "ernie_situ_mul", "situ_mul_quant_fp8", "ernie_multimax", "gelu_mul", "act_mul", "seg_mean",
         "seg_softmax_pool",
         "seg_mean_bf16_sum",
         "pool_rows", "pool_cols", "point_fourier", "relu", "clamp", "conv2d", "conv2d_unfold",

@@ -1453,6 +1453,7 @@ extern "C" int r4d_rad_ar_twoshot_8rank_exact(const RadArgs* a, RadStream s) {
                                    : ar8_env_coded() && c.numel >= ar8_env_coded_min();
         if (want && !weights && timeline == 0 && form == R4D_AR8_FORM_LOCKSTEP &&
             r4d_ar_twoshot_coded_ok(c.numel, in->dtype, 8, in->slot16)) {
+            traffic_twoshot(in, c.numel, nullptr, kTrCoded, 122, 160);
             R4D_TRY("ar_twoshot_8rank_exact (coded)",
                 r4d_ar_twoshot_8rank_exact_coded(
                     in->peer_scratch[0], in->peer_scratch[1], in->peer_scratch[2],

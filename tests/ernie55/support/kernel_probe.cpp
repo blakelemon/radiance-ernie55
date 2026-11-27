@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
     const int ip = std::stoi(argv[6]), yp = std::stoi(argv[7]);
     const double beta = std::stod(argv[8]), linear_beta = std::stod(argv[9]);
     const bool bad_shape = std::string(argv[10]) == "bad-shape";
-    const bool situ = op == "situ_mul" || op == "ernie_situ_mul" || op == "silu_mul";
+    const bool situ = op == "ernie_situ_mul" || op == "silu_mul";
     const int width = situ ? 2*n : n;
     Storage input(rows*ip, dtype), output(rows*yp, dtype);
     for (int r = 0; r < rows; r++) for (int i = 0; i < width; i++) {
