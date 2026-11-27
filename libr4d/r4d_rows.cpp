@@ -5730,6 +5730,11 @@ static const RadConstraint cGemmNtF32Pair[] = { C_GE("M", 1),         C_LE("M", 
                                                 C_GE("N", 1),         C_LE("N", 512),
                                                 C_GE("K", 1),         C_LE("K", 16384),
                                                 C_IN("dtype", "bf16") };
+static const RadConstraint cMoeMx[] = {
+    C_GE("M", 1), C_LE("M", 32767), C_GE("N", 1), C_DIV("K", 128),
+    C_GE("n_expert", 2), C_LE("n_expert", 512), C_GE("top_k", 1), C_LE("top_k", 32),
+    C_EQ("group", 128), C_IN("dtype", "mxfp4a8"),
+};
 static const RadConstraint cDsaScore[] = {
     C_GE("M", 1),      C_LE("M", 65535), C_EQ("n", 128),           C_EQ("heads", 32),
     C_GE("blocks", 1), C_GE("seqs", 1),  C_IN("dtype", "fp8_e4m3")

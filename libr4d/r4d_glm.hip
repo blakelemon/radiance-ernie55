@@ -747,10 +747,10 @@ int gemm_f32_pair_body(const RadArgs* a, RadStream stream) {
     }
     const long rows = x.shape[0];
     auto run_f32 = [&](const RadTensor& w, const RadTensor& y) {
-        if (n <= 8) return gemm_f32_tile<4, 1>(stream, x, w, y, n, k);
-        if (rows <= 16 || (rows < 64 && n < 128)) return gemm_f32_tile<2, 2, 16>(stream, x, w, y, n, k);
-        if (rows < 64) return gemm_f32_tile<8, 1, 8>(stream, x, w, y, n, k);
-        return gemm_f32_tile<8, 4>(stream, x, w, y, n, k);
+        if (n <= 8) return gemm_f32_tile<4, 1>(stream, x, w, y, n, k, false);
+        if (rows <= 16 || (rows < 64 && n < 128)) return gemm_f32_tile<2, 2, 16>(stream, x, w, y, n, k, false);
+        if (rows < 64) return gemm_f32_tile<8, 1, 8>(stream, x, w, y, n, k, false);
+        return gemm_f32_tile<8, 4>(stream, x, w, y, n, k, false);
     };
     int rc = run_f32(w0, y0);
     if (rc < 0) return rc;
