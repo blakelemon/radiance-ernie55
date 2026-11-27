@@ -1,0 +1,93 @@
+{%- set thinking_off = (enable_thinking is defined and (enable_thinking == false or enable_thinking == 0 or enable_thinking == "false")) -%}
+{{- "<|ERNIE_MASK|><|ernie:im_start|>system\n" -}}
+{%- if messages and messages[0]["role"] == "system" -%}
+{{- "<ernie:system_setting>\n" -}}
+{%- if messages[0]["content"] is string -%}
+{{- messages[0]["content"] -}}
+{%- else -%}
+{%- for part in messages[0]["content"] -%}{%- if part["type"] == "text" -%}{{- part["text"] -}}{%- endif -%}{%- endfor -%}
+{%- endif -%}
+{{- "\n</ernie:system_setting>\n" -}}
+{%- endif -%}
+{{- "<ernie:global_setting>" -}}
+{%- if not thinking_off -%}
+{%- set eff = reasoning_effort if (reasoning_effort is defined and reasoning_effort in ["low", "medium", "high"]) else "high" -%}
+{{- "\nreasoning_effort=" ~ eff -}}
+{%- endif -%}
+{%- if tools is defined and tools -%}
+{{- "\nparallel_tool_calls=True" -}}
+{%- endif -%}
+{{- "\n</ernie:global_setting>" -}}
+{%- if tools is defined and tools -%}
+{{- "\n<ernie:tool_list>\n" ~ (tools | tojson) ~ "\n</ernie:tool_list>" -}}
+{%- endif -%}
+{{- "<|ernie:im_end|>\n" -}}
+{%- for message in messages -%}
+{%- set role = message["role"] -%}
+{%- if role == "user" or (role == "system" and not loop.first) -%}
+{{- "<|ernie:im_start|>" ~ role ~ "\n" -}}
+{%- if message["content"] is string -%}
+{{- message["content"] -}}
+{%- elif message["content"] is iterable -%}
+{%- for part in message["content"] -%}{%- if part["type"] == "text" -%}{{- part["text"] -}}{%- endif -%}{%- endfor -%}
+{%- endif -%}
+{{- "<|ernie:im_end|>\n" -}}
+{%- elif role == "assistant" -%}
+{{- "<|ernie:im_start|>assistant\n<ernie:think>" -}}
+{%- set content_str = "" -%}
+{%- if message["content"] is string -%}
+{%- set content_str = message["content"] -%}
+{%- elif message["content"] is iterable -%}
+{%- for part in message["content"] -%}{%- if part["type"] == "text" -%}{%- set content_str = content_str ~ part["text"] -%}{%- endif -%}{%- endfor -%}
+{%- endif -%}
+{%- set r_str = "" -%}
+{%- if message["reasoning_content"] is defined and message["reasoning_content"] is string -%}
+{%- set r_str = message["reasoning_content"] -%}
+{%- elif "</ernie:think>" in content_str -%}
+{%- set r_str = content_str.split("</ernie:think>")[0].replace("<ernie:think>", "") -%}
+{%- set content_str = content_str.split("</ernie:think>", 1)[1] -%}
+{%- endif -%}
+{%- if not thinking_off and r_str -%}
+{{- r_str -}}
+{%- endif -%}
+{{- "</ernie:think>" ~ content_str -}}
+{%- if message["tool_calls"] is defined and message["tool_calls"] -%}
+{{- "<ernie:tool_call>" -}}
+{%- for tc in message["tool_calls"] -%}
+{%- set fn = tc["function"] if tc["function"] is defined else tc -%}
+{{- '<invoke name="' ~ fn["name"] ~ '">' -}}
+{%- set args = fn["arguments"] -%}
+{%- if args is mapping -%}
+{%- for k, v in args.items() -%}
+{{- '<parameter name="' ~ k ~ '">' ~ (v if v is string else (v | tojson)) ~ '</parameter>' -}}
+{%- endfor -%}
+{%- endif -%}
+{{- "</invoke>" -}}
+{%- endfor -%}
+{{- "</ernie:tool_call>" -}}
+{%- endif -%}
+{{- "<|ernie:im_end|>\n" -}}
+{%- elif role == "tool" -%}
+{%- if loop.first or messages[loop.index0 - 1]["role"] != "tool" -%}
+{{- "<|ernie:im_start|>tool" -}}
+{%- endif -%}
+{{- "\n<ernie:tool_output>" -}}
+{%- if message["content"] is string -%}
+{{- message["content"] -}}
+{%- elif message["content"] is iterable -%}
+{%- for part in message["content"] -%}{%- if part["type"] == "text" -%}{{- part["text"] -}}{%- endif -%}{%- endfor -%}
+{%- endif -%}
+{{- "</ernie:tool_output>" -}}
+{%- if loop.last or messages[loop.index0 + 1]["role"] != "tool" -%}
+{{- "<|ernie:im_end|>\n" -}}
+{%- endif -%}
+{%- endif -%}
+{%- endfor -%}
+{%- if add_generation_prompt -%}
+{{- "<|ernie:im_start|>assistant\n" -}}
+{%- if thinking_off -%}
+{{- "<ernie:think></ernie:think>" -}}
+{%- else -%}
+{{- "<ernie:think>" -}}
+{%- endif -%}
+{%- endif -%}

@@ -82,7 +82,9 @@ The `--set` keys the plugin reads (`arch/ernie55/ernie55.cpp`), in the order the
 
 ## Serving
 
-The configuration the measured numbers come from:
+The configuration the measured numbers come from. The chat template it names is
+`deploy/chat-templates/ernie55.jinja` in this tree (system, tools, reasoning effort and
+`enable_thinking`), mounted into the container at `/etc/radiance/ernie55.jinja`:
 
 ```yaml
 models:
