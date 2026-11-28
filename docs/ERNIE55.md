@@ -1,7 +1,7 @@
 # ERNIE 5.5 Flash on Radiance
 
 An unofficial community port of ERNIE 5.5 Flash (HuggingFace `model_type: ernie5_5_moe`) to Radiance,
-built on v2.2.0. The architecture is `arch/ernie55/`; the plugin claims the architecture id `ernie55moe`
+built on v2.3.0. The architecture is `arch/ernie55/`; the plugin claims the architecture id `ernie55moe`
 (`core/format/checkpoint.cpp` drops the underscores of `model_type` to get it). Model weights are not
 included in this tree and carry their own licence.
 
@@ -14,15 +14,20 @@ What works, on the rig the numbers below come from:
 - 8 concurrent sequences;
 - prefix caching across turns;
 - the DSpark block-diffusion drafter, at speculative depth 7 with an adaptive window;
-- an fp8 latent KV cache.
+- an fp8 latent KV cache;
+- indexer scoring split across the tensor-parallel ranks (`RADIANCE_ERNIE55_IDX_ROW_SPLIT=1`),
+  token-identical to the unsplit path in our comparisons.
 
-What has **not** been verified on the final commit:
+Verified on this commit: long-context retrieval at 30K and 150K tokens (10 of 10), perplexity and KL
+divergence against a bf16-KV reference (perplexity ratio 0.999654, mean KLD 0.0122, top-1 agreement
+95.9%), and out-of-tree plugin loading.
 
-- long-context retrieval and perplexity checks at 30K and 150K tokens;
-- out-of-tree plugin loading;
-- a KL-divergence/replay audit;
-- the case where a cached prefix is evicted and then missed;
-- an independent deep review of the last commits.
+What has **not** been verified:
+
+- the bf16 paired-GEMM path has no fixture coverage after the merge onto v2.3.0;
+- `RADIANCE_ERNIE55_KV_REPLICATED=1` on cards;
+- a replay audit;
+- the case where a cached prefix is evicted and then missed.
 
 Hardware other than eight gfx1201 cards has not been tried.
 
@@ -87,6 +92,8 @@ The configuration the measured numbers come from. The chat template it names is
 `enable_thinking`), mounted into the container at `/etc/radiance/ernie55.jinja`:
 
 ```yaml
+server:
+  kernels: libavx,libr4d,spechub,libref
 models:
   ernie55-flash-preview:
     model: /path/to/ernie55-flash-preview-dspark.rad
@@ -104,8 +111,12 @@ environment:
   RADIANCE_ERNIE55_HCA_CMP_LAYOUT: "auto"
   RADIANCE_ERNIE55_IDX_TILE: "16384"
   RADIANCE_ERNIE55_DSPARK_KV_WINDOW: "1"
+  RADIANCE_ERNIE55_IDX_ROW_SPLIT: "1"
   R4D_AR8_FORM: "ring"
 ```
+
+`server: kernels` names the kernel libraries to load. The v2.3.0 image also ships libraries for other
+model families; this model was measured with the four above.
 
 The environment switches, each read in the source named:
 
@@ -114,6 +125,9 @@ The environment switches, each read in the source named:
 | `RADIANCE_ERNIE55_HCA_CMP_LAYOUT` | `auto`, `block`, `token` | `auto` (container key `ernie55_hca_cmp_layout`) | the compressed HCA group's layout: one row per `period`-token block, or one slot a token. `auto` is `block` where `head_dim` is a multiple of `2 * period`, `token` otherwise (`arch/ernie55/ernie55.cpp`) |
 | `RADIANCE_ERNIE55_IDX_TILE` | `0` or `1..2^24` columns | `0`, untiled (container key `ernie55_idx_tile`) | serve-time override of the indexer score plane's tiling, for A/B runs on one container |
 | `RADIANCE_ERNIE55_DSPARK_KV_WINDOW` | `1` | off | stores the drafter's KV group as a sliding window of the drafter's attention window instead of a full-context group |
+| `RADIANCE_ERNIE55_IDX_ROW_SPLIT` | `1` | off | at tensor parallel 2 or more, each rank scores and selects its own run of a step's rows for the indexer and the selections are gathered before attention. Applies to steps of 256 rows or more, and from 16 rows when rows x live context reaches 2^18. Excludes `RADIANCE_ERNIE55_AR_OVERLAP` |
+| `RADIANCE_ERNIE55_IDX_ROW_SPLIT_TRACE` | `1` | off | logs one line per rank for each split step |
+| `RADIANCE_ERNIE55_KV_REPLICATED` | `1` | off | marks the KV groups as identical on every rank so the host tier keeps one copy; untried on cards |
 | `RADIANCE_ERNIE55_KV_LATENT_FMT` | `ds_mla`, `bf16id`, `i8gN`, `i10gN`, `i12gN` (N one of 128, 64, 32, 16) | `ds_mla` | the latent cache's row form under `--kv-cache-dtype fp8`: E4M3 codes, a lossless bf16 diagnostic row, or integer codes with one exact f32 scale per N latent values |
 | `RADIANCE_ERNIE55_AR_OVERLAP` | `1` | off | overlaps the collectives of a quantised prefill step at tensor parallel 2 or more with the compute between them |
 | `RADIANCE_ERNIE55_AR_OVERLAP_MIN` | an integer `>= 2` | `1280` | the fewest rows a prefill step must have before the overlap splits it |
@@ -124,14 +138,15 @@ The environment switches, each read in the source named:
 One machine, one set of runs: eight gfx1201 cards, tensor-parallel 8, about 29.9 GiB of weights and
 buffers held per card, with the configuration above.
 
-- Prefill, single stream: about 2,770 tokens/s at a 1.6K prompt, 2,490 at 8K, 2,150 at 30K.
+- Prefill, single stream: about 2,760 tokens/s at a 1.6K prompt, 2,585 at 8K, 2,430 at 30K (2,770 /
+  2,490 / 2,150 without the row split).
 - Decode, single stream: about 70-80 tokens/s on prose, about 130 on code, about 220 on highly
   predictable text. The drafter's acceptance on prose is about 35-50%.
-- Decode, 8 concurrent streams (total): about 810 tokens/s on highly predictable text, about 305 on
-  prose.
-- A cold 140K-token prompt takes about 105 s to first token; the next turn with the prefix cached
-  starts in 2-4 s.
-- The KV pool with these settings holds 1,483,008 tokens per card.
+- Decode, 8 concurrent streams (total): about 830-845 tokens/s on highly predictable text; about 330
+  or about 300 on prose depending on the launch.
+- A cold 149K-token prompt takes about 78 s to first token (114 s without the row split); the next
+  turn with the prefix cached starts in 2-4 s.
+- The KV pool with these settings holds 1,472,000 tokens per card.
 - `RADIANCE_ERNIE55_DSPARK_KV_WINDOW=1` stores the drafter's KV as a window group: its start-up
   reservation fell from 3.09 GiB to 9 MiB per card, and the KV pool grew by about 61% at an otherwise
   equal configuration. Output was token-identical with the switch on and off in our runs (50 of 50
@@ -142,6 +157,10 @@ buffers held per card, with the configuration above.
 - As in other engines that batch prefill, a request that is prefilling delays the other streams;
   `prefill-interleave` and the batch size set the balance.
 - The drafter's drafted/accepted counters are not bit-stable from run to run.
+- The adaptive draft-window controller chooses its depth from measured step times and settles
+  differently between launches: 8-stream prose runs in one of two modes about 10% apart, and the
+  first 8-stream run after a launch drafts shallower. `draft-window: fixed` is slower on prose.
+- Prose decode at 150K tokens of context is about 4% slower than on the v2.2.0 port.
 - Only eight gfx1201 cards have been tried.
 
 ## Tests

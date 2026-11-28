@@ -20,47 +20,63 @@ To support the development of radiance: [Patreon](https://patreon.com/StillDeadC
 
 ## This fork: ERNIE 5.5 Flash
 
-This branch (`ernie55-port`) is upstream radiance v2.2.0 plus an unofficial community port of
+This branch (`ernie55-port`) is upstream radiance v2.3.0 plus an unofficial community port of
 ERNIE 5.5 Flash (`arch/ernie55`), with its block-diffusion drafter (DSpark), a 1,048,576-token
-context and an fp8 latent KV cache. Everything else in this README is upstream's and unchanged.
+context, an fp8 latent KV cache and an indexer row split across the tensor-parallel ranks
+(`RADIANCE_ERNIE55_IDX_ROW_SPLIT=1`). The port on v2.2.0 is the commit `e11bdb5b` and its ancestors. Everything else in this README is upstream's and unchanged.
 Status, layout, conversion, serving configuration and known gaps: [`docs/ERNIE55.md`](docs/ERNIE55.md).
 Model weights are not included.
 
 Measured on one machine: eight 32 GB `gfx1201` cards, tensor-parallel 8, drafter depth 7 (adaptive),
-8 sequences, prefill batch 2,048. Medians of 5 runs; one set of runs, so read them as indicative.
+8 sequences, prefill batch 2,048, indexer row split on. Medians of 5 runs; read them as indicative.
+The row split is token-identical to the build without it in our comparisons (34 single prompts, 16
+concurrent, and 8 streams at 6K tokens of context each).
 
 | prefill, one request, nothing cached | 1.6K-token prompt | 8K | 30K |
 |---|---|---|---|
-| tokens/s | 2,770 | 2,491 | 2,153 |
+| tokens/s | 2,758 | 2,585 | 2,428 |
+| tokens/s before the row split (v2.2.0 port) | 2,770 | 2,491 | 2,153 |
 
 | decode, tokens/s | 1 stream | 8 streams (total) |
 |---|---|---|
-| counting (highly predictable text) | 203 | 808 |
-| prose | 83 (38% of drafted tokens accepted) | 306 |
+| counting (highly predictable text) | 203 | 830-845 |
+| prose | 83 (38% of drafted tokens accepted) | 300 or 330, by launch (see Limits) |
 
 | long agent session (8 tools, 140K-155K tokens of context) | |
 |---|---|
-| first request, nothing cached (139,863 tokens) | 104.5 s to first token |
+| first request, nothing cached (139,863 tokens), v2.2.0 port | 104.5 s to first token |
+| one prompt, nothing cached (148,938 tokens) | 77.8 s to first token (114.4 s without the row split) |
 | later turns, prefix cached | 1.3-3.8 s to first token |
 | decode with reasoning and tool calls | 70-81 tokens/s |
 
 | memory per card | |
 |---|---|
 | routed experts, resident | 17.96 GiB |
-| KV pool | 7.67 GiB = 1,483,008 tokens |
+| KV pool | 7.62 GiB = 1,472,000 tokens |
 | drafter KV, stored as a window (`RADIANCE_ERNIE55_DSPARK_KV_WINDOW=1`) | 12 MiB (3.09 GiB as a full-context group) |
 
 ### Limits
 
 - Only eight `gfx1201` cards at tensor-parallel 8 have been run. Other card counts, other GPU families
   and the CPU backend at full model size are untried.
-- Prefill slows with depth: about 1,260 tokens/s at 150K tokens of context against about 2,800 near
-  zero, so a fresh 150K prompt takes about two minutes to its first token. Later turns reuse the
-  cached prefix.
+- Prefill slows with depth: about 1,900 tokens/s averaged over a fresh 150K prompt against about
+  2,760 near zero (1,300 before the row split), so a fresh 150K prompt takes about 78 s to its first
+  token. Later turns reuse the cached prefix.
+- The 2.3 image ships kernel libraries this model does not use; the measured configuration names the
+  ones it loads (`server: kernels: libavx,libr4d,spechub,libref`).
 - The drafter accepts only about 35-50% of its drafted tokens on prose, so prose decodes at well under
   half the speed of predictable text.
-- Prose throughput varies 5-10% between launches, and the drafter's drafted/accepted counters are not
-  bit-stable from run to run. Output tokens were identical in our comparisons.
+- Decode at 8 streams varies with the launch, on this build and on the v2.2.0 port alike: the
+  adaptive draft-window controller chooses its depth from step times it measures, and settles
+  differently from one launch to the next. Prose at 8 streams runs at about 330 or about 300 tokens/s
+  depending on the launch (the slower mode drafts more tokens for the same number accepted), and the
+  first 8-stream run after a launch drafts shallower (about 690 tokens/s on predictable text, then
+  830-845). A fixed window (`draft-window: fixed`) is worse: about 255 tokens/s on prose at 8 streams.
+  The drafted/accepted counters are not bit-stable from run to run. Output tokens were identical in
+  our comparisons.
+- Prose decode at 150K tokens of context is about 4% slower than on the v2.2.0 port (66 against 69
+  tokens/s): step time is equal and the controller drafts slightly fewer tokens per step. Not
+  explained beyond that.
 - `data/recipes/ernie55-iqr-v4.recipe` is a plan, not a working conversion: the plugin refuses the
   encodings it targets.
 - As in other engines that batch prefill, a request that is prefilling delays the other streams
@@ -68,27 +84,37 @@ Measured on one machine: eight 32 GB `gfx1201` cards, tensor-parallel 8, drafter
 
 ### Open items
 
-Not yet done on the final commit:
+Checked on this commit: long-context retrieval at 30K and 150K tokens (10 of 10 planted facts
+found); teacher-forced perplexity and KL divergence against a bf16-KV reference (perplexity ratio
+0.999654, mean KLD 0.0122, top-1 agreement 95.9%); out-of-tree plugin loading (`oot` tests).
 
-- long-context retrieval and perplexity checks at 30K and 150K tokens;
-- out-of-tree plugin loading (`oot` tests) and the GPU-labelled tests in a full run;
-- a KL-divergence / replay audit against the reference implementation;
+Not yet done:
+
+- fixture coverage for the bf16 paired-GEMM path after the merge onto v2.3.0 (a review finding; the
+  quantised path the measured configuration uses is covered);
+- `RADIANCE_ERNIE55_KV_REPLICATED=1` (host-tier copy kept once) is untried on cards and off by default;
+- the row split and the collective overlap (`RADIANCE_ERNIE55_AR_OVERLAP`) exclude each other; they
+  have not been compared at depth;
+- the n-gram speculator's row-band policy sites were not revisited for v2.3.0 (the measured
+  configuration runs without it);
+- `RADIANCE_ERNIE55_DSPARK_KV_WINDOW` now matches what v2.3.0 does by default and could be dropped;
 - the case where a cached prefix is evicted and then missed, and a positive check that the restored
   drafter window is read after a prefix hit (the engine logs nothing on restore);
-- an independent deep review of the last drafter-window commits.
+- a replay audit against the reference implementation.
 
-Test status on the build host (CPU-only selection, 247 tests): `device_test`, `format_test`,
-`shipped_plugins_test` and `avx_check` fail there with and without this port's last changes;
-`quant_test` passes its checks but can exceed its 10 s CPU budget on a slow host; one drafter-window
-node test ("program unchanged with the switch off") failed once and passed on three reruns, cause not
-found.
+Test status on the build host (302 tests in the card build): `device_test`, `runtime_test`,
+`shipped_plugins_test` and `avx_check` fail there with and without this port (`runtime_test` fails
+the same two read-ahead cases on unmodified v2.3.0); `quant_test` and `tokenizer_test` can exceed
+their time budgets on a loaded host and pass alone.
 
 ### Roadmap (not started unless marked)
 
 Speed:
 
-- Prefill at depth: indexer scoring dominates at long context. Candidates are a row-split attention
-  for the MLA/DSA layers and recording the tiled prefill passes at the full context length.
+- Prefill at depth: the indexer's scoring is now split across the ranks (done: 30K +12%, a fresh 150K
+  prompt 32% sooner). Remaining at depth: HCA attention, the tiled top-k and MLA attention.
+- Draft-window controller: a warm start and a launch-independent choice between its two prose modes
+  (about 10% at 8 streams).
 - Collectives are about half of a prefill chunk's time. An overlap of collectives and compute is
   built (`RADIANCE_ERNIE55_AR_OVERLAP`) but gained only a few percent and costs prose decode, so it is
   off by default; a profile of where the lanes wait is the next step.
@@ -121,7 +147,7 @@ Correctness and tooling:
   check again with that as a positive control.
 - Find which quantiser turns a one-ulp difference into a different token, and the cause of an
   intermittently slow decoder under mixed load (seen in 2 of 6 runs).
-- Split the port into per-topic patch series against upstream v2.2.0 for possible contribution.
+- Split the port into per-topic patch series against upstream v2.3.0 for possible contribution.
 
 ## Models
 
